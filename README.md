@@ -159,6 +159,8 @@ node scripts/live-smoke-test.mjs
 
 The smoke test prints the score, recommendation, returned model name, and OpenAI
 response ID. Normal automated tests never call OpenAI and do not require a key.
+Transient 5xx provider failures are retried once. If the retry fails, the relay
+preserves the OpenAI request ID when available for troubleshooting.
 
 ## No-cost judge demo
 

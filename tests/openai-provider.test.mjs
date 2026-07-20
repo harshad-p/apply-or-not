@@ -2,7 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   analyzeWithOpenAI,
+  isTransientServerError,
   parseOpenAIResponse,
+  readError,
   validatePayload,
 } from "../local-relay/openai-provider.mjs";
 
@@ -126,4 +128,48 @@ test("rejects an unrecognized application method", () => {
       }),
     /application method is invalid/,
   );
+});
+
+test("retries one transient 520 response before succeeding", async () => {
+  let attempts = 0;
+  const fetchImpl = async () => {
+    attempts += 1;
+    if (attempts === 1) {
+      return {
+        ok: false,
+        status: 520,
+        headers: { get: () => "req_transient" },
+        text: async () => "",
+      };
+    }
+    return {
+      ok: true,
+      json: async () => ({
+        id: "resp_after_retry",
+        model: "gpt-5.6-sol",
+        output_text: JSON.stringify(modelOutput()),
+      }),
+    };
+  };
+
+  const result = await analyzeWithOpenAI(payload(), {
+    apiKey: "test-key-not-real",
+    fetchImpl,
+  });
+
+  assert.equal(attempts, 2);
+  assert.equal(result.provider.responseId, "resp_after_retry");
+});
+
+test("preserves a provider request ID on an unreadable server error", async () => {
+  const message = await readError({
+    status: 520,
+    headers: { get: () => "req_debug_520" },
+    text: async () => "<html>edge error</html>",
+  });
+
+  assert.match(message, /OpenAI request failed \(520\)/);
+  assert.match(message, /req_debug_520/);
+  assert.equal(isTransientServerError(520), true);
+  assert.equal(isTransientServerError(429), false);
 });

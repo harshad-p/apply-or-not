@@ -53,12 +53,28 @@ function parseOpenAIResponse(response) {
 }
 
 async function readError(response) {
+  const requestId = response.headers?.get?.("x-request-id") || "";
+  let message = `OpenAI request failed (${response.status}).`;
   try {
-    const body = await response.json();
-    return body?.error?.message || `OpenAI request failed (${response.status}).`;
+    const rawBody = await response.text();
+    if (rawBody) {
+      try {
+        const body = JSON.parse(rawBody);
+        message = body?.error?.message || message;
+      } catch {
+        if (!/<(?:html|body|script)\b/iu.test(rawBody)) {
+          message = rawBody.trim().slice(0, 300) || message;
+        }
+      }
+    }
   } catch {
-    return `OpenAI request failed (${response.status}).`;
+    // Keep the status-based fallback when the error body is unreadable.
   }
+  return requestId ? `${message} Request ID: ${requestId}` : message;
+}
+
+function isTransientServerError(status) {
+  return Number.isInteger(status) && status >= 500 && status <= 599;
 }
 
 function validatePayload(payload) {
@@ -103,6 +119,7 @@ async function analyzeWithOpenAI(
     projectId = "",
     fetchImpl = globalThis.fetch,
     timeoutMs = 60000,
+    maxAttempts = 2,
   } = {},
 ) {
   validatePayload(payload);
@@ -124,18 +141,27 @@ async function analyzeWithOpenAI(
   if (projectId) headers["OpenAI-Project"] = projectId;
 
   try {
-    const response = await fetchImpl(responsesUrl, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(buildOpenAIRequest(payload)),
-      signal: controller.signal,
-    });
+    const requestBody = JSON.stringify(buildOpenAIRequest(payload));
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      const response = await fetchImpl(responsesUrl, {
+        method: "POST",
+        headers,
+        body: requestBody,
+        signal: controller.signal,
+      });
 
-    if (!response.ok) {
-      throw new Error(await readError(response));
+      if (response.ok) {
+        return parseOpenAIResponse(await response.json());
+      }
+
+      const errorMessage = await readError(response);
+      if (isTransientServerError(response.status) && attempt < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, attempt * 500));
+        continue;
+      }
+      throw new Error(errorMessage);
     }
-
-    return parseOpenAIResponse(await response.json());
+    throw new Error("OpenAI analysis failed after retrying.");
   } catch (error) {
     if (error?.name === "AbortError") {
       throw new Error("OpenAI analysis timed out.");
@@ -149,6 +175,8 @@ async function analyzeWithOpenAI(
 export {
   analyzeWithOpenAI,
   extractOutputText,
+  isTransientServerError,
   parseOpenAIResponse,
+  readError,
   validatePayload,
 };
