@@ -16,6 +16,11 @@ function showStatus(message, state = "success") {
   saveStatus.dataset.state = state;
 }
 
+function markSettingsDirty() {
+  saveButton.textContent = "Save preferences";
+  showStatus("");
+}
+
 async function restoreSettings() {
   try {
     const {
@@ -38,12 +43,12 @@ async function restoreSettings() {
 criteriaInput.addEventListener("input", () => {
   criteriaInput.setCustomValidity("");
   updateCharacterCount();
-  showStatus("");
+  markSettingsDirty();
 });
 
 languageInput.addEventListener("input", () => {
   languageInput.setCustomValidity("");
-  showStatus("");
+  markSettingsDirty();
 });
 
 clearButton.addEventListener("click", async () => {
@@ -69,6 +74,7 @@ clearButton.addEventListener("click", async () => {
     criteriaInput.setCustomValidity("");
     languageInput.setCustomValidity("");
     updateCharacterCount();
+    saveButton.textContent = "Save preferences";
     showStatus("Preferences cleared.");
   } catch (error) {
     console.error("Unable to clear extension settings.", error);
@@ -98,6 +104,7 @@ form.addEventListener("submit", async (event) => {
   saveButton.disabled = true;
   saveButton.textContent = "Saving…";
   showStatus("");
+  let saved = false;
 
   try {
     await extensionApi.storage.local.set({
@@ -108,13 +115,17 @@ form.addEventListener("submit", async (event) => {
     criteriaInput.value = userCriteria;
     languageInput.value = preferredLanguage;
     updateCharacterCount();
+    saved = true;
+    saveButton.textContent = "Saved ✓";
     showStatus("Preferences saved locally.");
   } catch (error) {
     console.error("Unable to save extension settings.", error);
     showStatus("Could not save your preferences. Please try again.", "error");
   } finally {
     saveButton.disabled = false;
-    saveButton.textContent = "Save preferences";
+    if (!saved) {
+      saveButton.textContent = "Save preferences";
+    }
   }
 });
 

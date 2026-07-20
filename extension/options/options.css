@@ -209,13 +209,45 @@ textarea::placeholder {
 }
 
 .save-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0 auto 0 0;
-  color: #52705b;
+  border: 1px solid #b9d8c2;
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: #285b38;
+  background: #e8f5eb;
   font-size: 12px;
+  font-weight: 700;
+}
+
+.save-status:empty {
+  display: none;
+}
+
+.save-status::before {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #3d7c51;
+  content: "✓";
+  font-size: 10px;
 }
 
 .save-status[data-state="error"] {
+  border-color: #e3b4ad;
   color: #a13c30;
+  background: #fceae7;
+}
+
+.save-status[data-state="error"]::before {
+  background: #a13c30;
+  content: "!";
 }
 
 .action-buttons {
@@ -333,9 +365,20 @@ button:disabled {
   }
 
   .character-count,
-  .field-help,
-  .save-status {
+  .field-help {
     color: #8c9a90;
+  }
+
+  .save-status {
+    border-color: #31543a;
+    color: #b9d8c1;
+    background: #192b1e;
+  }
+
+  .save-status[data-state="error"] {
+    border-color: #71433e;
+    color: #e4aaa2;
+    background: #3a211f;
   }
 
   .privacy-note {
