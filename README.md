@@ -11,12 +11,13 @@ whether a job posting is worth applying to. It extracts the visible job
 description, evaluates it against the user's free-form preferences with an LLM,
 and returns an evidence-based score and recommendation.
 
-Job postings are often written in a language the applicant does not understand.
-Apply or Not analyzes the original posting without requiring the user to
-translate the page first, then presents its summary and reasoning in the user's
-preferred language. It also distinguishes the language used to write the job
-description from an actual language requirement: a posting written in German or
-Japanese does not by itself mean that proficiency in that language is mandatory.
+It can happen that a relevant job posting is written in the local language
+rather than the applicant's preferred language. Apply or Not analyzes the
+original posting without requiring the user to translate the page first, then
+presents its summary and reasoning in the user's preferred language. It also
+distinguishes the language used to write the job description from an actual
+language requirement: a posting written in German or Japanese does not by itself
+mean that proficiency in that language is mandatory.
 
 ## Planned first release
 

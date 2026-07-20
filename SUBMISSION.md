@@ -60,8 +60,9 @@ experience throughout development.
 
 ## Demo video outline — target 2:30
 
-- **0:00–0:20 — Problem:** Job seekers face long or foreign-language postings
-  and cannot tell which listed requirements are genuine blockers.
+- **0:00–0:20 — Problem:** Job seekers may encounter long postings written in a
+  local language that is not necessarily a job requirement, while also trying
+  to identify which listed requirements are genuine blockers.
 - **0:20–0:40 — Preferences:** Show the settings page and enter a synthetic,
   conversational applicant profile rather than a keyword checklist.
 - **0:40–1:05 — Extraction:** Open the bundled synthetic job page. Show job
