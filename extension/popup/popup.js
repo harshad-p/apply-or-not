@@ -3,6 +3,7 @@
 const extensionApi = globalThis.browser ?? globalThis.chrome;
 const analysisContract = globalThis.ApplyOrNotAnalysis;
 const cacheApi = globalThis.ApplyOrNotCache;
+const demoApi = globalThis.ApplyOrNotDemo;
 const presentation = globalThis.ApplyOrNotPresentation;
 const analysisDetails = document.querySelector("[data-analysis-details]");
 const applicationMethodLabel = document.querySelector(
@@ -20,6 +21,7 @@ const cancelReanalysisButton = document.querySelector(
   "[data-cancel-reanalysis]",
 );
 const extractButton = document.querySelector("[data-extract-button]");
+const demoButton = document.querySelector("[data-demo-button]");
 const jobLabel = document.querySelector("[data-job-label]");
 const languageGroup = document.querySelector("[data-language-group]");
 const languageSummary = document.querySelector("[data-language-summary]");
@@ -46,6 +48,7 @@ let currentSettings = {
 function showReanalysisConfirmation() {
   reanalysisConfirmation.hidden = false;
   extractButton.disabled = true;
+  demoButton.disabled = true;
   settingsButton.disabled = true;
   reanalysisConfirmation.scrollIntoView({ block: "nearest" });
   confirmReanalysisButton.focus();
@@ -54,6 +57,7 @@ function showReanalysisConfirmation() {
 function hideReanalysisConfirmation({ restoreFocus = false } = {}) {
   reanalysisConfirmation.hidden = true;
   extractButton.disabled = false;
+  demoButton.disabled = false;
   settingsButton.disabled = false;
   if (restoreFocus) extractButton.focus();
 }
@@ -177,15 +181,23 @@ function renderAnalysis(
   analysis,
   extraction,
   tabId,
-  { createdAt = Date.now(), fromCache = false, cacheSaved = true } = {},
+  {
+    createdAt = Date.now(),
+    fromCache = false,
+    cacheSaved = true,
+    demo = false,
+  } = {},
 ) {
+  hideAnalysisDetails();
   const recommendation = presentation.getRecommendationPresentation(
     analysis.recommendation,
   );
 
   resultMark.textContent = String(analysis.score);
   resultMark.dataset.state = recommendation.state;
-  resultEyebrow.textContent = `${recommendation.symbol} ${recommendation.label}`;
+  resultEyebrow.textContent = demo
+    ? `${recommendation.symbol} ${recommendation.label} · Judge demo`
+    : `${recommendation.symbol} ${recommendation.label}`;
   resultTitle.textContent = `${recommendation.label} — ${analysis.score}%`;
   resultDescription.textContent = analysis.summary;
   jobLabel.textContent = [extraction.job.title, extraction.job.company]
@@ -206,6 +218,18 @@ function renderAnalysis(
   appendEvidenceItems(blockerList, analysis.hardBlockers);
   languageSummary.textContent = formatLanguageSummary(analysis);
   analysisDetails.hidden = false;
+
+  if (demo) {
+    settingsStatus.textContent = "Demo result";
+    settingsStatus.dataset.state = recommendation.state;
+    settingsNote.textContent =
+      "Synthetic applicant and job data · deterministic bundled result · no API request or charge.";
+    extractButton.textContent = "Read this job posting";
+    extractButton.dataset.action = "inspect";
+    demoButton.textContent = "Replay no-cost demo";
+    setToolbarBadge(tabId, String(analysis.score), recommendation.badgeColor);
+    return;
+  }
 
   const savedLabel = fromCache
     ? "Saved result"
@@ -374,6 +398,7 @@ async function restoreCachedResultOnOpen() {
 
 async function extractCurrentPage({ forceAnalysis = false } = {}) {
   extractButton.disabled = true;
+  demoButton.disabled = true;
   extractButton.textContent = "Reading page…";
   resultEyebrow.textContent = "Local extraction";
   resultTitle.textContent = "Reading the current page";
@@ -438,6 +463,7 @@ async function extractCurrentPage({ forceAnalysis = false } = {}) {
     renderExtractionError(error, activeTab?.id);
   } finally {
     extractButton.disabled = false;
+    demoButton.disabled = false;
     if (
       extractButton.textContent === "Reading page…" ||
       extractButton.textContent === "Analyzing with GPT-5.6…"
@@ -445,6 +471,33 @@ async function extractCurrentPage({ forceAnalysis = false } = {}) {
       extractButton.textContent = "Try again";
       extractButton.dataset.action = "inspect";
     }
+  }
+}
+
+async function runJudgeDemo() {
+  hideReanalysisConfirmation();
+  demoButton.disabled = true;
+
+  try {
+    const { extraction, analysis } = demoApi.createDemoResult();
+    let tabId;
+    try {
+      const [activeTab] = await extensionApi.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+      tabId = activeTab?.id;
+    } catch (error) {
+      console.info("Demo could not read the active tab for its badge.", error);
+    }
+    renderExtraction(extraction);
+    renderAnalysis(analysis, extraction, tabId, { demo: true });
+  } catch (error) {
+    console.error("Unable to display the bundled judge demo.", error);
+    settingsStatus.textContent = "Demo unavailable";
+    settingsStatus.dataset.state = "error";
+  } finally {
+    demoButton.disabled = false;
   }
 }
 
@@ -465,6 +518,8 @@ confirmReanalysisButton?.addEventListener("click", async () => {
 cancelReanalysisButton?.addEventListener("click", () => {
   hideReanalysisConfirmation({ restoreFocus: true });
 });
+
+demoButton?.addEventListener("click", runJudgeDemo);
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !reanalysisConfirmation.hidden) {

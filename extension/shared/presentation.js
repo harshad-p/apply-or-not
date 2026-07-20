@@ -31,6 +31,7 @@
     if (normalized.startsWith("gpt-5.6-sol")) return "GPT-5.6 Sol";
     if (normalized.startsWith("gpt-5.6-terra")) return "GPT-5.6 Terra";
     if (normalized.startsWith("gpt-5.6-luna")) return "GPT-5.6 Luna";
+    if (normalized === "demo-fixture") return "Demo fixture";
     return model || "Unknown model";
   }
 

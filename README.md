@@ -114,6 +114,22 @@ node scripts/live-smoke-test.mjs
 The smoke test prints the score, recommendation, returned model name, and OpenAI
 response ID. Normal automated tests never call OpenAI and do not require a key.
 
+## No-cost judge demo
+
+The fastest test path does not require an API key, local relay, preferences, or
+active job posting:
+
+1. Load the extension in Safari or Chrome using the instructions above.
+2. Open its toolbar popup.
+3. Choose **Run no-cost demo**.
+
+The popup displays a deterministic result made from bundled synthetic applicant
+and job data, including the score, evidence, language assessment, application
+method, and toolbar badge. It is prominently labeled **Judge demo** and **Demo
+fixture** and never calls an API. This mode exists only to provide free,
+repeatable judging access; the live product path uses GPT-5.6 through the local
+relay described above.
+
 ## Verify the current milestone
 
 1. Reload the temporary or unpacked extension after pulling the latest files.
