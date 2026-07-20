@@ -13,8 +13,7 @@
 - [x] Expand the README with the Codex collaboration story, including what
   Codex accelerated, the important human decisions, and how GPT-5.6 is used in
   the shipped product.
-- [ ] Add an open-source license before making the repository public, or keep
-  it private and share it with the two judging addresses listed in the rules.
+- [x] Publish the repository with an MIT license.
 - [ ] Record a public YouTube demo under three minutes with audio, using only
   synthetic job and applicant data. Show the product, Codex collaboration, and
   live GPT-5.6 usage.

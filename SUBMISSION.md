@@ -1,5 +1,9 @@
 # Apply or Not — Submission Package
 
+## Repository
+
+https://github.com/harshad-p/apply-or-not
+
 ## Recommended category
 
 **Apps for Your Life**
@@ -85,7 +89,6 @@ experience throughout development.
 
 ## Still required from the entrant
 
-- Repository URL and public license, or private access for the judging accounts
 - Two or three final screenshots
 - Public YouTube URL
 - `/feedback` Codex Session ID from the main build task
