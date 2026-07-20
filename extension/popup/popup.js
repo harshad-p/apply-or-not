@@ -13,6 +13,12 @@ const blockerList = document.querySelector("[data-blocker-list]");
 const concernGroup = document.querySelector("[data-concern-group]");
 const concernList = document.querySelector("[data-concern-list]");
 const confidenceLabel = document.querySelector("[data-confidence]");
+const confirmReanalysisButton = document.querySelector(
+  "[data-confirm-reanalysis]",
+);
+const cancelReanalysisButton = document.querySelector(
+  "[data-cancel-reanalysis]",
+);
 const extractButton = document.querySelector("[data-extract-button]");
 const jobLabel = document.querySelector("[data-job-label]");
 const languageGroup = document.querySelector("[data-language-group]");
@@ -24,6 +30,9 @@ const resultDescription = document.querySelector("[data-result-description]");
 const resultEyebrow = document.querySelector("[data-result-eyebrow]");
 const resultMark = document.querySelector("[data-result-mark]");
 const resultTitle = document.querySelector("[data-result-title]");
+const reanalysisConfirmation = document.querySelector(
+  "[data-reanalyze-confirmation]",
+);
 const settingsButton = document.querySelector("[data-settings-button]");
 const settingsNote = document.querySelector("[data-settings-note]");
 const settingsStatus = document.querySelector("[data-settings-status]");
@@ -33,6 +42,21 @@ let currentSettings = {
   userCriteria: "",
   preferredLanguage: "English",
 };
+
+function showReanalysisConfirmation() {
+  reanalysisConfirmation.hidden = false;
+  extractButton.disabled = true;
+  settingsButton.disabled = true;
+  reanalysisConfirmation.scrollIntoView({ block: "nearest" });
+  confirmReanalysisButton.focus();
+}
+
+function hideReanalysisConfirmation({ restoreFocus = false } = {}) {
+  reanalysisConfirmation.hidden = true;
+  extractButton.disabled = false;
+  settingsButton.disabled = false;
+  if (restoreFocus) extractButton.focus();
+}
 
 if (versionElement && extensionApi?.runtime?.getManifest) {
   const { version } = extensionApi.runtime.getManifest();
@@ -426,15 +450,26 @@ async function extractCurrentPage({ forceAnalysis = false } = {}) {
 
 extractButton?.addEventListener("click", async () => {
   const forceAnalysis = extractButton.dataset.action === "reanalyze";
-  if (
-    forceAnalysis &&
-    !window.confirm(
-      "Reanalyzing will make another billable GPT-5.6 request. Continue?",
-    )
-  ) {
+  if (forceAnalysis) {
+    showReanalysisConfirmation();
     return;
   }
-  await extractCurrentPage({ forceAnalysis });
+  await extractCurrentPage();
+});
+
+confirmReanalysisButton?.addEventListener("click", async () => {
+  hideReanalysisConfirmation();
+  await extractCurrentPage({ forceAnalysis: true });
+});
+
+cancelReanalysisButton?.addEventListener("click", () => {
+  hideReanalysisConfirmation({ restoreFocus: true });
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !reanalysisConfirmation.hidden) {
+    hideReanalysisConfirmation({ restoreFocus: true });
+  }
 });
 
 settingsButton?.addEventListener("click", async () => {

@@ -49,8 +49,9 @@ preferences the user actually stated.
 
 Validated results are cached locally for up to 30 days and reused only when the
 job URL, extracted content, application method, preferences, explanation
-language, and prompt version still match. Reanalysis requires confirmation
-because it creates another billable model request.
+language, and prompt version still match. Reanalysis shows an explicit in-popup
+confirmation because it creates another billable model request. The popup uses
+one dedicated results scroller so long explanations remain responsive in Safari.
 
 The detailed product requirements and build context are maintained in
 [PROJECT_BRIEF.md](PROJECT_BRIEF.md).

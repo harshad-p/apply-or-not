@@ -56,6 +56,33 @@
           </div>
         </section>
 
+        <section
+          class="reanalyze-confirmation"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="reanalyze-title"
+          aria-describedby="reanalyze-description"
+          data-reanalyze-confirmation
+          hidden
+        >
+          <p class="confirmation-eyebrow">Billable request</p>
+          <h2 id="reanalyze-title">Analyze this job again?</h2>
+          <p id="reanalyze-description">
+            This will call GPT-5.6 again and may incur API charges. Your saved
+            result will remain unless the new request succeeds.
+          </p>
+          <div class="confirmation-actions">
+            <button
+              class="secondary-button"
+              type="button"
+              data-cancel-reanalysis
+            >
+              Cancel
+            </button>
+            <button type="button" data-confirm-reanalysis>Continue</button>
+          </div>
+        </section>
+
         <div class="button-stack">
           <button type="button" data-extract-button hidden>Read this job posting</button>
           <button class="secondary-button" type="button" data-settings-button>
