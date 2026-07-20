@@ -10,7 +10,7 @@
 - [x] Add a judge demo mode using synthetic applicant and job data so the full
   extension experience can be tested without an API key or billable request.
 - [x] Document the shortest judge test path for Chrome and Safari.
-- [ ] Expand the README with the Codex collaboration story, including what
+- [x] Expand the README with the Codex collaboration story, including what
   Codex accelerated, the important human decisions, and how GPT-5.6 is used in
   the shipped product.
 - [ ] Add an open-source license before making the repository public, or keep

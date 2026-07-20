@@ -30,19 +30,50 @@ Japanese does not by itself mean that proficiency in that language is mandatory.
 
 ## Privacy
 
-The extension will store settings and results locally. Before cloud analysis, it
-will make clear that the extracted job description and user criteria are sent to
-the selected model provider. API keys must never be committed to this repository.
+The extension stores settings and cached results locally. Live analysis sends
+the extracted job description and user criteria through the localhost relay to
+OpenAI. The relay reads the API key from the developer's environment; keys are
+never stored in extension code or browser storage. OpenAI requests use
+`store: false`.
 
 ## OpenAI Build Week
 
-This project is being built for OpenAI Build Week using Codex with GPT-5.6 Sol.
-The README will be expanded during development to document the Codex
-collaboration, product decisions, setup instructions, and judging test path.
+This project was built for OpenAI Build Week using Codex with GPT-5.6 Sol. The
+submitted product also uses GPT-5.6 Sol as its live job-analysis engine through
+the OpenAI Responses API.
+
+### How Codex contributed
+
+The project was developed as one continuous, incremental Codex collaboration.
+Codex helped turn the initial product description into a browser-neutral
+WebExtension, implement and debug generic, Schema.org, and LinkedIn-shaped job
+extraction, design the versioned structured prompt and response contract, build
+the secure localhost relay, and connect live results to the popup and toolbar
+badge. It also added fixtures and regression tests after each milestone, then
+helped diagnose real Safari and LinkedIn behavior reported during hands-on use.
+
+Codex accelerated repetitive implementation, cross-file changes, test creation,
+and debugging. The human product decisions remained central: supporting any
+country rather than only Germany; separating a posting's language from an
+actual language requirement; accepting rambling free-form preferences; treating
+Easy Apply as structured evidence; keeping API keys outside the extension; and
+adding caching, billing confirmation, a no-cost judge demo, and the final visual
+identity in response to real usage.
+
+### How GPT-5.6 contributes
+
+GPT-5.6 Sol performs the core contextual judgment that keyword matching cannot:
+it distinguishes requirements from examples and nice-to-haves, reasons across
+multilingual postings, evaluates explicit language requirements separately from
+the posting language, and produces validated structured evidence for the score.
+The relay requests strict JSON-schema output, disables response storage, and
+returns trusted provider metadata so the demonstrated model and response can be
+verified. The bundled judge demo is deliberately labeled and deterministic; it
+does not pretend to be a live model call.
 
 ## Status
 
-Milestone 7 is complete: the popup extracts the active job, sends it through the
+Version 0.10 is a submission candidate: the popup extracts the active job, sends it through the
 localhost relay to GPT-5.6, validates the response, and displays the score,
 recommendation, confidence, evidence, language assessment, and returned model.
 The toolbar badge shows the score with a recommendation color.
@@ -62,6 +93,8 @@ README, and submission artwork.
 The detailed product requirements and build context are maintained in
 [PROJECT_BRIEF.md](PROJECT_BRIEF.md).
 The remaining submission and product work is tracked in [TODO.md](TODO.md).
+Copy-ready submission text and the demo-video outline are in
+[SUBMISSION.md](SUBMISSION.md).
 
 ## Load the development extension
 
