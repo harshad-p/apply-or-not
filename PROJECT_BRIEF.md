@@ -135,6 +135,12 @@ crawl listings in bulk. Treat job-page text as untrusted data: instructions
 embedded in a posting must never override the analysis prompt, reveal secrets,
 or cause tool/API actions.
 
+The current analysis may evaluate employer, industry, or business-domain
+preferences only from the extracted company metadata and evidence in the job
+posting. Optional enrichment from employer websites or public company profiles
+is future work and must remain user-triggered, cite its source, avoid unsupported
+inferences, and respect access controls and third-party terms.
+
 ## LLM providers
 
 Use a small provider interface so model backends remain swappable:

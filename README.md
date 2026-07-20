@@ -90,8 +90,9 @@ recommendation, confidence, evidence, language assessment, and returned model.
 The toolbar badge shows the score with a recommendation color.
 
 The extractor also detects visible Easy Apply and external-application controls.
-Prompt v4 treats application method as structured evidence, recognizes
-transferable skills across related technologies, and scores only the
+Prompt v5 treats application method as structured evidence, recognizes
+transferable skills across related technologies, evaluates explicit employer
+and industry preferences from posting evidence, and scores only the
 preferences the user actually stated. GPT-5.6 classifies fixed rubric dimensions
 while trusted application code calculates the final percentage, preventing the
 model from freely choosing a different number on reanalysis.
@@ -214,6 +215,10 @@ Open `http://localhost:4173/fixtures/job-posting-en.html`,
 `http://localhost:4173/fixtures/job-posting-linkedin-like.html` to test job
 extraction. Use `http://localhost:4173/fixtures/not-a-job.html` to verify that an
 ordinary article is rejected.
+
+For the employer-preference video example, compare the fictional Northstar page
+with `http://localhost:4173/fixtures/job-posting-openai-synthetic.html`. The page
+is prominently labeled as synthetic and is not a real OpenAI job posting.
 
 Run the dependency-free extractor tests with:
 

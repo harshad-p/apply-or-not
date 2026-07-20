@@ -63,9 +63,12 @@ experience throughout development.
 - **0:00–0:20 — Problem:** Job seekers may encounter long postings written in a
   local language that is not necessarily a job requirement, while also trying
   to identify which listed requirements are genuine blockers.
-- **0:20–0:40 — Preferences:** Show the settings page and enter a synthetic,
-  conversational applicant profile rather than a keyword checklist.
-- **0:40–1:05 — Extraction:** Open the bundled synthetic job page. Show job
+- **0:20–0:45 — Preferences and company switch:** Enter matching skills plus
+  “I only want to apply to OpenAI.” Analyze the synthetic Northstar role, then
+  the clearly labeled synthetic OpenAI variant. Explain that the dramatic score
+  change comes from the user's explicit deal-breaker—not an AI judgment that one
+  company is better.
+- **0:45–1:05 — Extraction:** Open the bundled synthetic job page. Show job
   detection, Schema.org/visible-text extraction, and Easy Apply recognition.
 - **1:05–1:35 — GPT-5.6 result:** Run live analysis. Show the score badge,
   recommendation, evidence, and how German being optional is separated from the
@@ -86,6 +89,8 @@ experience throughout development.
 - Do not show API keys, personal information, real job pages, copyrighted music,
   or third-party trademarks.
 - Show both the working product and how Codex and GPT-5.6 were used.
+- Keep the company-switch moment brief; use it as a playful demonstration of
+  user control, then emphasize evidence, uncertainty, and human judgment.
 - Upload publicly to YouTube and paste the URL into Devpost.
 
 ## Still required from the entrant

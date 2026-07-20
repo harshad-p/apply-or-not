@@ -1,5 +1,8 @@
 # Job-fit analysis prompt — v4
 
+This historical prompt has been superseded by `job-fit-v5.md`, which explicitly
+supports employer, industry, and business-domain preferences.
+
 The executable prompt and strict JSON Schema live in
 `extension/shared/analysis-contract.js`. Keep both versions synchronized.
 

@@ -32,5 +32,13 @@
 - [ ] Add dedicated extraction adapters for Indeed, Glassdoor, and Xing as real
   pages expose gaps in the generic extractor.
 - [ ] Add a configurable local-model provider.
+- [ ] Add optional, user-triggered company enrichment from an employer website
+  or public company profile. Keep company evidence separate from job evidence,
+  show provenance and confidence, request only necessary host access, and avoid
+  background crawling or unsupported industry/culture inferences.
+- [ ] Help users understand dynamically generated application forms whose UI
+  language differs from the job posting. Explore visible label/instruction
+  extraction and translation, including explicitly permitted cross-origin
+  frames, without filling or submitting the application automatically.
 - [ ] Consider an optional, privacy-conscious hosted relay with quotas and
   abuse controls after the local release.

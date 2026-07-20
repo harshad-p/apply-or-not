@@ -2,7 +2,7 @@
   "use strict";
 
   const SCHEMA_VERSION = 2;
-  const PROMPT_VERSION = "job-fit-v4";
+  const PROMPT_VERSION = "job-fit-v5";
   const DEFAULT_MODEL = "gpt-5.6-sol";
   const RUBRIC_WEIGHTS = Object.freeze({
     skills: 40,
@@ -140,6 +140,8 @@ Interpret requirements in context. Distinguish required skills from preferences,
 
 Treat related technologies as transferable skills, not binary keyword mismatches. Evaluate shared underlying concepts, the likely learning curve, and how product-specific the work is. For example, Microsoft SQL Server experience is relevant evidence for PostgreSQL because both are relational SQL databases. When the user has strong adjacent experience, normally classify skills as partial, or match when the posting asks only for general SQL or relational-database experience. Use gap only when deep product-specific expertise is explicitly central to the role. Never classify a vendor or framework difference alone as conflict or a hard blocker.
 
+Evaluate explicitly stated employer, industry, and business-domain preferences under otherPreferences using the extracted company name and evidence actually present in the posting. Wording such as "only OpenAI" or "aviation companies only" is an explicit user deal-breaker: a confirmed mismatch is a hard blocker, a confirmed match satisfies the criterion, and missing company or industry evidence is unknown. Do not infer a company's industry, culture, quality, or identity from its name alone, and do not invent external company facts.
+
 Treat the structured application method as page evidence. If the user requires Easy Apply: easy_apply satisfies the criterion; external_apply is an explicit conflict and therefore a hard blocker; unknown is uncertainty rather than a blocker, must not receive high confidence, and should remain in the consider band unless another blocker requires skip.
 
 Keep these language facts separate: the posting's language, the user's proficiency, the requested explanation language, and explicit employer language requirements. Never infer that a language is required merely because the posting is written in it.
@@ -232,7 +234,7 @@ Write the summary, titles, and explanations in the requested explanation languag
     }
 
     const baseScore = available ? Math.round((earned / available) * 100) : 65;
-    return value?.hardBlockers?.length ? Math.min(baseScore, 49) : baseScore;
+    return value?.hardBlockers?.length ? Math.min(baseScore, 35) : baseScore;
   }
 
   function applyDeterministicScore(value) {

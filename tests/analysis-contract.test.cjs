@@ -72,6 +72,16 @@ test("requires hard blockers to produce a skip below 60", () => {
   );
 });
 
+test("explicit user deal-breakers cap an otherwise strong match at 35", () => {
+  const blocker = {
+    title: "Employer mismatch",
+    explanation: "The employer conflicts with an exclusive user preference.",
+    evidence: "Northstar Systems",
+  };
+
+  assert.equal(calculateRubricScore(validAnalysis({ hardBlockers: [blocker] })), 35);
+});
+
 test("calculates a stable score from applicable rubric dimensions", () => {
   const analysis = validAnalysis({
     rubric: {
@@ -138,9 +148,10 @@ test("builds a private structured GPT-5.6 Responses request", () => {
   assert.equal(request.text.format.strict, true);
   assert.match(request.input, /Backend API development/);
   assert.match(request.input, /easy_apply/);
-  assert.equal(PROMPT_VERSION, "job-fit-v4");
+  assert.equal(PROMPT_VERSION, "job-fit-v5");
   assert.match(request.instructions, /transferable skills/i);
   assert.match(request.instructions, /SQL Server experience is relevant evidence for PostgreSQL/i);
+  assert.match(request.instructions, /only OpenAI/i);
 });
 
 test("attaches trusted provider metadata outside the model output", () => {
