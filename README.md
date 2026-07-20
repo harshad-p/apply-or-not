@@ -38,10 +38,10 @@ collaboration, product decisions, setup instructions, and judging test path.
 
 ## Status
 
-Milestone 4 is complete: the extension has a versioned multilingual analysis
-prompt, a strict structured-result schema, score/recommendation consistency
-checks, and a tested GPT-5.6 Responses API request contract. Live LLM analysis
-is not connected yet.
+Milestone 5 is complete: a localhost-only relay can call GPT-5.6 through the
+Responses API, validate the structured result, and return trusted provider
+metadata. The extension background worker is connected to that relay. The popup
+result presentation is the next milestone.
 
 The detailed product requirements and build context are maintained in
 [PROJECT_BRIEF.md](PROJECT_BRIEF.md).
@@ -70,8 +70,32 @@ The extension source is in [`extension`](extension).
 
 The extension requests `storage`, `activeTab`, and `scripting`. Page access is
 temporary and begins only when the user opens the popup and chooses to read the
-current page. The extension does not have permanent access to every website and
-does not make network requests yet.
+current page. It also has access only to the local relay at
+`http://127.0.0.1:8787`; the extension cannot send requests directly to arbitrary
+internet hosts.
+
+## Start the local GPT-5.6 relay
+
+Use Node.js 18 or newer. Set `OPENAI_API_KEY` in your terminal environment, then
+start the relay without putting the key in this repository:
+
+```sh
+export OPENAI_API_KEY="your OpenAI Platform API key"
+node local-relay/server.mjs
+```
+
+The relay listens only on `127.0.0.1`, accepts browser-extension origins, and
+keeps the key in the local process environment. Stop it with `Control-C`.
+
+To make one real, billable GPT-5.6 request with fictional data, keep the relay
+running and use another terminal:
+
+```sh
+node scripts/live-smoke-test.mjs
+```
+
+The smoke test prints the score, recommendation, returned model name, and OpenAI
+response ID. Normal automated tests never call OpenAI and do not require a key.
 
 ## Verify the current milestone
 
@@ -99,5 +123,5 @@ ordinary article is rejected.
 Run the dependency-free extractor tests with:
 
 ```sh
-node --test tests/*.test.cjs
+node --test tests/*.test.*
 ```
