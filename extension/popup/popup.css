@@ -70,6 +70,18 @@ body {
   text-transform: uppercase;
 }
 
+.status-pill[data-state="configured"] {
+  border-color: #a8cfb4;
+  color: #27613a;
+  background: #e6f4e9;
+}
+
+.status-pill[data-state="error"] {
+  border-color: #e3b4ad;
+  color: #8a3329;
+  background: #fceae7;
+}
+
 .empty-state {
   display: flex;
   flex: 1;
@@ -124,11 +136,27 @@ button {
   border: 0;
   border-radius: 12px;
   padding: 12px 16px;
-  background: #cbd4ce;
-  color: #6f7872;
+  background: #193d2a;
+  color: #fff;
   font-size: 14px;
   font-weight: 750;
-  cursor: not-allowed;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+button:hover {
+  background: #23563a;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button:focus-visible {
+  outline: 3px solid #93c8a3;
+  outline-offset: 2px;
 }
 
 .milestone-note {
@@ -172,6 +200,18 @@ footer {
     background: rgb(255 255 255 / 4%);
   }
 
+  .status-pill[data-state="configured"] {
+    border-color: #3f664b;
+    color: #9ed2ad;
+    background: #1d3525;
+  }
+
+  .status-pill[data-state="error"] {
+    border-color: #71433e;
+    color: #e4aaa2;
+    background: #3a211f;
+  }
+
   .score-placeholder {
     border-color: #405d49;
     color: #89a892;
@@ -187,8 +227,12 @@ footer {
   }
 
   button {
-    background: #2b382f;
-    color: #77857b;
+    background: #72c28c;
+    color: #102117;
+  }
+
+  button:hover {
+    background: #8bd2a1;
   }
 
   .milestone-note,

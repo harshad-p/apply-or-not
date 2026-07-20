@@ -38,9 +38,9 @@ collaboration, product decisions, setup instructions, and judging test path.
 
 ## Status
 
-Milestone 1 is complete: the permission-free Manifest V3 extension foundation
-loads a toolbar popup. Preferences, page access, extraction, and analysis are not
-connected yet.
+Milestone 2 is complete: the Manifest V3 extension loads a toolbar popup and a
+settings page where the user can save free-form criteria and a preferred output
+language locally. Page access, extraction, and analysis are not connected yet.
 
 The detailed product requirements and build context are maintained in
 [PROJECT_BRIEF.md](PROJECT_BRIEF.md).
@@ -67,4 +67,13 @@ The extension source is in [`extension`](extension).
 3. Choose **Load unpacked** and select the repository's `extension` folder.
 4. Pin **Apply or Not**, then click its toolbar button.
 
-No permissions are requested in this milestone.
+The extension currently requests only the `storage` permission. It does not have
+access to job pages or make network requests yet.
+
+## Verify the current milestone
+
+1. Reload the temporary or unpacked extension after pulling the latest files.
+2. Open the popup and choose **Set your preferences**.
+3. Enter free-form criteria and a preferred explanation language, then save.
+4. Close and reopen the settings page to confirm the values persist.
+5. Reopen the popup and confirm it says **Preferences saved**.
