@@ -74,14 +74,40 @@
           <p class="field-help">You can enter any language.</p>
         </section>
 
+        <section class="settings-card" aria-labelledby="api-key-label">
+          <label id="api-key-label" for="api-key">OpenAI API key</label>
+          <p class="field-description">
+            Optional shortcut for the local demo. Start the relay, then send a
+            key to its memory for this session only.
+          </p>
+          <div class="inline-field-action">
+            <input
+              id="api-key"
+              name="apiKey"
+              type="password"
+              minlength="20"
+              maxlength="500"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="Paste an API key"
+              data-api-key
+            >
+            <button type="button" data-connect-key-button>Connect key</button>
+          </div>
+          <p class="field-help">
+            Never saved in browser storage. The relay forgets it when Node stops.
+          </p>
+          <p class="connection-status" role="status" aria-live="polite" data-connection-status></p>
+        </section>
+
         <aside class="privacy-note">
           <span class="privacy-icon" aria-hidden="true">✓</span>
           <div>
             <strong>Local storage, explicit cloud analysis</strong>
             <p>
-              Preferences and cached results stay here. When you request live
-              analysis, your criteria and the job text are sent through your
-              local relay to OpenAI. You can clear local data at any time.
+              Preferences and cached results stay here. API keys stay only in
+              the relay process. Live analysis sends your criteria and job text
+              through that relay to OpenAI.
             </p>
           </div>
         </aside>

@@ -159,6 +159,27 @@ textarea::placeholder {
   font-size: 11px;
 }
 
+.inline-field-action {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.connection-status {
+  margin: 10px 0 0;
+  color: #526158;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.connection-status[data-state="configured"] {
+  color: #285b38;
+}
+
+.connection-status[data-state="error"] {
+  color: #a13c30;
+}
+
 .privacy-note {
   display: flex;
   gap: 12px;
@@ -314,6 +335,10 @@ button:disabled {
   .action-buttons {
     flex-direction: column-reverse;
   }
+
+  .inline-field-action {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -353,8 +378,17 @@ button:disabled {
   }
 
   .character-count,
-  .field-help {
+  .field-help,
+  .connection-status {
     color: #8c9a90;
+  }
+
+  .connection-status[data-state="configured"] {
+    color: #b9d8c1;
+  }
+
+  .connection-status[data-state="error"] {
+    color: #e4aaa2;
   }
 
   .save-status {

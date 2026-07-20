@@ -32,9 +32,9 @@ Japanese does not by itself mean that proficiency in that language is mandatory.
 
 The extension stores settings and cached results locally. Live analysis sends
 the extracted job description and user criteria through the localhost relay to
-OpenAI. The relay reads the API key from the developer's environment; keys are
-never stored in extension code or browser storage. OpenAI requests use
-`store: false`.
+OpenAI. The key can come from the developer's environment or be sent once from
+the settings page to relay memory. It is never stored in extension code or
+browser storage. OpenAI requests use `store: false`.
 
 ## OpenAI Build Week
 
@@ -126,8 +126,18 @@ internet hosts.
 
 ## Start the local GPT-5.6 relay
 
-Use Node.js 18 or newer. Set `OPENAI_API_KEY` in your terminal environment, then
-start the relay without putting the key in this repository:
+Use Node.js 18 or newer. Start the relay without putting a key in this
+repository:
+
+```sh
+node local-relay/server.mjs
+```
+
+Open the extension settings, paste the key into **OpenAI API key**, and choose
+**Connect key**. The value is sent only to `127.0.0.1`, held in process memory,
+and forgotten when the relay stops. It is never written to browser storage.
+
+Alternatively, configure the process from the terminal before starting it:
 
 ```sh
 export OPENAI_API_KEY="your OpenAI Platform API key"
@@ -135,7 +145,7 @@ node local-relay/server.mjs
 ```
 
 The relay listens only on `127.0.0.1`, accepts browser-extension origins, and
-keeps the key in the local process environment. Stop it with `Control-C`.
+keeps the key only in the local process. Stop it with `Control-C`.
 
 To make one real, billable GPT-5.6 request with fictional data, keep the relay
 running and use another terminal:

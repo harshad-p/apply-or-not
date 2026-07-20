@@ -25,6 +25,15 @@ async function checkRelay() {
   return readJsonResponse(response);
 }
 
+async function configureRelay(apiKey) {
+  const response = await fetch(`${relayUrl}/configure`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ apiKey }),
+  });
+  return readJsonResponse(response);
+}
+
 async function analyzeJob(payload) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 70000);
@@ -61,6 +70,8 @@ extensionApi.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
   if (message?.type === "analysis:health") {
     operation = checkRelay();
+  } else if (message?.type === "analysis:key:set") {
+    operation = configureRelay(message.apiKey);
   } else if (message?.type === "analysis:run") {
     operation = analyzeJob(message.payload);
   } else {

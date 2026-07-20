@@ -106,7 +106,11 @@ async function analyzeWithOpenAI(
   } = {},
 ) {
   validatePayload(payload);
-  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured.");
+  if (!apiKey) {
+    throw new Error(
+      "OpenAI is not configured. Enter an API key in extension settings or restart the relay with OPENAI_API_KEY.",
+    );
+  }
   if (typeof fetchImpl !== "function") {
     throw new Error("This Node.js version does not provide fetch.");
   }

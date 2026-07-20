@@ -1,25 +1,18 @@
 import http from "node:http";
 import { analyzeWithOpenAI } from "./openai-provider.mjs";
+import {
+  isAllowedOrigin,
+  isExtensionOrigin,
+  validateApiKey,
+} from "./configuration.mjs";
 
 const host = "127.0.0.1";
 const port = Number.parseInt(process.env.APPLY_OR_NOT_PORT || "8787", 10);
-const apiKey = process.env.OPENAI_API_KEY || "";
+let apiKey = process.env.OPENAI_API_KEY || "";
 const projectId = process.env.OPENAI_PROJECT_ID || "";
 const maximumBodyBytes = 128 * 1024;
 
-if (!apiKey) {
-  console.error("OPENAI_API_KEY is not configured. Set it before starting the relay.");
-  process.exitCode = 1;
-} else {
-  startServer();
-}
-
-function isAllowedOrigin(origin) {
-  if (!origin) return true;
-  return /^(chrome-extension|moz-extension|safari-web-extension):\/\//iu.test(
-    origin,
-  );
-}
+startServer();
 
 function corsHeaders(origin) {
   return {
@@ -89,9 +82,29 @@ function startServer() {
       sendJson(
         response,
         200,
-        { ok: true, provider: "openai", model: "gpt-5.6-sol" },
+        {
+          ok: true,
+          provider: "openai",
+          model: "gpt-5.6-sol",
+          configured: Boolean(apiKey),
+        },
         origin,
       );
+      return;
+    }
+
+    if (request.method === "POST" && request.url === "/configure") {
+      if (!isExtensionOrigin(origin)) {
+        sendJson(response, 403, { error: "Only the extension can configure the relay." });
+        return;
+      }
+      try {
+        const body = await readJson(request);
+        apiKey = validateApiKey(body?.apiKey);
+        sendJson(response, 200, { ok: true, configured: true }, origin);
+      } catch (error) {
+        sendJson(response, 400, { error: error.message }, origin);
+      }
       return;
     }
 
@@ -117,6 +130,11 @@ function startServer() {
 
   server.listen(port, host, () => {
     console.log(`Apply or Not relay listening on http://${host}:${port}`);
-    console.log("The OpenAI API key remains in this process environment.");
+    console.log(
+      apiKey
+        ? "OpenAI is configured from the process environment."
+        : "OpenAI is not configured. Enter a key in the extension settings.",
+    );
+    console.log("The OpenAI API key is kept only in this relay process.");
   });
 }

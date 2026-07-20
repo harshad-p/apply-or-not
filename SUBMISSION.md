@@ -45,9 +45,10 @@ experience throughout development.
    detection, and toolbar badge. No API key, relay, preferences, or network call
    is required.
 4. Optionally run `node --test tests/*.test.*` to execute the offline suite.
-5. For a live GPT-5.6 test, set `OPENAI_API_KEY`, run
-   `node local-relay/server.mjs`, save preferences, open a job posting, and choose
-   **Analyze this job**. This optional path is billable.
+5. For a live GPT-5.6 test, run `node local-relay/server.mjs`, connect a key from
+   extension settings (or set `OPENAI_API_KEY` before startup), save preferences,
+   open a job posting, and choose **Analyze this job**. This optional path is
+   billable; the entered key is never saved by the extension.
 
 ## Demo video outline — target 2:30
 
