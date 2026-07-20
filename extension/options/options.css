@@ -46,16 +46,9 @@ body {
 }
 
 .brand-mark {
-  display: grid;
   width: 36px;
   height: 36px;
-  place-items: center;
-  border-radius: 11px;
-  background: #193d2a;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: -0.04em;
+  border-radius: 9px;
 }
 
 .eyebrow {
@@ -334,11 +327,6 @@ button:disabled {
     background:
       radial-gradient(circle at 12% 0%, rgb(72 153 98 / 16%), transparent 31rem),
       #111813;
-  }
-
-  .brand-mark {
-    color: #102117;
-    background: #72c28c;
   }
 
   .eyebrow {

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
+  <title id="title">Apply or Not</title>
+  <desc id="description">An application button being pressed by a cursor.</desc>
+  <rect width="512" height="512" rx="116" fill="#193d2a"/>
+  <rect x="78" y="139" width="356" height="196" rx="64" fill="#f7f2e7"/>
+  <path d="M151 237h177" fill="none" stroke="#193d2a" stroke-linecap="round" stroke-width="34"/>
+  <path d="m286 270 170 126-74 13-39 68-57-207Z" fill="#e4b85e" stroke="#193d2a" stroke-linejoin="round" stroke-width="24"/>
+</svg>

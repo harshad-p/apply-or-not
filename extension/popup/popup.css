@@ -46,16 +46,9 @@ body {
 }
 
 .brand-mark {
-  display: grid;
   width: 34px;
   height: 34px;
-  place-items: center;
-  border-radius: 11px;
-  background: #193d2a;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: -0.04em;
+  border-radius: 9px;
 }
 
 .brand-name {
@@ -407,11 +400,6 @@ footer {
     background:
       radial-gradient(circle at 15% 5%, rgb(72 153 98 / 17%), transparent 36%),
       #121914;
-  }
-
-  .brand-mark {
-    background: #72c28c;
-    color: #102117;
   }
 
   .status-pill {

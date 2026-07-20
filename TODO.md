@@ -2,9 +2,9 @@
 
 ## Submission-critical
 
-- [ ] Create the visual identity: a simple logo that remains legible at toolbar
-  size, extension icons for Safari and Chromium, and a larger project image for
-  the README and Devpost listing. Wire the icon sizes into the manifest.
+- [x] Create the visual identity: the Apply click logo, extension icons for
+  Safari and Chromium, and a larger project image for the README and Devpost
+  listing. Wire the icon sizes into the manifest.
 - [ ] Capture polished screenshots after the branding and final popup states are
   complete, using only synthetic job and applicant data.
 - [ ] Add a judge demo mode using synthetic applicant and job data so the full

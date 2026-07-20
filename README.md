@@ -1,5 +1,9 @@
 # Apply or Not
 
+<p align="center">
+  <img src="extension/icons/icon-256.png" width="128" alt="Apply or Not logo: an application button being pressed by a cursor">
+</p>
+
 Apply or Not is a local-first browser extension that helps job seekers decide
 whether a job posting is worth applying to. It extracts the visible job
 description, evaluates it against the user's free-form preferences with an LLM,
@@ -52,6 +56,8 @@ job URL, extracted content, application method, preferences, explanation
 language, and prompt version still match. Reanalysis shows an explicit in-popup
 confirmation because it creates another billable model request. The popup uses
 one dedicated results scroller so long explanations remain responsive in Safari.
+The Apply click identity is installed across the toolbar, popup, settings page,
+README, and submission artwork.
 
 The detailed product requirements and build context are maintained in
 [PROJECT_BRIEF.md](PROJECT_BRIEF.md).
