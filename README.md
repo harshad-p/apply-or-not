@@ -38,9 +38,9 @@ collaboration, product decisions, setup instructions, and judging test path.
 
 ## Status
 
-Milestone 2 is complete: the Manifest V3 extension loads a toolbar popup and a
-settings page where the user can save free-form criteria and a preferred output
-language locally. Page access, extraction, and analysis are not connected yet.
+Milestone 3 is complete: the extension can save user preferences, request
+temporary access to the active tab, detect likely job postings, and extract a
+generic job description locally. LLM analysis is not connected yet.
 
 The detailed product requirements and build context are maintained in
 [PROJECT_BRIEF.md](PROJECT_BRIEF.md).
@@ -67,13 +67,35 @@ The extension source is in [`extension`](extension).
 3. Choose **Load unpacked** and select the repository's `extension` folder.
 4. Pin **Apply or Not**, then click its toolbar button.
 
-The extension currently requests only the `storage` permission. It does not have
-access to job pages or make network requests yet.
+The extension requests `storage`, `activeTab`, and `scripting`. Page access is
+temporary and begins only when the user opens the popup and chooses to read the
+current page. The extension does not have permanent access to every website and
+does not make network requests yet.
 
 ## Verify the current milestone
 
 1. Reload the temporary or unpacked extension after pulling the latest files.
-2. Open the popup and choose **Set your preferences**.
-3. Enter free-form criteria and a preferred explanation language, then save.
-4. Close and reopen the settings page to confirm the values persist.
-5. Reopen the popup and confirm it says **Preferences saved**.
+2. Confirm your preferences are saved.
+3. Open a job posting, open the popup, and choose **Read this job posting**.
+4. If Safari asks for page access, allow it for the current use.
+5. Confirm the popup shows the detected title and extracted character count.
+
+### Synthetic extraction fixtures
+
+The repository includes English and German job postings plus a non-job article
+under [`extension/fixtures`](extension/fixtures). To serve them locally:
+
+```sh
+python3 -m http.server 4173 --directory extension
+```
+
+Open `http://localhost:4173/fixtures/job-posting-en.html`,
+`http://localhost:4173/fixtures/job-posting-de.html`, or
+`http://localhost:4173/fixtures/not-a-job.html`, then run the extension on each
+page.
+
+Run the dependency-free extractor tests with:
+
+```sh
+node --test tests/extractor.test.cjs
+```

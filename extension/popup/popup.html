@@ -16,15 +16,20 @@
       </header>
 
       <section class="empty-state" aria-labelledby="popup-title">
-        <div class="score-placeholder" aria-hidden="true">?</div>
-        <p class="eyebrow">Job-fit check</p>
-        <h1 id="popup-title">Should you apply?</h1>
-        <p class="description">
+        <div class="score-placeholder" aria-hidden="true" data-result-mark>?</div>
+        <p class="eyebrow" data-result-eyebrow>Job-fit check</p>
+        <h1 id="popup-title" data-result-title>Should you apply?</h1>
+        <p class="description" data-result-description>
           Open a job posting to get a score and an explanation based on your
           preferences.
         </p>
 
-        <button type="button" data-settings-button>Set your preferences</button>
+        <div class="button-stack">
+          <button type="button" data-extract-button hidden>Read this job posting</button>
+          <button class="secondary-button" type="button" data-settings-button>
+            Set your preferences
+          </button>
+        </div>
         <p class="milestone-note" data-settings-note>
           Tell Apply or Not what you want from a role before analyzing job
           postings.
