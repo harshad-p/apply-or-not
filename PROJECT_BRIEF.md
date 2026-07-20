@@ -99,6 +99,9 @@ The score must follow an explainable rubric rather than arbitrary sentiment.
 The implemented v3 rubric uses fixed application-side weights and discrete model
 classifications so GPT-5.6 interprets evidence but cannot freely choose the final
 percentage.
+Prompt v4 also treats adjacent technologies as transferable evidence rather than
+binary keyword mismatches, while preserving gaps for genuinely product-specific
+requirements.
 Do not invent facts that are absent from the posting or the user's profile.
 Treat low extraction quality or ambiguous wording as uncertainty, not as a
 negative signal.

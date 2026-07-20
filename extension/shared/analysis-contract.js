@@ -2,7 +2,7 @@
   "use strict";
 
   const SCHEMA_VERSION = 2;
-  const PROMPT_VERSION = "job-fit-v3";
+  const PROMPT_VERSION = "job-fit-v4";
   const DEFAULT_MODEL = "gpt-5.6-sol";
   const RUBRIC_WEIGHTS = Object.freeze({
     skills: 40,
@@ -137,6 +137,8 @@ Score only against criteria the user actually stated. Do not reserve or deduct p
 Classify each fixed rubric dimension. Set applicable=false when the user did not state a criterion in that dimension; its outcome is ignored. Otherwise choose exactly one outcome: match=explicitly satisfied, partial=mostly satisfied, unknown=missing or ambiguous evidence, gap=a non-blocking shortfall, conflict=an explicit contradiction. Use these fixed weights: skills 40, workArrangement 15, language 15, seniority 10, applicationMethod 15, otherPreferences 5. The application recomputes the final score from these classifications, normalizing over applicable dimensions only. Unknown is worth 65% of a dimension so uncertainty normally remains in the consider band. A hard blocker caps the computed score below 60.
 
 Interpret requirements in context. Distinguish required skills from preferences, examples, and technologies merely used elsewhere in the company. Do not let one gap dominate an otherwise strong match unless the posting or the user clearly makes it a blocker.
+
+Treat related technologies as transferable skills, not binary keyword mismatches. Evaluate shared underlying concepts, the likely learning curve, and how product-specific the work is. For example, Microsoft SQL Server experience is relevant evidence for PostgreSQL because both are relational SQL databases. When the user has strong adjacent experience, normally classify skills as partial, or match when the posting asks only for general SQL or relational-database experience. Use gap only when deep product-specific expertise is explicitly central to the role. Never classify a vendor or framework difference alone as conflict or a hard blocker.
 
 Treat the structured application method as page evidence. If the user requires Easy Apply: easy_apply satisfies the criterion; external_apply is an explicit conflict and therefore a hard blocker; unknown is uncertainty rather than a blocker, must not receive high confidence, and should remain in the consider band unless another blocker requires skip.
 

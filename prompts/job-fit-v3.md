@@ -1,5 +1,8 @@
 # Job-fit analysis prompt — v3
 
+This historical prompt has been superseded by `job-fit-v4.md`, which explicitly
+accounts for transferable skills across related technologies.
+
 The executable prompt and strict JSON Schema live in
 `extension/shared/analysis-contract.js`. Keep both versions synchronized.
 
