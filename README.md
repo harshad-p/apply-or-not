@@ -9,8 +9,8 @@ Job postings are often written in a language the applicant does not understand.
 Apply or Not analyzes the original posting without requiring the user to
 translate the page first, then presents its summary and reasoning in the user's
 preferred language. It also distinguishes the language used to write the job
-description from an actual language requirement: a posting written in German
-does not by itself mean that German proficiency is mandatory.
+description from an actual language requirement: a posting written in German or
+Japanese does not by itself mean that proficiency in that language is mandatory.
 
 ## Planned first release
 

@@ -12,11 +12,17 @@ whether a job posting is worth applying to. It reads the posting, evaluates it
 against the user's background and preferences with an LLM, and returns a clear,
 evidence-based recommendation.
 
-The initial user is the project's creator: a software developer currently living
-in Germany, proficient in English, and applying for software-development roles
-in Germany. Some relevant job postings are written partly or entirely in German.
-The product should remain general enough for other users to enter their own
-background, languages, preferences, and deal-breakers.
+The first real-world use case comes from the project's creator: a software
+developer currently living in Germany, proficient in English, and applying for
+software-development roles in Germany. Some relevant postings are written partly
+or entirely in German.
+
+Apply or Not is not specific to Germany, German, software development, or any
+particular applicant profile. It should help anyone evaluate a job posting in any
+supported language. For example, an English-speaking applicant could evaluate a
+Japanese posting without first translating the page, while the extension checks
+separately whether the employer actually requires Japanese proficiency. Every
+user can enter their own background, languages, preferences, and deal-breakers.
 
 ## Core experience
 
@@ -35,12 +41,14 @@ background, languages, preferences, and deal-breakers.
 - Analyze job descriptions in their original language; the user should not need
   to translate the page first.
 - Present the summary and reasoning in the user's preferred output language.
-- Detect the posting's language separately from its language requirements.
-- Never infer that German proficiency is required merely because a posting is
-  written in German.
+- Treat the posting's language, the user's language proficiency, the user's
+  preferred output language, and the employer's language requirements as
+  separate facts.
+- Never infer that proficiency in a language is required merely because the
+  posting is written in that language.
 - Distinguish explicit requirements such as “fluent German required” from softer
-  signals such as “German is helpful,” “English or German,” or no stated
-  requirement.
+  signals such as “German is helpful,” alternatives such as “English or German,”
+  or no stated requirement. Apply the same reasoning to every language.
 - Quote or cite short evidence from the original posting when useful, and explain
   that evidence in the user's preferred language.
 
