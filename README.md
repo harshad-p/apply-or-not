@@ -211,3 +211,7 @@ Run the dependency-free extractor tests with:
 ```sh
 node --test tests/*.test.*
 ```
+
+## License
+
+Apply or Not is available under the [MIT License](LICENSE).
