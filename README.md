@@ -39,3 +39,6 @@ collaboration, product decisions, setup instructions, and judging test path.
 ## Status
 
 Initial project setup. No working extension has been implemented yet.
+
+The detailed product requirements and build context are maintained in
+[PROJECT_BRIEF.md](PROJECT_BRIEF.md).
