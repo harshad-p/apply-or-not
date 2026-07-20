@@ -2,6 +2,11 @@
 
 ## Submission-critical
 
+- [ ] Create the visual identity: a simple logo that remains legible at toolbar
+  size, extension icons for Safari and Chromium, and a larger project image for
+  the README and Devpost listing. Wire the icon sizes into the manifest.
+- [ ] Capture polished screenshots after the branding and final popup states are
+  complete, using only synthetic job and applicant data.
 - [ ] Add a judge demo mode using synthetic applicant and job data so the full
   extension experience can be tested without an API key or billable request.
 - [ ] Document the shortest judge test path for Chrome and Safari.
@@ -30,4 +35,3 @@
 - [ ] Add a configurable local-model provider.
 - [ ] Consider an optional, privacy-conscious hosted relay with quotas and
   abuse controls after the local release.
-
