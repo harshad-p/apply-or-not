@@ -38,9 +38,10 @@ collaboration, product decisions, setup instructions, and judging test path.
 
 ## Status
 
-Milestone 3 is complete: the extension can save user preferences, request
-temporary access to the active tab, detect likely job postings, and extract a
-generic job description locally. LLM analysis is not connected yet.
+Milestone 4 is complete: the extension has a versioned multilingual analysis
+prompt, a strict structured-result schema, score/recommendation consistency
+checks, and a tested GPT-5.6 Responses API request contract. Live LLM analysis
+is not connected yet.
 
 The detailed product requirements and build context are maintained in
 [PROJECT_BRIEF.md](PROJECT_BRIEF.md).
@@ -98,5 +99,5 @@ ordinary article is rejected.
 Run the dependency-free extractor tests with:
 
 ```sh
-node --test tests/extractor.test.cjs
+node --test tests/*.test.cjs
 ```

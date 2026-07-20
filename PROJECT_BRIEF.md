@@ -176,9 +176,11 @@ This hosted tier is a future option, not part of the initial local-only release.
 - Never insert untrusted job-page content with unsafe HTML APIs
 - Provide a way to clear locally stored criteria and results
 
-Because this is initially for personal/local use, a user-supplied API key may be
-stored in extension-local storage with a clear warning. Do not present that as a
-production-grade secret-management design.
+Standard OpenAI API keys must not be stored in extension code or browser
+storage. For local development, use a localhost-only relay that reads the key
+from the developer's environment. A future hosted service must keep its key on
+the server. Local-model providers may be called directly when they do not use a
+cloud secret.
 
 ## Technical constraints
 
