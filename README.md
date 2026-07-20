@@ -38,10 +38,10 @@ collaboration, product decisions, setup instructions, and judging test path.
 
 ## Status
 
-Milestone 5 is complete: a localhost-only relay can call GPT-5.6 through the
-Responses API, validate the structured result, and return trusted provider
-metadata. The extension background worker is connected to that relay. The popup
-result presentation is the next milestone.
+Milestone 6 is complete: the popup extracts the active job, sends it through the
+localhost relay to GPT-5.6, validates the response, and displays the score,
+recommendation, confidence, evidence, language assessment, and returned model.
+The toolbar badge shows the score with a recommendation color.
 
 The detailed product requirements and build context are maintained in
 [PROJECT_BRIEF.md](PROJECT_BRIEF.md).

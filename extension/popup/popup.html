@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Apply or Not</title>
     <link rel="stylesheet" href="popup.css">
+    <script src="../shared/presentation.js" defer></script>
     <script src="popup.js" defer></script>
   </head>
   <body>
@@ -15,7 +16,7 @@
         <span class="status-pill" data-settings-status>Checking setup</span>
       </header>
 
-      <section class="empty-state" aria-labelledby="popup-title">
+      <section class="result-state" aria-labelledby="popup-title">
         <div class="score-placeholder" aria-hidden="true" data-result-mark>?</div>
         <p class="eyebrow" data-result-eyebrow>Job-fit check</p>
         <h1 id="popup-title" data-result-title>Should you apply?</h1>
@@ -23,6 +24,34 @@
           Open a job posting to get a score and an explanation based on your
           preferences.
         </p>
+
+        <section class="analysis-details" aria-label="Analysis details" data-analysis-details hidden>
+          <p class="job-label" data-job-label></p>
+          <div class="result-meta">
+            <span data-confidence></span>
+            <span data-model></span>
+          </div>
+
+          <div class="reason-group" data-positive-group>
+            <h2>Why it fits</h2>
+            <ul data-positive-list></ul>
+          </div>
+
+          <div class="reason-group" data-concern-group>
+            <h2>Concerns</h2>
+            <ul data-concern-list></ul>
+          </div>
+
+          <div class="reason-group" data-blocker-group>
+            <h2>Hard blockers</h2>
+            <ul data-blocker-list></ul>
+          </div>
+
+          <div class="language-summary" data-language-group>
+            <h2>Language</h2>
+            <p data-language-summary></p>
+          </div>
+        </section>
 
         <div class="button-stack">
           <button type="button" data-extract-button hidden>Read this job posting</button>
@@ -37,7 +66,7 @@
       </section>
 
       <footer>
-        <span>Nothing leaves your browser yet.</span>
+        <span>Cloud analysis uses your local relay.</span>
         <span data-version></span>
       </footer>
     </main>
