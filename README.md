@@ -55,6 +55,7 @@ one dedicated results scroller so long explanations remain responsive in Safari.
 
 The detailed product requirements and build context are maintained in
 [PROJECT_BRIEF.md](PROJECT_BRIEF.md).
+The remaining submission and product work is tracked in [TODO.md](TODO.md).
 
 ## Load the development extension
 
