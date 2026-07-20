@@ -19,6 +19,13 @@ distinguishes the language used to write the job description from an actual
 language requirement: a posting written in German or Japanese does not by itself
 mean that proficiency in that language is mandatory.
 
+The project began with a concrete personal need: its creator is an
+English-speaking software developer currently living in Germany and evaluating
+local software-development postings, including jobs written in German where
+German proficiency may not actually be required. That initial use case shaped
+the multilingual behavior, but the extension was generalized for applicants,
+countries, professions, and languages everywhere.
+
 ## Planned first release
 
 - Safari support, with a browser-neutral WebExtension core
@@ -56,12 +63,13 @@ badge. It also added fixtures and regression tests after each milestone, then
 helped diagnose real Safari and LinkedIn behavior reported during hands-on use.
 
 Codex accelerated repetitive implementation, cross-file changes, test creation,
-and debugging. The human product decisions remained central: supporting any
-country rather than only Germany; separating a posting's language from an
-actual language requirement; accepting rambling free-form preferences; treating
-Easy Apply as structured evidence; keeping API keys outside the extension; and
-adding caching, billing confirmation, a no-cost judge demo, and the final visual
-identity in response to real usage.
+and debugging. The human product decisions remained central: expanding the
+creator's original Germany-focused need into a tool for applicants everywhere;
+separating a posting's language from an actual language requirement; accepting
+rambling free-form preferences; treating Easy Apply as structured evidence;
+keeping API keys outside the extension; and adding caching, billing
+confirmation, a no-cost judge demo, and the final visual identity in response to
+real usage.
 
 ### How GPT-5.6 contributes
 
