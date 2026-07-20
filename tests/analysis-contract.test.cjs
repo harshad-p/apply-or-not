@@ -5,14 +5,23 @@ const {
   DEFAULT_MODEL,
   PROMPT_VERSION,
   buildOpenAIRequest,
+  calculateRubricScore,
   normalizeAnalysis,
   validateModelOutput,
 } = require("../extension/shared/analysis-contract.js");
 
 function validAnalysis(overrides = {}) {
   return {
-    score: 84,
+    score: 100,
     recommendation: "apply",
+    rubric: {
+      skills: { applicable: true, outcome: "match" },
+      workArrangement: { applicable: false, outcome: "unknown" },
+      language: { applicable: false, outcome: "unknown" },
+      seniority: { applicable: false, outcome: "unknown" },
+      applicationMethod: { applicable: false, outcome: "unknown" },
+      otherPreferences: { applicable: false, outcome: "unknown" },
+    },
     confidence: "high",
     summary: "The role is a strong overall match.",
     positiveMatches: [
@@ -63,6 +72,51 @@ test("requires hard blockers to produce a skip below 60", () => {
   );
 });
 
+test("calculates a stable score from applicable rubric dimensions", () => {
+  const analysis = validAnalysis({
+    rubric: {
+      ...validAnalysis().rubric,
+      language: { applicable: true, outcome: "conflict" },
+    },
+  });
+
+  assert.equal(calculateRubricScore(analysis), 73);
+  assert.equal(calculateRubricScore(analysis), 73);
+});
+
+test("normalization replaces model-selected score and recommendation", () => {
+  const normalized = normalizeAnalysis(
+    validAnalysis({ score: 12, recommendation: "skip" }),
+    { id: "openai", model: "gpt-5.6-sol" },
+  );
+
+  assert.equal(normalized.score, 100);
+  assert.equal(normalized.recommendation, "apply");
+});
+
+test("unknown evidence remains in the consider band", () => {
+  const analysis = validAnalysis({
+    rubric: {
+      ...validAnalysis().rubric,
+      skills: { applicable: false, outcome: "unknown" },
+      applicationMethod: { applicable: true, outcome: "unknown" },
+    },
+  });
+
+  assert.equal(calculateRubricScore(analysis), 65);
+});
+
+test("no applicable criteria defaults to a neutral consider score", () => {
+  const rubric = Object.fromEntries(
+    Object.keys(validAnalysis().rubric).map((dimension) => [
+      dimension,
+      { applicable: false, outcome: "unknown" },
+    ]),
+  );
+
+  assert.equal(calculateRubricScore(validAnalysis({ rubric })), 65);
+});
+
 test("builds a private structured GPT-5.6 Responses request", () => {
   const request = buildOpenAIRequest({
     userCriteria: "I prefer backend roles.",
@@ -84,7 +138,7 @@ test("builds a private structured GPT-5.6 Responses request", () => {
   assert.equal(request.text.format.strict, true);
   assert.match(request.input, /Backend API development/);
   assert.match(request.input, /easy_apply/);
-  assert.equal(PROMPT_VERSION, "job-fit-v2");
+  assert.equal(PROMPT_VERSION, "job-fit-v3");
 });
 
 test("attaches trusted provider metadata outside the model output", () => {

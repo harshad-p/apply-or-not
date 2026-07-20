@@ -10,6 +10,14 @@ function modelOutput() {
   return {
     score: 88,
     recommendation: "apply",
+    rubric: {
+      skills: { applicable: true, outcome: "match" },
+      workArrangement: { applicable: false, outcome: "unknown" },
+      language: { applicable: false, outcome: "unknown" },
+      seniority: { applicable: false, outcome: "unknown" },
+      applicationMethod: { applicable: false, outcome: "unknown" },
+      otherPreferences: { applicable: false, outcome: "unknown" },
+    },
     confidence: "high",
     summary: "Strong backend match with no explicit language blocker.",
     positiveMatches: [
@@ -56,7 +64,7 @@ test("parses and attributes a structured Responses API result", () => {
     ],
   });
 
-  assert.equal(result.score, 88);
+  assert.equal(result.score, 100);
   assert.equal(result.provider.model, "gpt-5.6-sol-2026-07-01");
   assert.equal(result.provider.responseId, "resp_fixture");
 });

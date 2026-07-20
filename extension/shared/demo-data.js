@@ -33,6 +33,14 @@
   const modelOutput = Object.freeze({
     score: 94,
     recommendation: "apply",
+    rubric: {
+      skills: { applicable: true, outcome: "match" },
+      workArrangement: { applicable: true, outcome: "match" },
+      language: { applicable: true, outcome: "match" },
+      seniority: { applicable: false, outcome: "unknown" },
+      applicationMethod: { applicable: true, outcome: "match" },
+      otherPreferences: { applicable: false, outcome: "unknown" },
+    },
     confidence: "high",
     summary:
       "This synthetic role strongly matches the sample applicant's backend stack, hybrid-work preference, Easy Apply requirement, and English-language needs.",

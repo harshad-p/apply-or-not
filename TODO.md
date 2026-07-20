@@ -26,7 +26,7 @@
 
 ## Product quality
 
-- [ ] Make scores reproducible for unchanged inputs. Use an explicit weighted
+- [x] Make scores reproducible for unchanged inputs. Use an explicit weighted
   rubric for user criteria and job evidence, keep GPT-5.6 responsible for
   contextual interpretation and explanation, and add regression tests that
   prevent large score changes when the evidence is unchanged.

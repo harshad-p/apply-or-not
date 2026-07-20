@@ -96,6 +96,9 @@ contain at least:
 - Explicitly stated language requirements
 
 The score must follow an explainable rubric rather than arbitrary sentiment.
+The implemented v3 rubric uses fixed application-side weights and discrete model
+classifications so GPT-5.6 interprets evidence but cannot freely choose the final
+percentage.
 Do not invent facts that are absent from the posting or the user's profile.
 Treat low extraction quality or ambiguous wording as uncertainty, not as a
 negative signal.

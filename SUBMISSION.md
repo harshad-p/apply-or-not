@@ -16,9 +16,10 @@ Not is a local-first Safari and Chromium extension that reads the active job
 posting and evaluates it against the applicant's own free-form preferences.
 
 Users can describe their experience, languages, working-style preferences, and
-deal-breakers naturally. GPT-5.6 Sol then returns a validated score from 0–100,
-an Apply/Consider/Skip recommendation, confidence, concise reasoning, evidence
-from the posting, and a separate assessment of explicit language requirements.
+deal-breakers naturally. GPT-5.6 Sol classifies each stated criterion and returns
+confidence, concise reasoning, evidence, and explicit language requirements. The
+extension calculates a reproducible score from 0–100 and an Apply/Consider/Skip
+recommendation using fixed, documented weights.
 The posting can be German, Japanese, or another language; the extension does not
 mistake the language of the page for a mandatory applicant qualification.
 

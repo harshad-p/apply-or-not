@@ -1,5 +1,8 @@
 # Job-fit analysis prompt — v2
 
+This historical prompt has been superseded by `job-fit-v3.md`, which introduces
+application-enforced deterministic scoring.
+
 The executable version of this prompt and its JSON Schema live in
 `extension/shared/analysis-contract.js`. Keep both versions synchronized.
 

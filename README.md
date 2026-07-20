@@ -79,8 +79,10 @@ recommendation, confidence, evidence, language assessment, and returned model.
 The toolbar badge shows the score with a recommendation color.
 
 The extractor also detects visible Easy Apply and external-application controls.
-Prompt v2 treats application method as structured evidence and scores only the
-preferences the user actually stated.
+Prompt v3 treats application method as structured evidence and scores only the
+preferences the user actually stated. GPT-5.6 classifies fixed rubric dimensions
+while trusted application code calculates the final percentage, preventing the
+model from freely choosing a different number on reanalysis.
 
 Validated results are cached locally for up to 30 days and reused only when the
 job URL, extracted content, application method, preferences, explanation
