@@ -52,9 +52,18 @@ body {
 }
 
 .brand-name {
+  display: block;
   font-size: 14px;
   font-weight: 750;
   letter-spacing: -0.01em;
+}
+
+.brand-tagline {
+  display: block;
+  margin-top: 1px;
+  color: #6b786f;
+  font-size: 9px;
+  line-height: 1.2;
 }
 
 .status-pill {
@@ -406,6 +415,10 @@ footer {
     border-color: #34483a;
     color: #a9b9ae;
     background: rgb(255 255 255 / 4%);
+  }
+
+  .brand-tagline {
+    color: #849188;
   }
 
   .status-pill[data-state="configured"] {

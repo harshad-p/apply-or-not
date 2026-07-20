@@ -51,6 +51,18 @@ body {
   border-radius: 9px;
 }
 
+.brand-copy,
+.brand-tagline {
+  display: block;
+}
+
+.brand-tagline {
+  margin-top: 2px;
+  color: #6b786f;
+  font-size: 10px;
+  font-weight: 500;
+}
+
 .eyebrow {
   margin: 0 0 8px;
   color: #39704b;
@@ -359,6 +371,7 @@ button:disabled {
   }
 
   .intro,
+  .brand-tagline,
   .field-heading p,
   .field-description {
     color: #a7b5ab;

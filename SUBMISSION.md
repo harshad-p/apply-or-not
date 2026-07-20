@@ -6,7 +6,10 @@
 
 ## Tagline
 
-Turn any job posting into an evidence-based apply, consider, or skip decision.
+To apply or not—that is the question.
+
+**One-line description:** Turn any job posting into an evidence-based apply,
+consider, or skip decision.
 
 ## Devpost description
 

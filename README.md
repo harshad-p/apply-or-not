@@ -4,6 +4,8 @@
   <img src="extension/icons/icon-256.png" width="128" alt="Apply or Not logo: an application button being pressed by a cursor">
 </p>
 
+<p align="center"><em>To apply or not—that is the question.</em></p>
+
 Apply or Not is a local-first browser extension that helps job seekers decide
 whether a job posting is worth applying to. It extracts the visible job
 description, evaluates it against the user's free-form preferences with an LLM,
