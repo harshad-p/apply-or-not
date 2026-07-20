@@ -38,7 +38,7 @@ collaboration, product decisions, setup instructions, and judging test path.
 
 ## Status
 
-Milestone 6 is complete: the popup extracts the active job, sends it through the
+Milestone 7 is complete: the popup extracts the active job, sends it through the
 localhost relay to GPT-5.6, validates the response, and displays the score,
 recommendation, confidence, evidence, language assessment, and returned model.
 The toolbar badge shows the score with a recommendation color.
@@ -46,6 +46,11 @@ The toolbar badge shows the score with a recommendation color.
 The extractor also detects visible Easy Apply and external-application controls.
 Prompt v2 treats application method as structured evidence and scores only the
 preferences the user actually stated.
+
+Validated results are cached locally for up to 30 days and reused only when the
+job URL, extracted content, application method, preferences, explanation
+language, and prompt version still match. Reanalysis requires confirmation
+because it creates another billable model request.
 
 The detailed product requirements and build context are maintained in
 [PROJECT_BRIEF.md](PROJECT_BRIEF.md).
@@ -105,9 +110,12 @@ response ID. Normal automated tests never call OpenAI and do not require a key.
 
 1. Reload the temporary or unpacked extension after pulling the latest files.
 2. Confirm your preferences are saved.
-3. Open a job posting, open the popup, and choose **Read this job posting**.
+3. Open a job posting and open the popup. Local extraction checks for a matching
+   saved result without calling the model.
 4. If Safari asks for page access, allow it for the current use.
-5. Confirm the popup shows the detected title and extracted character count.
+5. Choose **Analyze this job** when no saved result exists.
+6. Close and reopen the popup, then confirm the same result appears without a
+   second API request.
 
 ### Synthetic extraction fixtures
 

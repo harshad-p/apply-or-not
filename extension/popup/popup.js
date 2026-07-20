@@ -1,6 +1,8 @@
 "use strict";
 
 const extensionApi = globalThis.browser ?? globalThis.chrome;
+const analysisContract = globalThis.ApplyOrNotAnalysis;
+const cacheApi = globalThis.ApplyOrNotCache;
 const presentation = globalThis.ApplyOrNotPresentation;
 const analysisDetails = document.querySelector("[data-analysis-details]");
 const applicationMethodLabel = document.querySelector(
@@ -56,13 +58,15 @@ async function loadSettingsStatus() {
       ? "Edit your preferences"
       : "Set your preferences";
     settingsNote.textContent = isConfigured
-      ? "The job description and your preferences will be sent to GPT-5.6 through the local relay."
+      ? "Checking this page for a matching saved result does not call the model."
       : "Tell Apply or Not what you want from a role before analyzing job postings.";
+    return isConfigured;
   } catch (error) {
     console.error("Unable to read extension settings.", error);
     settingsStatus.textContent = "Settings unavailable";
     settingsStatus.dataset.state = "error";
     settingsNote.textContent = "Reload the extension and try opening settings again.";
+    return false;
   }
 }
 
@@ -145,7 +149,12 @@ function renderExtraction(extraction) {
   settingsNote.textContent = `${detectionScore}/100 page evidence · ${characterCount.toLocaleString()} characters read from ${source}.${truncatedNote}`;
 }
 
-function renderAnalysis(analysis, extraction, tabId) {
+function renderAnalysis(
+  analysis,
+  extraction,
+  tabId,
+  { createdAt = Date.now(), fromCache = false, cacheSaved = true } = {},
+) {
   const recommendation = presentation.getRecommendationPresentation(
     analysis.recommendation,
   );
@@ -174,15 +183,17 @@ function renderAnalysis(analysis, extraction, tabId) {
   languageSummary.textContent = formatLanguageSummary(analysis);
   analysisDetails.hidden = false;
 
-  settingsStatus.textContent = "Analyzed";
+  const savedLabel = fromCache
+    ? "Saved result"
+    : cacheSaved
+      ? "New result saved locally"
+      : "New result could not be saved";
+  settingsStatus.textContent = fromCache ? "Saved result" : "Analyzed";
   settingsStatus.dataset.state = recommendation.state;
-  settingsNote.textContent = `Validated ${analysis.promptVersion} result · ${presentation.formatModelLabel(analysis.provider.model)} · response ${analysis.provider.responseId || "not supplied"}`;
-  extractButton.textContent = "Analyze this job again";
-  setToolbarBadge(
-    tabId,
-    String(analysis.score),
-    recommendation.badgeColor,
-  );
+  settingsNote.textContent = `${savedLabel} · ${new Date(createdAt).toLocaleString()} · ${presentation.formatModelLabel(analysis.provider.model)} · ${analysis.promptVersion} · response ${analysis.provider.responseId || "not supplied"}`;
+  extractButton.textContent = "Reanalyze this job";
+  extractButton.dataset.action = "reanalyze";
+  setToolbarBadge(tabId, String(analysis.score), recommendation.badgeColor);
 }
 
 function renderExtractionError(error, tabId) {
@@ -196,6 +207,8 @@ function renderExtractionError(error, tabId) {
     "Open a normal web page and allow temporary access if Safari asks, then try again.";
   settingsNote.textContent =
     "Browser settings pages and other protected pages cannot be analyzed.";
+  extractButton.textContent = "Try reading this page again";
+  extractButton.dataset.action = "inspect";
   setToolbarBadge(tabId, "!", "#a84035");
 }
 
@@ -209,7 +222,79 @@ function renderAnalysisError(error, extraction, tabId) {
   resultDescription.textContent = error.message;
   settingsNote.textContent = `${extraction.extraction.characterCount.toLocaleString()} characters were extracted successfully. Make sure the local relay is running, then retry.`;
   extractButton.textContent = "Try analysis again";
+  extractButton.dataset.action = "analyze";
   setToolbarBadge(tabId, "!", "#a84035");
+}
+
+async function readCurrentPage() {
+  const [activeTab] = await extensionApi.tabs.query({
+    active: true,
+    currentWindow: true,
+  });
+  if (!activeTab?.id) {
+    throw new Error("No active browser tab is available.");
+  }
+
+  await extensionApi.scripting.executeScript({
+    target: { tabId: activeTab.id },
+    files: ["content/extractor.js"],
+  });
+  const [injectionResult] = await extensionApi.scripting.executeScript({
+    target: { tabId: activeTab.id },
+    func: () => globalThis.ApplyOrNotExtractor?.extract(document),
+  });
+  if (!injectionResult?.result) {
+    throw new Error("The page extractor returned no result.");
+  }
+
+  return { activeTab, extraction: injectionResult.result };
+}
+
+function createCacheContext(extraction) {
+  const pageUrl = extraction.page.url;
+  return {
+    pageUrl,
+    signature: cacheApi.createSignature({
+      pageUrl,
+      job: extraction.job,
+      userCriteria: currentSettings.userCriteria,
+      preferredLanguage: currentSettings.preferredLanguage,
+      promptVersion: analysisContract.PROMPT_VERSION,
+    }),
+  };
+}
+
+async function findCachedAnalysis(extraction) {
+  const context = createCacheContext(extraction);
+  const stored = await extensionApi.storage.local.get([
+    cacheApi.CACHE_STORAGE_KEY,
+  ]);
+  const entry = cacheApi.findEntry(stored[cacheApi.CACHE_STORAGE_KEY], context);
+  if (!entry) return null;
+
+  const validation = analysisContract.validateModelOutput(entry.analysis);
+  if (
+    !validation.valid ||
+    entry.analysis.promptVersion !== analysisContract.PROMPT_VERSION
+  ) {
+    return null;
+  }
+  return entry;
+}
+
+async function saveCachedAnalysis(extraction, analysis, createdAt) {
+  const context = createCacheContext(extraction);
+  const stored = await extensionApi.storage.local.get([
+    cacheApi.CACHE_STORAGE_KEY,
+  ]);
+  const cache = cacheApi.upsertEntry(stored[cacheApi.CACHE_STORAGE_KEY], {
+    ...context,
+    createdAt,
+    analysis,
+  });
+  await extensionApi.storage.local.set({
+    [cacheApi.CACHE_STORAGE_KEY]: cache,
+  });
 }
 
 async function requestAnalysis(extraction) {
@@ -228,7 +313,42 @@ async function requestAnalysis(extraction) {
   return response.result;
 }
 
-async function extractCurrentPage() {
+async function restoreCachedResultOnOpen() {
+  extractButton.disabled = true;
+  extractButton.textContent = "Checking page locally…";
+
+  try {
+    const { activeTab, extraction } = await readCurrentPage();
+    renderExtraction(extraction);
+    if (!extraction.isLikelyJobPosting) {
+      extractButton.textContent = "Read this page again";
+      extractButton.dataset.action = "inspect";
+      return;
+    }
+
+    const cached = await findCachedAnalysis(extraction);
+    if (cached) {
+      renderAnalysis(cached.analysis, extraction, activeTab.id, {
+        createdAt: cached.createdAt,
+        fromCache: true,
+      });
+      return;
+    }
+
+    extractButton.textContent = "Analyze this job";
+    extractButton.dataset.action = "analyze";
+    settingsNote.textContent =
+      "No saved result matches this page, preferences, and prompt. Analyze will make one billable GPT-5.6 request.";
+  } catch (error) {
+    console.info("No cached result could be restored for this page.", error);
+    extractButton.textContent = "Read this job posting";
+    extractButton.dataset.action = "inspect";
+  } finally {
+    extractButton.disabled = false;
+  }
+}
+
+async function extractCurrentPage({ forceAnalysis = false } = {}) {
   extractButton.disabled = true;
   extractButton.textContent = "Reading page…";
   resultEyebrow.textContent = "Local extraction";
@@ -241,34 +361,28 @@ async function extractCurrentPage() {
 
   let activeTab;
   try {
-    [activeTab] = await extensionApi.tabs.query({
-      active: true,
-      currentWindow: true,
-    });
-    if (!activeTab?.id) {
-      throw new Error("No active browser tab is available.");
-    }
-
+    const currentPage = await readCurrentPage();
+    activeTab = currentPage.activeTab;
+    const { extraction } = currentPage;
     await setToolbarBadge(activeTab.id);
-    await extensionApi.scripting.executeScript({
-      target: { tabId: activeTab.id },
-      files: ["content/extractor.js"],
-    });
-    const [injectionResult] = await extensionApi.scripting.executeScript({
-      target: { tabId: activeTab.id },
-      func: () => globalThis.ApplyOrNotExtractor?.extract(document),
-    });
-
-    if (!injectionResult?.result) {
-      throw new Error("The page extractor returned no result.");
-    }
-
-    const extraction = injectionResult.result;
     renderExtraction(extraction);
+
     if (!extraction.isLikelyJobPosting) {
       extractButton.textContent = "Read this page again";
+      extractButton.dataset.action = "inspect";
       await setToolbarBadge(activeTab.id, "?", "#b46b12");
       return;
+    }
+
+    if (!forceAnalysis) {
+      const cached = await findCachedAnalysis(extraction);
+      if (cached) {
+        renderAnalysis(cached.analysis, extraction, activeTab.id, {
+          createdAt: cached.createdAt,
+          fromCache: true,
+        });
+        return;
+      }
     }
 
     extractButton.textContent = "Analyzing with GPT-5.6…";
@@ -281,7 +395,18 @@ async function extractCurrentPage() {
 
     try {
       const analysis = await requestAnalysis(extraction);
-      renderAnalysis(analysis, extraction, activeTab.id);
+      const createdAt = Date.now();
+      let cacheSaved = true;
+      try {
+        await saveCachedAnalysis(extraction, analysis, createdAt);
+      } catch (error) {
+        cacheSaved = false;
+        console.error("Unable to cache the analysis result.", error);
+      }
+      renderAnalysis(analysis, extraction, activeTab.id, {
+        createdAt,
+        cacheSaved,
+      });
     } catch (error) {
       renderAnalysisError(error, extraction, activeTab.id);
     }
@@ -294,11 +419,23 @@ async function extractCurrentPage() {
       extractButton.textContent === "Analyzing with GPT-5.6…"
     ) {
       extractButton.textContent = "Try again";
+      extractButton.dataset.action = "inspect";
     }
   }
 }
 
-extractButton?.addEventListener("click", extractCurrentPage);
+extractButton?.addEventListener("click", async () => {
+  const forceAnalysis = extractButton.dataset.action === "reanalyze";
+  if (
+    forceAnalysis &&
+    !window.confirm(
+      "Reanalyzing will make another billable GPT-5.6 request. Continue?",
+    )
+  ) {
+    return;
+  }
+  await extractCurrentPage({ forceAnalysis });
+});
 
 settingsButton?.addEventListener("click", async () => {
   try {
@@ -311,4 +448,11 @@ settingsButton?.addEventListener("click", async () => {
   }
 });
 
-loadSettingsStatus();
+async function initializePopup() {
+  const isConfigured = await loadSettingsStatus();
+  if (isConfigured) {
+    await restoreCachedResultOnOpen();
+  }
+}
+
+initializePopup();

@@ -53,7 +53,7 @@ languageInput.addEventListener("input", () => {
 
 clearButton.addEventListener("click", async () => {
   const shouldClear = window.confirm(
-    "Clear your saved job criteria and explanation language?",
+    "Clear your saved job criteria, explanation language, and cached results?",
   );
 
   if (!shouldClear) {
@@ -68,6 +68,7 @@ clearButton.addEventListener("click", async () => {
       "userCriteria",
       "preferredLanguage",
       "settingsVersion",
+      "analysisCacheV1",
     ]);
     criteriaInput.value = "";
     languageInput.value = "English";
@@ -75,7 +76,7 @@ clearButton.addEventListener("click", async () => {
     languageInput.setCustomValidity("");
     updateCharacterCount();
     saveButton.textContent = "Save preferences";
-    showStatus("Preferences cleared.");
+    showStatus("Preferences and saved results cleared.");
   } catch (error) {
     console.error("Unable to clear extension settings.", error);
     showStatus("Could not clear your preferences. Please try again.", "error");
