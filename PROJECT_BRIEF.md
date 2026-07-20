@@ -141,6 +141,20 @@ Provider selection must not change the normalized analysis-result schema. Keep
 prompts versioned and testable. Validate model output before displaying it, and
 handle timeouts, malformed responses, rate limits, and unavailable providers.
 
+### Possible hosted service after the first release
+
+A future version may offer a seamless, sponsored cloud tier. The extension would
+send an analysis request to an Apply or Not server, and that server would call
+the model provider with a server-side API key before returning only the
+normalized result. The provider key must never be embedded in or returned to the
+extension.
+
+Such a service would require explicit privacy terms, secure transport, request
+validation, per-user or per-installation quotas, rate limiting, abuse prevention,
+cost controls, retention rules, and a clear response when the sponsored allowance
+is exhausted. Users could then switch to a personal API key or local provider.
+This hosted tier is a future option, not part of the initial local-only release.
+
 ## User interface
 
 - Toolbar badge showing a compact score such as `87`, or a failure/skip symbol
