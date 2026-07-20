@@ -5,6 +5,26 @@
   const MAX_DESCRIPTION_LENGTH = 50000;
 
   const candidateSelectors = [
+    {
+      selector: ".jobs-description__content",
+      source: "LinkedIn job description",
+      boost: 40,
+    },
+    {
+      selector: ".jobs-description-content__text",
+      source: "LinkedIn job description",
+      boost: 40,
+    },
+    {
+      selector: ".jobs-box__html-content",
+      source: "LinkedIn job description",
+      boost: 38,
+    },
+    {
+      selector: "[class*='jobs-description' i]",
+      source: "LinkedIn job description",
+      boost: 35,
+    },
     { selector: "[itemprop='description']", source: "structured element", boost: 35 },
     { selector: "[data-testid*='job-description' i]", source: "job description", boost: 35 },
     { selector: "[data-test*='job-description' i]", source: "job description", boost: 35 },
@@ -17,6 +37,8 @@
   ];
 
   const titleSelectors = [
+    ".job-details-jobs-unified-top-card__job-title",
+    ".jobs-unified-top-card__job-title",
     "[data-testid*='job-title' i]",
     "[data-test*='job-title' i]",
     "[class*='job-title' i]",
@@ -25,6 +47,8 @@
   ];
 
   const companySelectors = [
+    ".job-details-jobs-unified-top-card__company-name",
+    ".jobs-unified-top-card__company-name",
     "[itemprop='hiringOrganization'] [itemprop='name']",
     "[data-testid*='company-name' i]",
     "[data-test*='company-name' i]",

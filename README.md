@@ -91,8 +91,9 @@ python3 -m http.server 4173 --directory extension
 
 Open `http://localhost:4173/fixtures/job-posting-en.html`,
 `http://localhost:4173/fixtures/job-posting-de.html`, or
-`http://localhost:4173/fixtures/not-a-job.html`, then run the extension on each
-page.
+`http://localhost:4173/fixtures/job-posting-linkedin-like.html` to test job
+extraction. Use `http://localhost:4173/fixtures/not-a-job.html` to verify that an
+ordinary article is rejected.
 
 Run the dependency-free extractor tests with:
 

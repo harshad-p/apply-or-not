@@ -2,10 +2,20 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const {
+  extract,
   findJobPostingNode,
   normalizeText,
   scoreDetection,
 } = require("../extension/content/extractor.js");
+
+function textElement(text) {
+  return {
+    hidden: false,
+    innerText: text,
+    textContent: text,
+    getAttribute: () => null,
+  };
+}
 
 test("normalizes whitespace without flattening paragraphs", () => {
   assert.equal(
@@ -60,4 +70,41 @@ test("German job signals work without structured data", () => {
   });
 
   assert.ok(result.score >= 50);
+});
+
+test("extracts LinkedIn-shaped job containers", () => {
+  const description = textElement(
+    "About the role. Responsibilities include building backend services. Requirements include production experience. ".repeat(
+      6,
+    ),
+  );
+  const title = textElement("Platform Engineer");
+  const company = textElement("Example Networks");
+  const documentRef = {
+    title: "Platform Engineer | Example Networks",
+    location: { href: "https://www.linkedin.com/jobs/view/123" },
+    defaultView: {
+      getComputedStyle: () => ({ display: "block", visibility: "visible" }),
+    },
+    querySelectorAll: (selector) => {
+      if (selector === ".jobs-description__content") return [description];
+      return [];
+    },
+    querySelector: (selector) => {
+      if (selector === ".job-details-jobs-unified-top-card__job-title") {
+        return title;
+      }
+      if (selector === ".job-details-jobs-unified-top-card__company-name") {
+        return company;
+      }
+      return null;
+    },
+  };
+
+  const result = extract(documentRef);
+
+  assert.equal(result.isLikelyJobPosting, true);
+  assert.equal(result.job.title, "Platform Engineer");
+  assert.equal(result.job.company, "Example Networks");
+  assert.equal(result.extraction.source, "LinkedIn job description");
 });
