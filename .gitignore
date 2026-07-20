@@ -1,0 +1,30 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets.*
+
+# macOS
+.DS_Store
+
+# Xcode and Safari extension local state
+DerivedData/
+build/
+xcuserdata/
+*.xcuserstate
+*.xccheckout
+
+# JavaScript dependencies (not expected, but never commit generated packages)
+node_modules/
+
+# Test and coverage output
+coverage/
+test-results/
+
+# Editor files
+.idea/
+.vscode/
+*.swp
+
