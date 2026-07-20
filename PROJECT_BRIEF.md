@@ -12,9 +12,11 @@ whether a job posting is worth applying to. It reads the posting, evaluates it
 against the user's background and preferences with an LLM, and returns a clear,
 evidence-based recommendation.
 
-The initial user is a software developer living outside Germany and applying for
-software-development roles in Germany. The product should remain general enough
-for other users to enter their own background, preferences, and deal-breakers.
+The initial user is the project's creator: a software developer currently living
+in Germany, proficient in English, and applying for software-development roles
+in Germany. Some relevant job postings are written partly or entirely in German.
+The product should remain general enough for other users to enter their own
+background, languages, preferences, and deal-breakers.
 
 ## Core experience
 
@@ -203,4 +205,3 @@ Before making changes, inspect the existing repository and preserve unrelated
 work. Prefer the smallest implementation that completes the current milestone.
 Explain important assumptions, avoid unnecessary dependencies, test behavior in
 proportion to its risk, and keep documentation synchronized with the product.
-
