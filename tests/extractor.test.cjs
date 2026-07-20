@@ -108,3 +108,29 @@ test("extracts LinkedIn-shaped job containers", () => {
   assert.equal(result.job.company, "Example Networks");
   assert.equal(result.extraction.source, "LinkedIn job description");
 });
+
+test("extracts LinkedIn job details by stable id", () => {
+  const description = textElement(
+    "About the job. Responsibilities include API development and cloud operations. Requirements include backend experience and English communication. ".repeat(
+      5,
+    ),
+  );
+  const documentRef = {
+    title: "Backend Engineer | Example Company",
+    location: { href: "https://www.linkedin.com/jobs/view/456" },
+    defaultView: {
+      getComputedStyle: () => ({ display: "block", visibility: "visible" }),
+    },
+    querySelectorAll: (selector) => {
+      if (selector === "#job-details") return [description];
+      return [];
+    },
+    querySelector: () => null,
+  };
+
+  const result = extract(documentRef);
+
+  assert.equal(result.isLikelyJobPosting, true);
+  assert.equal(result.extraction.source, "LinkedIn job details");
+  assert.ok(result.extraction.characterCount > 200);
+});

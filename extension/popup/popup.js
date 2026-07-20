@@ -40,6 +40,7 @@ async function loadSettingsStatus() {
 
 function renderExtraction(extraction) {
   const { characterCount, source, wasTruncated } = extraction.extraction;
+  const detectionScore = extraction.detection.score;
 
   if (extraction.isLikelyJobPosting) {
     resultMark.textContent = "JD";
@@ -62,7 +63,7 @@ function renderExtraction(extraction) {
   }
 
   const truncatedNote = wasTruncated ? " The text was limited to 50,000 characters." : "";
-  settingsNote.textContent = `${characterCount.toLocaleString()} characters read from ${source}.${truncatedNote}`;
+  settingsNote.textContent = `${detectionScore}/100 page evidence · ${characterCount.toLocaleString()} characters read from ${source}.${truncatedNote}`;
   extractButton.textContent = "Read this page again";
 }
 

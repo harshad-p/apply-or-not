@@ -6,6 +6,16 @@
 
   const candidateSelectors = [
     {
+      selector: "#job-details",
+      source: "LinkedIn job details",
+      boost: 42,
+    },
+    {
+      selector: ".jobs-description__container",
+      source: "LinkedIn job description",
+      boost: 40,
+    },
+    {
       selector: ".jobs-description__content",
       source: "LinkedIn job description",
       boost: 40,
@@ -22,6 +32,11 @@
     },
     {
       selector: "[class*='jobs-description' i]",
+      source: "LinkedIn job description",
+      boost: 35,
+    },
+    {
+      selector: "[class*='jobs-description-content' i]",
       source: "LinkedIn job description",
       boost: 35,
     },
@@ -72,6 +87,9 @@
     /応募資格/u,
     /業務内容/u,
   ];
+
+  const jobSectionHeadingPattern =
+    /^(about the (?:job|role|position)|job description|the role|stellenbeschreibung|über (?:die|diese) stelle|description du poste|descripción del puesto|descrição da vaga|仕事内容|職務内容)$/iu;
 
   function normalizeText(value) {
     return String(value ?? "")
@@ -208,6 +226,39 @@
           source: definition.source,
           isSpecific: definition.boost >= 30,
         });
+      }
+    }
+
+    let headings = [];
+    try {
+      headings = documentRef.querySelectorAll("h1, h2, h3, h4");
+    } catch {
+      headings = [];
+    }
+
+    for (const heading of headings) {
+      const headingText = normalizeText(heading.innerText || heading.textContent);
+      if (!jobSectionHeadingPattern.test(headingText)) continue;
+
+      let container = heading.parentElement;
+      for (let depth = 0; container && depth < 4; depth += 1) {
+        const text = normalizeText(container.innerText || container.textContent);
+        if (
+          text.length >= MIN_DESCRIPTION_LENGTH &&
+          isElementVisible(container, documentRef)
+        ) {
+          if (!visited.has(container)) {
+            visited.add(container);
+            candidates.push({
+              text,
+              score: Math.min(text.length / 80, 60) + 34,
+              source: `section headed “${headingText}”`,
+              isSpecific: true,
+            });
+          }
+          break;
+        }
+        container = container.parentElement;
       }
     }
 
