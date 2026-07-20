@@ -67,7 +67,14 @@ test("builds a private structured GPT-5.6 Responses request", () => {
   const request = buildOpenAIRequest({
     userCriteria: "I prefer backend roles.",
     preferredLanguage: "English",
-    job: { description: "Backend API development" },
+    job: {
+      description: "Backend API development",
+      application: {
+        method: "easy_apply",
+        label: "Easy Apply",
+        confidence: "high",
+      },
+    },
   });
 
   assert.equal(request.model, DEFAULT_MODEL);
@@ -76,6 +83,8 @@ test("builds a private structured GPT-5.6 Responses request", () => {
   assert.equal(request.text.format.type, "json_schema");
   assert.equal(request.text.format.strict, true);
   assert.match(request.input, /Backend API development/);
+  assert.match(request.input, /easy_apply/);
+  assert.equal(PROMPT_VERSION, "job-fit-v2");
 });
 
 test("attaches trusted provider metadata outside the model output", () => {

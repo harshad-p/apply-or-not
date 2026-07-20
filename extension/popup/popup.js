@@ -3,6 +3,9 @@
 const extensionApi = globalThis.browser ?? globalThis.chrome;
 const presentation = globalThis.ApplyOrNotPresentation;
 const analysisDetails = document.querySelector("[data-analysis-details]");
+const applicationMethodLabel = document.querySelector(
+  "[data-application-method]",
+);
 const blockerGroup = document.querySelector("[data-blocker-group]");
 const blockerList = document.querySelector("[data-blocker-list]");
 const concernGroup = document.querySelector("[data-concern-group]");
@@ -157,6 +160,9 @@ function renderAnalysis(analysis, extraction, tabId) {
     .join(" · ");
   confidenceLabel.textContent = presentation.formatConfidence(analysis.confidence);
   modelLabel.textContent = presentation.formatModelLabel(analysis.provider.model);
+  applicationMethodLabel.textContent = presentation.formatApplicationMethod(
+    extraction.job.application,
+  );
 
   positiveGroup.hidden = analysis.positiveMatches.length === 0;
   concernGroup.hidden = analysis.concerns.length === 0;

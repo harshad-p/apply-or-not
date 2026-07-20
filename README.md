@@ -43,6 +43,10 @@ localhost relay to GPT-5.6, validates the response, and displays the score,
 recommendation, confidence, evidence, language assessment, and returned model.
 The toolbar badge shows the score with a recommendation color.
 
+The extractor also detects visible Easy Apply and external-application controls.
+Prompt v2 treats application method as structured evidence and scores only the
+preferences the user actually stated.
+
 The detailed product requirements and build context are maintained in
 [PROJECT_BRIEF.md](PROJECT_BRIEF.md).
 

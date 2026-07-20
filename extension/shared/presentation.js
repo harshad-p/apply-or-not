@@ -39,7 +39,14 @@
     return `${value.charAt(0).toUpperCase()}${value.slice(1)} confidence`;
   }
 
+  function formatApplicationMethod(application) {
+    if (application?.method === "easy_apply") return "Easy Apply detected";
+    if (application?.method === "external_apply") return "External application";
+    return "Application method unknown";
+  }
+
   const api = Object.freeze({
+    formatApplicationMethod,
     formatConfidence,
     formatModelLabel,
     getRecommendationPresentation,

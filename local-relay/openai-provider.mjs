@@ -86,6 +86,14 @@ function validatePayload(payload) {
   if (payload.job.description.length > 50000) {
     throw new Error("Extracted job description is too long.");
   }
+  if (
+    payload.job.application &&
+    !["easy_apply", "external_apply", "unknown"].includes(
+      payload.job.application.method,
+    )
+  ) {
+    throw new Error("Extracted application method is invalid.");
+  }
 }
 
 async function analyzeWithOpenAI(

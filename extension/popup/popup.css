@@ -213,6 +213,7 @@ h1 {
 
 .result-meta {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 7px;
   margin-bottom: 15px;
@@ -336,6 +337,7 @@ button:disabled {
   color: #76827a;
   font-size: 11px;
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 footer {

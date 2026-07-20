@@ -1,7 +1,7 @@
-# Job-fit analysis prompt — v1
+# Job-fit analysis prompt — v1 (historical)
 
-The executable version of this prompt and its JSON Schema live in
-`extension/shared/analysis-contract.js`. Keep both versions synchronized.
+This version is retained for analysis provenance. The current executable prompt
+is documented in `job-fit-v2.md`.
 
 ## Purpose
 

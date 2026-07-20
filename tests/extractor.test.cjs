@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 
 const {
   extract,
+  extractApplicationMethod,
   findJobPostingNode,
   normalizeText,
   scoreDetection,
@@ -14,6 +15,13 @@ function textElement(text) {
     innerText: text,
     textContent: text,
     getAttribute: () => null,
+  };
+}
+
+function controlElement(text, attributes = {}) {
+  return {
+    ...textElement(text),
+    getAttribute: (name) => attributes[name] ?? null,
   };
 }
 
@@ -133,4 +141,40 @@ test("extracts LinkedIn job details by stable id", () => {
   assert.equal(result.isLikelyJobPosting, true);
   assert.equal(result.extraction.source, "LinkedIn job details");
   assert.ok(result.extraction.characterCount > 200);
+});
+
+test("detects Easy Apply from a visible application control", () => {
+  const easyApplyButton = controlElement("Easy Apply", {
+    "aria-label": "Easy Apply to Backend Engineer",
+  });
+  const documentRef = {
+    defaultView: {
+      getComputedStyle: () => ({ display: "block", visibility: "visible" }),
+    },
+    querySelectorAll: (selector) =>
+      selector === "button, a[role='button'], a[href]" ? [easyApplyButton] : [],
+  };
+
+  assert.deepEqual(extractApplicationMethod(documentRef), {
+    method: "easy_apply",
+    label: "Easy Apply",
+    confidence: "high",
+  });
+});
+
+test("distinguishes an external Apply control from Easy Apply", () => {
+  const applyLink = controlElement("Apply now");
+  const documentRef = {
+    defaultView: {
+      getComputedStyle: () => ({ display: "block", visibility: "visible" }),
+    },
+    querySelectorAll: (selector) =>
+      selector === "button, a[role='button'], a[href]" ? [applyLink] : [],
+  };
+
+  assert.deepEqual(extractApplicationMethod(documentRef), {
+    method: "external_apply",
+    label: "Apply now",
+    confidence: "medium",
+  });
 });

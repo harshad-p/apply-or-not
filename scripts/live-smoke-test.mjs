@@ -8,6 +8,11 @@ const syntheticPayload = {
     title: "Backend Software Engineer",
     company: "Fictional Systems",
     location: "Tokyo or remote within Europe",
+    application: {
+      method: "easy_apply",
+      label: "Easy Apply",
+      confidence: "high",
+    },
     description: `Fictional Systems is hiring a mid-level backend engineer.
 
 You will build APIs with C# and .NET, work with Azure services, and improve SQL data pipelines. Three or more years of backend experience is required. React is used by another team and is helpful but not required.

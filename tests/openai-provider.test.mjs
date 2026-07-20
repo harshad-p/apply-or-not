@@ -105,3 +105,17 @@ test("rejects an empty extracted description before any API call", () => {
     /description is missing/,
   );
 });
+
+test("rejects an unrecognized application method", () => {
+  assert.throws(
+    () =>
+      validatePayload({
+        ...payload(),
+        job: {
+          description: "A valid description",
+          application: { method: "instant_apply" },
+        },
+      }),
+    /application method is invalid/,
+  );
+});

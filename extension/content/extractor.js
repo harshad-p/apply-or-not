@@ -91,6 +91,11 @@
   const jobSectionHeadingPattern =
     /^(about the (?:job|role|position)|job description|the role|stellenbeschreibung|über (?:die|diese) stelle|description du poste|descripción del puesto|descrição da vaga|仕事内容|職務内容)$/iu;
 
+  const easyApplyPattern =
+    /\b(easy apply|easily apply|quick apply|einfach bewerben|schnell bewerben|candidature simplifiée|postulación sencilla|candidatura semplificata)\b|簡単応募/iu;
+  const externalApplyPattern =
+    /^(apply|apply now|bewerben|jetzt bewerben|postuler|candidater|solicitar|candidatar-se|応募|今すぐ応募)(?:\b|$)/iu;
+
   function normalizeText(value) {
     return String(value ?? "")
       .replace(/\u00a0/g, " ")
@@ -278,6 +283,53 @@
     return "";
   }
 
+  function extractApplicationMethod(documentRef) {
+    let controls = [];
+    try {
+      controls = documentRef.querySelectorAll(
+        "button, a[role='button'], a[href]",
+      );
+    } catch {
+      controls = [];
+    }
+
+    let externalCandidate = null;
+    for (const control of controls) {
+      if (!isElementVisible(control, documentRef)) continue;
+      const visibleText = normalizeText(control.innerText || control.textContent);
+      const ariaLabel = normalizeText(control.getAttribute?.("aria-label"));
+      const title = normalizeText(control.getAttribute?.("title"));
+      const label = visibleText || ariaLabel || title;
+      const searchableLabel = [visibleText, ariaLabel, title]
+        .filter(Boolean)
+        .join(" ");
+
+      if (easyApplyPattern.test(searchableLabel)) {
+        return {
+          method: "easy_apply",
+          label: label || "Easy Apply",
+          confidence: "high",
+        };
+      }
+
+      if (!externalCandidate && externalApplyPattern.test(searchableLabel)) {
+        externalCandidate = {
+          method: "external_apply",
+          label: label || "Apply",
+          confidence: "medium",
+        };
+      }
+    }
+
+    return (
+      externalCandidate || {
+        method: "unknown",
+        label: "Application method not detected",
+        confidence: "low",
+      }
+    );
+  }
+
   function countDescriptionSignals(description) {
     return descriptionSignalPatterns.reduce(
       (count, pattern) => count + Number(pattern.test(description)),
@@ -362,6 +414,7 @@
     const description = selected.text.slice(0, MAX_DESCRIPTION_LENGTH);
     const pageTitle = normalizeText(documentRef.title);
     const pageUrl = String(documentRef.location?.href ?? "");
+    const application = extractApplicationMethod(documentRef);
     const detection = scoreDetection({
       hasStructuredJob: Boolean(structuredJob),
       hasSpecificContainer: selected.isSpecific,
@@ -376,7 +429,7 @@
       structuredJob?.company || getFirstText(documentRef, companySelectors);
 
     return {
-      schemaVersion: 1,
+      schemaVersion: 2,
       isLikelyJobPosting: detection.score >= 50,
       detection,
       job: {
@@ -384,6 +437,7 @@
         company,
         location: structuredJob?.location ?? "",
         description,
+        application,
       },
       extraction: {
         source: selected.source,
@@ -405,6 +459,7 @@
 
   const api = Object.freeze({
     extract,
+    extractApplicationMethod,
     findJobPostingNode,
     normalizeText,
     scoreDetection,

@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const {
+  formatApplicationMethod,
   formatConfidence,
   formatModelLabel,
   getRecommendationPresentation,
@@ -31,4 +32,16 @@ test("formats returned GPT-5.6 model snapshots for the popup", () => {
 
 test("formats confidence as a readable label", () => {
   assert.equal(formatConfidence("high"), "High confidence");
+});
+
+test("formats application-method evidence", () => {
+  assert.equal(
+    formatApplicationMethod({ method: "easy_apply" }),
+    "Easy Apply detected",
+  );
+  assert.equal(
+    formatApplicationMethod({ method: "external_apply" }),
+    "External application",
+  );
+  assert.equal(formatApplicationMethod(), "Application method unknown");
 });
