@@ -38,7 +38,33 @@ collaboration, product decisions, setup instructions, and judging test path.
 
 ## Status
 
-Initial project setup. No working extension has been implemented yet.
+Milestone 1 is complete: the permission-free Manifest V3 extension foundation
+loads a toolbar popup. Preferences, page access, extraction, and analysis are not
+connected yet.
 
 The detailed product requirements and build context are maintained in
 [PROJECT_BRIEF.md](PROJECT_BRIEF.md).
+
+## Load the development extension
+
+The extension source is in [`extension`](extension).
+
+### Safari 27 on macOS
+
+1. Open Safari Settings, select Advanced, and enable **Show features for web
+   developers**.
+2. Open the Developer settings pane and allow unsigned extensions for local
+   development.
+3. Add a temporary extension and select the repository's `extension` folder.
+4. Enable **Apply or Not** in Safari Settings > Extensions.
+5. Add its button to the toolbar if Safari does not show it automatically, then
+   click it to open the popup.
+
+### Chrome or another Chromium browser
+
+1. Open the browser's extensions page.
+2. Enable Developer mode.
+3. Choose **Load unpacked** and select the repository's `extension` folder.
+4. Pin **Apply or Not**, then click its toolbar button.
+
+No permissions are requested in this milestone.

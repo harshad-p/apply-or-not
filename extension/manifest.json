@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Apply or Not",
+  "version": "0.1.0",
+  "description": "Evaluate a job posting against your preferences before you apply.",
+  "action": {
+    "default_title": "Apply or Not",
+    "default_popup": "popup/popup.html"
+  }
+}

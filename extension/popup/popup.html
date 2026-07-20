@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Apply or Not</title>
+    <link rel="stylesheet" href="popup.css">
+    <script src="popup.js" defer></script>
+  </head>
+  <body>
+    <main class="popup-shell">
+      <header class="brand">
+        <span class="brand-mark" aria-hidden="true">A?</span>
+        <span class="brand-name">Apply or Not</span>
+        <span class="status-pill">Foundation ready</span>
+      </header>
+
+      <section class="empty-state" aria-labelledby="popup-title">
+        <div class="score-placeholder" aria-hidden="true">?</div>
+        <p class="eyebrow">Job-fit check</p>
+        <h1 id="popup-title">Should you apply?</h1>
+        <p class="description">
+          Open a job posting to get a score and an explanation based on your
+          preferences.
+        </p>
+
+        <button type="button" disabled>Analyze this job</button>
+        <p class="milestone-note">
+          Analysis will become available after preferences and page extraction
+          are connected.
+        </p>
+      </section>
+
+      <footer>
+        <span>Nothing leaves your browser yet.</span>
+        <span data-version></span>
+      </footer>
+    </main>
+  </body>
+</html>
