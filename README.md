@@ -39,7 +39,7 @@ mean that proficiency in that language is mandatory.
 
 ## Planned first release
 
-- Safari support, with a browser-neutral WebExtension core
+- Safari, Chromium, and Firefox support through a browser-neutral WebExtension core
 - Job-description extraction from common job sites and generic pages
 - Multilingual analysis and results in the user's preferred language
 - Separation of a posting's written language from explicit language requirements
@@ -100,7 +100,7 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.15.1 is a submission candidate: the popup extracts the active job, sends it through the
+Version 0.16.0 is a submission candidate: the popup extracts the active job, sends it through the
 localhost relay to GPT-5.6, validates the response, and displays the score,
 recommendation, confidence, evidence, language assessment, and returned model.
 The toolbar badge shows the score with a recommendation color.
@@ -166,6 +166,19 @@ The extension source is in [`extension`](extension).
 3. Choose **Load unpacked** and select the repository's `extension` folder.
 4. Pin **Apply or Not**, then click its toolbar button.
 
+### Mozilla Firefox
+
+1. Enter `about:debugging` in the address bar.
+2. Select **This Firefox**.
+3. Choose **Load Temporary Add-on**.
+4. Open the repository's `extension` folder and select `manifest.json`.
+5. Add **Apply or Not** to the toolbar if Firefox does not show it automatically,
+   then click its button.
+
+Firefox removes temporarily loaded extensions when the browser restarts. Return
+to `about:debugging` to reload it during local development. These steps follow
+Mozilla's [temporary extension instructions](https://extensionworkshop.com/documentation/develop/temporary-installation-in-firefox/).
+
 The extension requests `storage`, `activeTab`, and `scripting`. Page access is
 temporary and begins only when the user opens the popup and chooses to read the
 current page. It also has access only to the local relay at
@@ -212,7 +225,7 @@ preserves the OpenAI request ID when available for troubleshooting.
 The fastest test path does not require an API key, local relay, preferences, or
 active job posting:
 
-1. Load the extension in Safari or Chrome using the instructions above.
+1. Load the extension in Safari, Chrome/Chromium, or Firefox using the instructions above.
 2. Open its toolbar popup.
 3. Choose **Run no-cost demo**.
 

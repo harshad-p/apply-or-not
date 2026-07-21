@@ -37,7 +37,7 @@ language, and it does not treat SQL Server and PostgreSQL as completely
 unrelated skills. The original problem was personal, but the same idea can help
 someone applying in any country or language.
 
-Apply or Not runs as a local-first Safari and Chromium extension. Preferences
+Apply or Not runs as a local-first Safari, Chromium, and Firefox extension. Preferences
 and cached results stay in the browser. A localhost relay keeps the API key out
 of the extension and sends non-stored, structured requests to OpenAI. The
 toolbar shows the score, cached results can be reopened without another API
@@ -53,8 +53,8 @@ regression test.
 
 ## Judge testing instructions
 
-1. Load the repository's `extension` directory as a temporary Safari extension
-   or an unpacked Chromium extension.
+1. Load the repository's `extension` directory as a temporary Safari or Firefox
+   extension, or as an unpacked Chromium extension.
 2. Open the toolbar popup and choose **Run no-cost demo**.
 3. Inspect the score, recommendation, evidence, language assessment, Easy Apply
    detection, and toolbar badge. No API key, relay, preferences, or network call

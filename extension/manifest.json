@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Apply or Not",
-  "version": "0.15.1",
+  "version": "0.16.0",
   "description": "Evaluate a job posting against your preferences before you apply.",
   "icons": {
     "16": "icons/icon-16.png",
@@ -12,7 +12,15 @@
   "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": ["http://127.0.0.1:8787/*"],
   "background": {
-    "service_worker": "background/service-worker.js"
+    "service_worker": "background/service-worker.js",
+    "scripts": [
+      "shared/analysis-contract.js",
+      "shared/analysis-cache.js",
+      "shared/action-badge.js",
+      "shared/analysis-runner.js",
+      "background/service-worker.js"
+    ],
+    "preferred_environment": ["service_worker", "document"]
   },
   "action": {
     "default_title": "Apply or Not",

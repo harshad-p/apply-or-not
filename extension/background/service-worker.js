@@ -1,11 +1,13 @@
 "use strict";
 
-importScripts(
-  "../shared/analysis-contract.js",
-  "../shared/analysis-cache.js",
-  "../shared/action-badge.js",
-  "../shared/analysis-runner.js",
-);
+if (typeof importScripts === "function") {
+  importScripts(
+    "../shared/analysis-contract.js",
+    "../shared/analysis-cache.js",
+    "../shared/action-badge.js",
+    "../shared/analysis-runner.js",
+  );
+}
 
 const extensionApi = globalThis.browser ?? globalThis.chrome;
 const relayUrl = "http://127.0.0.1:8787";
