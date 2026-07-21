@@ -105,22 +105,27 @@ test("normalization replaces model-selected score and recommendation", () => {
 });
 
 test("closed applications force a zero score and skip recommendation", () => {
+  const context = {
+    job: {
+      application: {
+        status: "closed",
+        statusLabel: "No longer accepting applications",
+      },
+    },
+  };
   const normalized = normalizeAnalysis(
     validAnalysis(),
     { id: "openai", model: "gpt-5.6-sol" },
-    {
-      job: {
-        application: {
-          status: "closed",
-          statusLabel: "No longer accepting applications",
-        },
-      },
-    },
+    context,
   );
 
   assert.equal(normalized.score, 0);
   assert.equal(normalized.recommendation, "skip");
   assert.match(normalized.hardBlockers[0].title, /applications closed/i);
+  assert.deepEqual(validateModelOutput(normalized, context), {
+    valid: true,
+    errors: [],
+  });
 });
 
 test("unknown evidence remains in the consider band", () => {

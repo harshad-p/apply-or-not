@@ -100,7 +100,7 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.16.0 is a submission candidate: the popup extracts the active job, sends it through the
+Version 0.16.1 is a submission candidate: the popup extracts the active job, sends it through the
 localhost relay to GPT-5.6, validates the response, and displays the score,
 recommendation, confidence, evidence, language assessment, and returned model.
 The toolbar badge shows the score with a recommendation color.

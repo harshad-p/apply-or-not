@@ -100,6 +100,7 @@ h1 { margin: 0; font-size: clamp(30px, 4vw, 48px); line-height: 1.05; letter-spa
 .scenario-header h1 { margin-bottom: 12px; }
 .scenario-header p { color: #5d6960; font-size: 18px; line-height: 1.6; }
 .scenario-header .demo-profile { padding: 16px 18px; border-left: 4px solid #276c43; border-radius: 10px; background: #eaf4ed; font-size: 15px; }
+.scenario-header .demo-reload { font-size: 14px; color: #7a5310; }
 .scenario-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .scenario-card { display: block; padding: 24px; border: 1px solid #dbe4dc; border-radius: 18px; color: inherit; background: white; text-decoration: none; box-shadow: 0 12px 32px rgba(39, 64, 48, 0.06); }
 .scenario-card:hover { border-color: #6ba17d; transform: translateY(-2px); }

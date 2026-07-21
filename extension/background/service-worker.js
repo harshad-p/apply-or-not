@@ -66,6 +66,7 @@ async function analyzeJob(payload) {
     const body = await readJsonResponse(response);
     const validation = globalThis.ApplyOrNotAnalysis.validateModelOutput(
       body.analysis,
+      payload,
     );
 
     if (!validation.valid) {

@@ -21,3 +21,14 @@ test("provides Manifest V3 background entry points across browsers", () => {
     "document",
   ]);
 });
+
+test("background validation keeps the extracted job context", () => {
+  const worker = fs.readFileSync(
+    path.join(__dirname, "../extension/background/service-worker.js"),
+    "utf8",
+  );
+  assert.match(
+    worker,
+    /validateModelOutput\(\s*body\.analysis,\s*payload,?\s*\)/u,
+  );
+});
