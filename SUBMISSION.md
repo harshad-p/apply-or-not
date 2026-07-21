@@ -17,32 +17,38 @@ consider, or skip decision.
 
 ## Devpost description
 
-Job seekers waste time translating postings, deciphering vague requirements,
-and deciding whether one missing skill should stop them from applying. Apply or
-Not is a local-first Safari and Chromium extension that reads the active job
-posting and evaluates it against the applicant's own free-form preferences.
+I built Apply or Not because I kept running into the same questions while
+looking at software jobs in Germany. A posting might be written in German even
+when German is not actually required. It might list one technology I do not
+know alongside several that I use every day. After reading the whole thing, I
+still have to decide whether that gap matters enough to skip the job.
 
-Users can describe their experience, languages, working-style preferences, and
-deal-breakers naturally. GPT-5.6 Sol classifies each stated criterion and returns
-confidence, concise reasoning, evidence, and explicit language requirements. The
-extension calculates a reproducible score from 0–100 and an Apply/Consider/Skip
-recommendation using fixed, documented weights.
-The posting can be German, Japanese, or another language; the extension does not
-mistake the language of the page for a mandatory applicant qualification.
+With the extension, I can describe what I want in my own words—even if I ramble.
+I can mention my skills, languages, preferred way of working, industries,
+companies, and real deal-breakers such as “Easy Apply only.” The extension reads
+the current job page, including available company and application information,
+and sends that evidence to GPT-5.6 Sol. It then shows an Apply, Consider, or Skip
+recommendation, a score, and short reasons tied to the posting.
 
-The extension combines generic visible-text extraction, Schema.org JobPosting
-data, and site-specific heuristics. It detects application controls such as Easy
-Apply, shows a score badge in the toolbar, caches exact matching results locally,
-and warns before a reanalysis creates another billable request. A localhost-only
-relay protects the OpenAI API key and sends strict, non-stored Responses API
-requests. A clearly labeled synthetic judge demo exercises the complete result
-UI without an API key or charge.
+The score is not meant to make the decision for me. It is a second opinion that
+helps me notice genuine blockers, transferable skills, and missing information.
+For example, it does not assume that a German or Japanese posting requires that
+language, and it does not treat SQL Server and PostgreSQL as completely
+unrelated skills. The original problem was personal, but the same idea can help
+someone applying in any country or language.
 
-Apply or Not was built incrementally with Codex using GPT-5.6 Sol. Codex helped
-implement extraction, prompt and schema design, the OpenAI relay, Safari UI,
-caching, tests, and submission packaging. Human decisions shaped the product's
-multilingual behavior, privacy boundaries, scoring principles, and user
-experience throughout development.
+Apply or Not runs as a local-first Safari and Chromium extension. Preferences
+and cached results stay in the browser. A localhost relay keeps the API key out
+of the extension and sends non-stored, structured requests to OpenAI. The
+toolbar shows the score, cached results can be reopened without another API
+call, and the extension warns before a billable reanalysis. There is also a
+clearly labeled synthetic demo that judges can run without an API key.
+
+I built the project step by step with Codex using GPT-5.6 Sol. Codex helped me
+turn the idea into the extension, relay, prompt contract, tests, and demo. I
+made the product decisions and tested it on real Safari and LinkedIn behavior;
+when something failed or felt misleading, I reported it and we fixed it with a
+regression test.
 
 ## Judge testing instructions
 
