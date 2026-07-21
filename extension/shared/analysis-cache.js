@@ -41,6 +41,8 @@
         pageUrl || "",
         job?.title || "",
         job?.company || "",
+        job?.companyContext || "",
+        job?.companyEvidenceSource || "none",
         job?.location || "",
         job?.description || "",
         job?.application?.method || "unknown",

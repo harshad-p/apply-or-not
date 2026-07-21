@@ -97,6 +97,12 @@ preferences the user actually stated. GPT-5.6 classifies fixed rubric dimensions
 while trusted application code calculates the final percentage, preventing the
 model from freely choosing a different number on reanalysis.
 
+Company evidence is collected conservatively from Schema.org organization and
+industry fields, known job-site company-name elements, and recognizable company
+panels on the current job page. The evidence source is sent with the extracted
+text. Apply or Not does not guess a company's industry from its name or silently
+visit external company profiles.
+
 Validated results are cached locally for up to 30 days and reused only when the
 job URL, extracted content, application method, preferences, explanation
 language, and prompt version still match. Reanalysis shows an explicit in-popup

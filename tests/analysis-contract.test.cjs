@@ -148,6 +148,8 @@ test("builds a private structured GPT-5.6 Responses request", () => {
   assert.equal(request.text.format.strict, true);
   assert.match(request.input, /Backend API development/);
   assert.match(request.input, /easy_apply/);
+  assert.match(request.input, /companyContext/);
+  assert.match(request.input, /companyEvidenceSource/);
   assert.equal(PROMPT_VERSION, "job-fit-v5");
   assert.match(request.instructions, /transferable skills/i);
   assert.match(request.instructions, /SQL Server experience is relevant evidence for PostgreSQL/i);

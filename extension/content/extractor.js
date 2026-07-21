@@ -3,6 +3,7 @@
 
   const MIN_DESCRIPTION_LENGTH = 200;
   const MAX_DESCRIPTION_LENGTH = 50000;
+  const MAX_COMPANY_CONTEXT_LENGTH = 8000;
 
   const candidateSelectors = [
     {
@@ -68,6 +69,15 @@
     "[data-testid*='company-name' i]",
     "[data-test*='company-name' i]",
     "[class*='company-name' i]",
+  ];
+
+  const companyContextSelectors = [
+    ".jobs-company__box",
+    ".jobs-company__content",
+    "[itemprop='hiringOrganization'] [itemprop='description']",
+    "[data-testid*='company-description' i]",
+    "[data-test*='company-description' i]",
+    "[class*='company-description' i]",
   ];
 
   const jobPagePattern =
@@ -147,6 +157,32 @@
     return normalizeText(organization?.name);
   }
 
+  function getStructuredCompanyContext(jobPosting) {
+    const organization = jobPosting?.hiringOrganization;
+    const organizationDescription =
+      organization && typeof organization === "object"
+        ? organization.description
+        : "";
+    const industries = [
+      jobPosting?.industry,
+      organization && typeof organization === "object"
+        ? organization.industry
+        : "",
+    ]
+      .flat()
+      .filter(Boolean)
+      .map(normalizeText);
+
+    return normalizeText(
+      [
+        industries.length ? `Industry: ${[...new Set(industries)].join(", ")}` : "",
+        organizationDescription,
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+    ).slice(0, MAX_COMPANY_CONTEXT_LENGTH);
+  }
+
   function getLocationText(location) {
     const locations = Array.isArray(location) ? location : [location];
     const labels = locations
@@ -187,6 +223,10 @@
           company: getOrganizationName(node.hiringOrganization),
           location: getLocationText(node.jobLocation),
           description: htmlToText(documentRef, node.description),
+          companyContext: htmlToText(
+            documentRef,
+            getStructuredCompanyContext(node),
+          ),
         };
       } catch {
         // Invalid JSON-LD from the page should not prevent visible-text extraction.
@@ -281,6 +321,27 @@
       }
     }
     return "";
+  }
+
+  function extractVisibleCompanyContext(documentRef) {
+    for (const selector of companyContextSelectors) {
+      try {
+        const element = documentRef.querySelector(selector);
+        if (!isElementVisible(element, documentRef)) continue;
+        const text = normalizeText(element.innerText || element.textContent);
+        if (text.length >= 40) {
+          return {
+            text: text.slice(0, MAX_COMPANY_CONTEXT_LENGTH),
+            source: selector.startsWith(".jobs-company")
+              ? "LinkedIn company panel"
+              : "company section on job page",
+          };
+        }
+      } catch {
+        // Continue to the next company-context selector.
+      }
+    }
+    return { text: "", source: "none" };
   }
 
   function extractApplicationMethod(documentRef) {
@@ -427,6 +488,12 @@
       structuredJob?.title || getFirstText(documentRef, titleSelectors) || pageTitle;
     const company =
       structuredJob?.company || getFirstText(documentRef, companySelectors);
+    const visibleCompanyContext = extractVisibleCompanyContext(documentRef);
+    const companyContext =
+      structuredJob?.companyContext || visibleCompanyContext.text;
+    const companyEvidenceSource = structuredJob?.companyContext
+      ? "JobPosting structured data"
+      : visibleCompanyContext.source;
 
     return {
       schemaVersion: 2,
@@ -435,6 +502,8 @@
       job: {
         title,
         company,
+        companyContext,
+        companyEvidenceSource,
         location: structuredJob?.location ?? "",
         description,
         application,
@@ -461,6 +530,7 @@
     extract,
     extractApplicationMethod,
     findJobPostingNode,
+    getStructuredCompanyContext,
     normalizeText,
     scoreDetection,
   });

@@ -158,6 +158,8 @@ Write the summary, titles, and explanations in the requested explanation languag
         jobPosting: {
           title: job?.title || "",
           company: job?.company || "",
+          companyContext: job?.companyContext || "",
+          companyEvidenceSource: job?.companyEvidenceSource || "none",
           location: job?.location || "",
           description: job?.description || "",
           applicationMethod: {

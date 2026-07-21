@@ -5,6 +5,7 @@ const {
   extract,
   extractApplicationMethod,
   findJobPostingNode,
+  getStructuredCompanyContext,
   normalizeText,
   scoreDetection,
 } = require("../extension/content/extractor.js");
@@ -42,6 +43,19 @@ test("finds a JobPosting nested inside an @graph", () => {
   };
 
   assert.deepEqual(findJobPostingNode(job), job["@graph"][1]);
+});
+
+test("extracts structured company industry and description evidence", () => {
+  const context = getStructuredCompanyContext({
+    industry: "Aviation analytics",
+    hiringOrganization: {
+      industry: "Software",
+      description: "Builds operational tools for airlines.",
+    },
+  });
+
+  assert.match(context, /Industry: Aviation analytics, Software/);
+  assert.match(context, /operational tools for airlines/);
 });
 
 test("strong structured evidence identifies a job posting", () => {
@@ -88,6 +102,9 @@ test("extracts LinkedIn-shaped job containers", () => {
   );
   const title = textElement("Platform Engineer");
   const company = textElement("Example Networks");
+  const companyContext = textElement(
+    "About the company. Example Networks builds analytics software for aviation operators.",
+  );
   const documentRef = {
     title: "Platform Engineer | Example Networks",
     location: { href: "https://www.linkedin.com/jobs/view/123" },
@@ -105,6 +122,7 @@ test("extracts LinkedIn-shaped job containers", () => {
       if (selector === ".job-details-jobs-unified-top-card__company-name") {
         return company;
       }
+      if (selector === ".jobs-company__box") return companyContext;
       return null;
     },
   };
@@ -114,6 +132,8 @@ test("extracts LinkedIn-shaped job containers", () => {
   assert.equal(result.isLikelyJobPosting, true);
   assert.equal(result.job.title, "Platform Engineer");
   assert.equal(result.job.company, "Example Networks");
+  assert.match(result.job.companyContext, /analytics software for aviation/);
+  assert.equal(result.job.companyEvidenceSource, "LinkedIn company panel");
   assert.equal(result.extraction.source, "LinkedIn job description");
 });
 
