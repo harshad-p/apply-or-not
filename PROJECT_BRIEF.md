@@ -146,15 +146,19 @@ inferences, and respect access controls and third-party terms.
 
 ## LLM providers
 
-Use a small provider interface so model backends remain swappable:
+The current live implementation uses OpenAI GPT-5.6 through the localhost
+relay. Keep the provider boundary small so future backends remain swappable:
 
 - OpenAI GPT-5.6 as the default and demonstrated hackathon provider
-- A configurable local LLM endpoint
-- Optional compatible cloud providers later
+- A configurable OpenAI-compatible local LLM endpoint, such as Ollama or LM
+  Studio, as the first post-submission provider
+- Optional compatible cloud providers later, only with explicit configuration
 
 Provider selection must not change the normalized analysis-result schema. Keep
 prompts versioned and testable. Validate model output before displaying it, and
 handle timeouts, malformed responses, rate limits, and unavailable providers.
+Local inference must be labeled clearly because model quality, structured-output
+support, speed, and hardware requirements vary by model and computer.
 
 The background worker owns each in-flight analysis, its persisted status, cache
 write, and toolbar update. The popup is only a view: closing it must not cancel

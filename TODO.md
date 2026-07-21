@@ -9,7 +9,7 @@
   complete, using only synthetic job and applicant data.
 - [x] Add a judge demo mode using synthetic applicant and job data so the full
   extension experience can be tested without an API key or billable request.
-- [x] Document the shortest judge test path for Chrome and Safari.
+- [x] Document the shortest judge test path for Safari, Chromium, and Firefox.
 - [x] Expand the README with the Codex collaboration story, including what
   Codex accelerated, the important human decisions, and how GPT-5.6 is used in
   the shipped product.
@@ -31,7 +31,9 @@
   prevent large score changes when the evidence is unchanged.
 - [ ] Add dedicated extraction adapters for Indeed, Glassdoor, and Xing as real
   pages expose gaps in the generic extractor.
-- [ ] Add a configurable local-model provider.
+- [ ] Add a configurable local-model provider. Start with a localhost-only,
+  OpenAI-compatible endpoint for Ollama or LM Studio; preserve the normalized
+  result schema, deterministic scoring, timeout handling, and provider label.
 - [ ] Add optional, user-triggered company enrichment from an employer website
   or public company profile. Keep company evidence separate from job evidence,
   show provenance and confidence, request only necessary host access, and avoid

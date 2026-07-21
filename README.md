@@ -45,7 +45,7 @@ mean that proficiency in that language is mandatory.
 - Separation of a posting's written language from explicit language requirements
 - Editable, free-form user criteria
 - OpenAI GPT-5.6 analysis with structured results
-- Swappable providers, including an optional local LLM endpoint
+- A provider boundary designed for future local and cloud model options
 - Toolbar score badge, detailed popup, and local-only settings storage
 - Plain HTML, CSS, and JavaScript with no framework or bundler
 
@@ -131,18 +131,40 @@ text. Apply or Not does not guess a company's industry from its name or silently
 visit external company profiles.
 
 Validated results are cached locally for up to 30 days and reused only when the
-job URL, extracted content, application method, preferences, explanation
+stable job identity, application availability, preferences, explanation
 language, and prompt version still match. Reanalysis shows an explicit in-popup
 confirmation because it creates another billable model request. The popup uses
 one dedicated results scroller so long explanations remain responsive in Safari.
 The Apply click identity is installed across the toolbar, popup, settings page,
 README, and submission artwork.
 
+## Next steps
+
+The submitted version deliberately keeps the live path focused on GPT-5.6. The
+next product steps are:
+
+- Add a configurable local-LLM provider, starting with OpenAI-compatible local
+  endpoints such as [Ollama](https://docs.ollama.com/api/openai-compatibility)
+  and [LM Studio](https://lmstudio.ai/docs/developer/openai-compat). The same
+  validated result contract and deterministic scoring rules must apply.
+- Add dedicated extraction adapters for Indeed, Glassdoor, and Xing as real
+  layouts expose gaps in the generic extractor.
+- Explain and translate visible labels in dynamically generated application
+  forms without filling or submitting them automatically.
+- Add optional, user-triggered company enrichment with visible source and
+  confidence information.
+- Explore an optional hosted relay with clear privacy terms, quotas, rate
+  limits, and cost controls, while retaining personal-key and local-model paths.
+- Make score thresholds and selected weighting preferences configurable without
+  weakening the evidence shown beside the score.
+
 The detailed product requirements and build context are maintained in
 [PROJECT_BRIEF.md](PROJECT_BRIEF.md).
 The remaining submission and product work is tracked in [TODO.md](TODO.md).
 Copy-ready submission text and the demo-video outline are in
 [SUBMISSION.md](SUBMISSION.md).
+The continuation voiceover and recording directions are in
+[VIDEO_SCRIPT.md](VIDEO_SCRIPT.md).
 
 ## Load the development extension
 

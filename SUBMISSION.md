@@ -51,6 +51,12 @@ made the product decisions and tested it on real Safari and LinkedIn behavior;
 when something failed or felt misleading, I reported it and we fixed it with a
 regression test.
 
+After the submission, I want to add local LLM support through configurable
+OpenAI-compatible endpoints such as Ollama or LM Studio. Other next steps include
+more job-site adapters, assistance with untranslated application-form labels,
+optional company enrichment with provenance, configurable scoring preferences,
+and a privacy-conscious hosted relay with quotas.
+
 ## Judge testing instructions
 
 1. Load the repository's `extension` directory as a temporary Safari or Firefox
@@ -65,41 +71,42 @@ regression test.
    open a job posting, and choose **Analyze this job**. This optional path is
    billable; the entered key is never saved by the extension.
 
-## Demo video outline — target 2:30
+## Demo video outline — target under 3:00
 
 - **0:00–0:20 — Problem:** Job seekers may encounter long postings written in a
   local language that is not necessarily a job requirement, while also trying
   to identify which listed requirements are genuine blockers.
-- **0:20–0:45 — Preferences and company switch:** Enter matching skills plus
-  “I only want to apply to OpenAI.” Analyze the synthetic Northstar role, then
-  the clearly labeled synthetic OpenAI variant. Explain that the dramatic score
-  change comes from the user's explicit deal-breaker—not an AI judgment that one
-  company is better.
-- **0:45–1:05 — Extraction:** Open the bundled synthetic job page. Show job
-  detection, Schema.org/visible-text extraction, and Easy Apply recognition.
-  Use the bundled scenario launcher to switch pages without showing a real job
-  listing or personal data.
-- **1:05–1:40 — GPT-5.6 result:** Start live analysis, close the popup, and
-  continue scrolling the job. Reopen it to show the in-progress or saved result,
-  then show the score, evidence, and language assessment.
-- **1:40–1:55 — Cost and privacy:** Reopen the cached result, show the billable
-  reanalysis warning, and briefly show the localhost relay with no key visible.
-- **1:55–2:10 — Judge demo:** Run the no-cost synthetic demo and point out its
-  explicit labeling.
-- **2:10–2:25 — Codex:** Show the commit history/tests and explain that Codex
-  helped build and debug the extension iteratively with GPT-5.6 Sol.
-- **2:25–2:30 — Close:** “Apply or Not helps you spend application time where
-  the evidence says it matters.”
+- **0:20–0:35 — Birth and setup:** Reveal the logo and say the extension was
+  built with help from Codex. Show loading it and starting the Node relay.
+- **0:35–0:50 — Safe key demonstration:** Show only a prominently labeled fake
+  key. Configure the real key off-camera, then show the connected state and
+  explain that the relay keeps it only in memory—not browser storage.
+- **0:50–1:10 — Preferences and fixtures:** Enter the synthetic applicant
+  preferences. Start the Python fixture server and clarify that it is only for
+  safe demo pages; real job sites do not require it.
+- **1:10–1:55 — Four scenarios:** Analyze the English strong match, German
+  strong match, English mismatch, and closed strong match. Emphasize that a
+  German posting does not prove German is required, while closed applications
+  deterministically score zero.
+- **1:55–2:20 — Popup behavior:** Scroll through positive matches, concerns,
+  evidence, and language requirements. Close and reopen the popup to show saved
+  state, then show the billable reanalysis warning.
+- **2:20–2:35 — Judge demo:** Run the no-cost synthetic demo and state that it
+  never calls an API.
+- **2:35–2:50 — Next steps:** Mention local LLMs, more site adapters, application
+  form translation, and optional company enrichment.
+- **2:50–3:00 — Close:** Reinforce that this is evidence-based decision support;
+  the applicant still makes the final decision.
 
 ## Recording checklist
 
 - Keep the video under three minutes and include clear audio.
 - Use only bundled synthetic applicant and job data.
-- Do not show API keys, personal information, real job pages, copyrighted music,
-  or third-party trademarks.
+- Do not show a real API key. If demonstrating the field, use a visibly labeled
+  fake placeholder and configure the real key off-camera.
 - Show both the working product and how Codex and GPT-5.6 were used.
-- Keep the company-switch moment brief; use it as a playful demonstration of
-  user control, then emphasize evidence, uncertainty, and human judgment.
+- End by emphasizing evidence, uncertainty, and human judgment rather than
+  presenting the score as an automatic application decision.
 - Upload publicly to YouTube and paste the URL into Devpost.
 
 ## Still required from the entrant
