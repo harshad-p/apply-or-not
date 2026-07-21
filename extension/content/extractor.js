@@ -163,15 +163,18 @@
       organization && typeof organization === "object"
         ? organization.description
         : "";
-    const industries = [
+    const industries = [];
+    for (const value of [
       jobPosting?.industry,
       organization && typeof organization === "object"
         ? organization.industry
         : "",
-    ]
-      .flat()
-      .filter(Boolean)
-      .map(normalizeText);
+    ]) {
+      const values = Array.isArray(value) ? value : [value];
+      for (const entry of values) {
+        if (entry) industries.push(normalizeText(entry));
+      }
+    }
 
     return normalizeText(
       [
@@ -217,16 +220,23 @@
         const node = findJobPostingNode(parsed);
         if (!node) continue;
 
+        let companyContext = "";
+        try {
+          companyContext = htmlToText(
+            documentRef,
+            getStructuredCompanyContext(node),
+          );
+        } catch {
+          // Optional company enrichment must never prevent core job extraction.
+        }
+
         return {
           node,
           title: normalizeText(node.title),
           company: getOrganizationName(node.hiringOrganization),
           location: getLocationText(node.jobLocation),
           description: htmlToText(documentRef, node.description),
-          companyContext: htmlToText(
-            documentRef,
-            getStructuredCompanyContext(node),
-          ),
+          companyContext,
         };
       } catch {
         // Invalid JSON-LD from the page should not prevent visible-text extraction.

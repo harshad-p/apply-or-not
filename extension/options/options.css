@@ -155,6 +155,10 @@ input {
   font-size: 14px;
 }
 
+.secret-text-input {
+  -webkit-text-security: disc;
+}
+
 textarea:focus,
 input:focus {
   border-color: #4a8b60;

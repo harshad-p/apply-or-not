@@ -5,6 +5,9 @@ const analysisContract = globalThis.ApplyOrNotAnalysis;
 const cacheApi = globalThis.ApplyOrNotCache;
 const demoApi = globalThis.ApplyOrNotDemo;
 const presentation = globalThis.ApplyOrNotPresentation;
+const updateActionBadge = globalThis.ApplyOrNotBadge.createBadgeUpdater(
+  extensionApi.action,
+);
 const analysisDetails = document.querySelector("[data-analysis-details]");
 const applicationMethodLabel = document.querySelector(
   "[data-application-method]",
@@ -137,12 +140,8 @@ function formatLanguageSummary(analysis) {
 }
 
 async function setToolbarBadge(tabId, text = "", color = "#526158") {
-  if (!extensionApi.action || !tabId) return;
   try {
-    await Promise.all([
-      extensionApi.action.setBadgeText({ tabId, text }),
-      extensionApi.action.setBadgeBackgroundColor({ tabId, color }),
-    ]);
+    await updateActionBadge(tabId, text, color);
   } catch (error) {
     console.warn("Unable to update the toolbar badge.", error);
   }
@@ -251,8 +250,9 @@ function renderExtractionError(error, tabId) {
   resultMark.dataset.state = "error";
   resultEyebrow.textContent = "Page unavailable";
   resultTitle.textContent = "This page could not be read";
-  resultDescription.textContent =
-    "Open a normal web page and allow temporary access if Safari asks, then try again.";
+  resultDescription.textContent = error?.message
+    ? `Safari reported: ${error.message}`
+    : "Open a normal web page and allow temporary access if Safari asks, then try again.";
   settingsNote.textContent =
     "Browser settings pages and other protected pages cannot be analyzed.";
   extractButton.textContent = "Try reading this page again";
@@ -289,8 +289,20 @@ async function readCurrentPage() {
   });
   const [injectionResult] = await extensionApi.scripting.executeScript({
     target: { tabId: activeTab.id },
-    func: () => globalThis.ApplyOrNotExtractor?.extract(document),
+    func: () => {
+      try {
+        return globalThis.ApplyOrNotExtractor?.extract(document);
+      } catch (error) {
+        return {
+          extractorError:
+            error instanceof Error ? error.message : "Unknown extraction error",
+        };
+      }
+    },
   });
+  if (injectionResult?.result?.extractorError) {
+    throw new Error(injectionResult.result.extractorError);
+  }
   if (!injectionResult?.result) {
     throw new Error("The page extractor returned no result.");
   }
