@@ -156,6 +156,12 @@ input {
 }
 
 .secret-text-input {
+  min-height: 44px;
+  height: 44px;
+  padding: 12px 13px;
+  resize: none;
+  overflow: hidden;
+  white-space: nowrap;
   -webkit-text-security: disc;
 }
 

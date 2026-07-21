@@ -6,6 +6,7 @@ const {
   extractApplicationMethod,
   findJobPostingNode,
   getStructuredCompanyContext,
+  isKnownJobPageUrl,
   normalizeText,
   scoreDetection,
 } = require("../extension/content/extractor.js");
@@ -92,6 +93,35 @@ test("German job signals work without structured data", () => {
   });
 
   assert.ok(result.score >= 50);
+});
+
+test("recognizes direct and selected LinkedIn job URLs", () => {
+  assert.equal(
+    isKnownJobPageUrl("https://www.linkedin.com/jobs/view/123456"),
+    true,
+  );
+  assert.equal(
+    isKnownJobPageUrl(
+      "https://www.linkedin.com/jobs/search/?keywords=backend&currentJobId=123456",
+    ),
+    true,
+  );
+  assert.equal(
+    isKnownJobPageUrl("https://www.linkedin.com/jobs/search/?keywords=backend"),
+    false,
+  );
+});
+
+test("recognizes a LinkedIn job when its current layout exposes only main text", () => {
+  const result = scoreDetection({
+    pageTitle: "Backend Engineer | Example GmbH | LinkedIn",
+    pageUrl:
+      "https://www.linkedin.com/jobs/search/?keywords=backend&currentJobId=123456",
+    description: "Backend engineering position with production systems experience. ".repeat(12),
+  });
+
+  assert.ok(result.score >= 50);
+  assert.ok(result.signals.includes("recognized job-site posting URL"));
 });
 
 test("extracts LinkedIn-shaped job containers", () => {

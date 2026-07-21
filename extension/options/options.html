@@ -26,7 +26,7 @@
         </p>
       </header>
 
-      <form data-settings-form>
+      <form id="preferences-form" data-settings-form>
         <section class="settings-card" aria-labelledby="criteria-label">
           <div class="field-heading">
             <div>
@@ -76,35 +76,36 @@
           </datalist>
           <p class="field-help">You can enter any language.</p>
         </section>
+      </form>
 
-        <section class="settings-card" aria-labelledby="api-key-label">
+      <section class="settings-card" aria-labelledby="api-key-label">
           <label id="api-key-label" for="api-key">OpenAI API key</label>
           <p class="field-description">
             Optional shortcut for the local demo. Start the relay, then send a
             key to its memory for this session only.
           </p>
           <div class="inline-field-action">
-            <input
+            <textarea
               id="api-key"
-              type="text"
               class="secret-text-input"
               minlength="20"
               maxlength="500"
+              rows="1"
               autocomplete="off"
               autocapitalize="none"
               spellcheck="false"
               placeholder="Paste an API key"
               data-api-key
-            >
+            ></textarea>
             <button type="button" data-connect-key-button>Connect key</button>
           </div>
           <p class="field-help">
             Never saved in browser storage. The relay forgets it when Node stops.
           </p>
           <p class="connection-status" role="status" aria-live="polite" data-connection-status></p>
-        </section>
+      </section>
 
-        <aside class="privacy-note">
+      <aside class="privacy-note">
           <span class="privacy-icon" aria-hidden="true">✓</span>
           <div>
             <strong>Local storage, explicit cloud analysis</strong>
@@ -114,18 +115,17 @@
               through that relay to OpenAI.
             </p>
           </div>
-        </aside>
+      </aside>
 
-        <div class="form-actions">
+      <div class="form-actions">
           <p class="save-status" role="status" aria-live="polite" data-save-status></p>
           <div class="action-buttons">
             <button class="secondary-button" type="button" data-clear-button>
               Clear preferences
             </button>
-            <button type="submit" data-save-button>Save preferences</button>
+            <button type="submit" form="preferences-form" data-save-button>Save preferences</button>
           </div>
-        </div>
-      </form>
+      </div>
     </main>
   </body>
 </html>

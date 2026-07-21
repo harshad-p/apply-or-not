@@ -83,6 +83,30 @@
   const jobPagePattern =
     /\b(job|jobs|career|careers|position|positions|vacancy|vacancies|role|roles|stelle|stellen|stellenangebot|stellenanzeige)\b|求人|採用|募集/iu;
 
+  function isKnownJobPageUrl(value) {
+    try {
+      const url = new URL(value);
+      const host = url.hostname.toLowerCase();
+      const path = url.pathname.toLowerCase();
+
+      if (host.endsWith("linkedin.com")) {
+        return path.includes("/jobs/view/") || url.searchParams.has("currentJobId");
+      }
+      if (host.endsWith("indeed.com") || host.includes(".indeed.")) {
+        return path.includes("/viewjob") || url.searchParams.has("jk");
+      }
+      if (host.endsWith("glassdoor.com") || host.includes(".glassdoor.")) {
+        return path.includes("/job-listing/");
+      }
+      if (host.endsWith("xing.com")) {
+        return path.includes("/jobs/");
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
   const descriptionSignalPatterns = [
     /\bresponsibilit(?:y|ies)\b/iu,
     /\bqualifications?\b/iu,
@@ -92,6 +116,9 @@
     /\bwhat we offer\b/iu,
     /\baufgaben\b/iu,
     /\banforderungen\b/iu,
+    /\bqualifikationen\b/iu,
+    /\büber den job\b/iu,
+    /\bwas (?:du|sie) (?:tun|machen|mitbringen)\b/iu,
     /\b(?:dein|ihr) profil\b/iu,
     /仕事内容/u,
     /応募資格/u,
@@ -99,7 +126,7 @@
   ];
 
   const jobSectionHeadingPattern =
-    /^(about the (?:job|role|position)|job description|the role|stellenbeschreibung|über (?:die|diese) stelle|description du poste|descripción del puesto|descrição da vaga|仕事内容|職務内容)$/iu;
+    /^(about the (?:job|role|position)|job description|the role|stellenbeschreibung|über (?:den job|die stelle|diese stelle)|description du poste|descripción del puesto|descrição da vaga|仕事内容|職務内容)$/iu;
 
   const easyApplyPattern =
     /\b(easy apply|easily apply|quick apply|einfach bewerben|schnell bewerben|candidature simplifiée|postulación sencilla|candidatura semplificata)\b|簡単応募/iu;
@@ -438,6 +465,11 @@
       signals.push("job-related page URL");
     }
 
+    if (isKnownJobPageUrl(pageUrl)) {
+      score += 25;
+      signals.push("recognized job-site posting URL");
+    }
+
     if (description.length >= 500) {
       score += 10;
       signals.push("substantial description text");
@@ -541,6 +573,7 @@
     extractApplicationMethod,
     findJobPostingNode,
     getStructuredCompanyContext,
+    isKnownJobPageUrl,
     normalizeText,
     scoreDetection,
   });
