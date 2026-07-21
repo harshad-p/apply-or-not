@@ -59,6 +59,15 @@ and a privacy-conscious hosted relay with quotas.
 
 ## Judge testing instructions
 
+### Requirements
+
+- The no-cost judge demo needs only a supported browser and a local repository
+  copy—no Node.js, Python, API key, relay, or network request.
+- Live GPT-5.6 analysis additionally needs Node.js 18+, an OpenAI Platform API
+  key with available credit, internet access, and local port `8787`.
+- The four fictional browser pages use Python 3 as a static server on local port
+  `4173`. Python is only for these fixtures, not for real job pages.
+
 1. Load the repository's `extension` directory as a temporary Safari or Firefox
    extension, or as an unpacked Chromium extension.
 2. Open the toolbar popup and choose **Run no-cost demo**.

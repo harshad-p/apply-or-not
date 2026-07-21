@@ -170,6 +170,16 @@ The continuation voiceover and recording directions are in
 
 The extension source is in [`extension`](extension).
 
+### Requirements by test path
+
+- **No-cost judge demo:** a supported browser and a local copy of this
+  repository. It needs no API key, Node.js, Python, relay, or internet request.
+- **Live GPT-5.6 analysis:** Node.js 18 or newer, an OpenAI Platform API key with
+  available API credit, an internet connection, and local port `8787` available.
+- **Four fictional video scenarios:** Python 3 only to serve the static pages,
+  with local port `4173` available. Python is not needed on real job sites.
+- **Offline automated tests:** Node.js 18 or newer; no API key or network call.
+
 ### Safari 27 on macOS
 
 1. Open Safari Settings, select Advanced, and enable **Show features for web
