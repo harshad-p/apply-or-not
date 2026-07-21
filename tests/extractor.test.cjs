@@ -212,6 +212,63 @@ test("detects Easy Apply from a visible application control", () => {
   });
 });
 
+test("ignores Easy Apply controls from unrelated LinkedIn job cards", () => {
+  const unrelatedEasyApply = controlElement("Easy Apply", {
+    "aria-label": "Easy Apply to a different job",
+  });
+  const documentRef = {
+    location: { href: "https://www.linkedin.com/jobs/view/123" },
+    defaultView: {
+      getComputedStyle: () => ({ display: "block", visibility: "visible" }),
+    },
+    querySelectorAll: (selector) =>
+      selector === "button, a[role='button'], a[href]"
+        ? [unrelatedEasyApply]
+        : [],
+  };
+
+  assert.deepEqual(extractApplicationMethod(documentRef, "Backend Engineer"), {
+    method: "unknown",
+    label: "Application method not detected",
+    confidence: "low",
+  });
+});
+
+test("prefers the selected LinkedIn job apply control over other buttons", () => {
+  const selectedApply = controlElement("Apply", {
+    "aria-label": "Apply to Backend Engineer",
+  });
+  const unrelatedEasyApply = controlElement("Easy Apply");
+  const selectedSelector = [
+    ".jobs-apply-button",
+    ".jobs-s-apply button",
+    "[data-live-test-job-apply-button]",
+    "#indeedApplyButton",
+    "[data-testid='indeedApplyButton']",
+    "[data-test='applyButton']",
+    "[data-testid='apply-button']",
+  ].join(", ");
+  const documentRef = {
+    location: { href: "https://www.linkedin.com/jobs/view/123" },
+    defaultView: {
+      getComputedStyle: () => ({ display: "block", visibility: "visible" }),
+    },
+    querySelectorAll: (selector) => {
+      if (selector === selectedSelector) return [selectedApply];
+      if (selector === "button, a[role='button'], a[href]") {
+        return [unrelatedEasyApply, selectedApply];
+      }
+      return [];
+    },
+  };
+
+  assert.deepEqual(extractApplicationMethod(documentRef, "Backend Engineer"), {
+    method: "external_apply",
+    label: "Apply",
+    confidence: "medium",
+  });
+});
+
 test("distinguishes an external Apply control from Easy Apply", () => {
   const applyLink = controlElement("Apply now");
   const documentRef = {

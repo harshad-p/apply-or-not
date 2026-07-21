@@ -90,7 +90,7 @@ recommendation, confidence, evidence, language assessment, and returned model.
 The toolbar badge shows the score with a recommendation color.
 
 The extractor also detects visible Easy Apply and external-application controls.
-Prompt v5 treats application method as structured evidence, recognizes
+Prompt v6 treats application method as selected-job page-control evidence, recognizes
 transferable skills across related technologies, evaluates explicit employer
 and industry preferences from posting evidence, and scores only the
 preferences the user actually stated. GPT-5.6 classifies fixed rubric dimensions

@@ -1,5 +1,9 @@
 # Job-fit analysis prompt — v5
 
+This historical prompt has been superseded by `job-fit-v6.md`, which clarifies
+that application method comes from selected-job page controls rather than
+structured employer information.
+
 The executable prompt and strict JSON Schema live in
 `extension/shared/analysis-contract.js`. Keep both versions synchronized.
 

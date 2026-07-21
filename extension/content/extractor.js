@@ -132,6 +132,15 @@
     /\b(easy apply|easily apply|quick apply|einfach bewerben|schnell bewerben|candidature simplifiée|postulación sencilla|candidatura semplificata)\b|簡単応募/iu;
   const externalApplyPattern =
     /^(apply|apply now|bewerben|jetzt bewerben|postuler|candidater|solicitar|candidatar-se|応募|今すぐ応募)(?:\b|$)/iu;
+  const selectedJobApplySelector = [
+    ".jobs-apply-button",
+    ".jobs-s-apply button",
+    "[data-live-test-job-apply-button]",
+    "#indeedApplyButton",
+    "[data-testid='indeedApplyButton']",
+    "[data-test='applyButton']",
+    "[data-testid='apply-button']",
+  ].join(", ");
 
   function normalizeText(value) {
     return String(value ?? "")
@@ -381,14 +390,57 @@
     return { text: "", source: "none" };
   }
 
-  function extractApplicationMethod(documentRef) {
+  function isAggregatorJobPage(documentRef) {
+    try {
+      const host = new URL(documentRef.location?.href ?? "").hostname.toLowerCase();
+      return (
+        host.endsWith("linkedin.com") ||
+        host.endsWith("indeed.com") ||
+        host.includes(".indeed.") ||
+        host.endsWith("glassdoor.com") ||
+        host.includes(".glassdoor.") ||
+        host.endsWith("xing.com")
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  function extractApplicationMethod(documentRef, jobTitle = "") {
     let controls = [];
     try {
-      controls = documentRef.querySelectorAll(
-        "button, a[role='button'], a[href]",
+      controls = Array.from(
+        documentRef.querySelectorAll(selectedJobApplySelector),
       );
     } catch {
       controls = [];
+    }
+
+    if (!controls.length && !isAggregatorJobPage(documentRef)) {
+      try {
+        controls = Array.from(
+          documentRef.querySelectorAll("button, a[role='button'], a[href]"),
+        );
+      } catch {
+        controls = [];
+      }
+    }
+
+    const normalizedTitle = normalizeText(jobTitle).toLocaleLowerCase();
+    if (controls.length > 1 && normalizedTitle) {
+      const matchingControls = controls.filter((control) => {
+        const label = normalizeText(
+          [
+            control.innerText || control.textContent,
+            control.getAttribute?.("aria-label"),
+            control.getAttribute?.("title"),
+          ]
+            .filter(Boolean)
+            .join(" "),
+        ).toLocaleLowerCase();
+        return label.includes(normalizedTitle);
+      });
+      if (matchingControls.length) controls = matchingControls;
     }
 
     let externalCandidate = null;
@@ -517,7 +569,6 @@
     const description = selected.text.slice(0, MAX_DESCRIPTION_LENGTH);
     const pageTitle = normalizeText(documentRef.title);
     const pageUrl = String(documentRef.location?.href ?? "");
-    const application = extractApplicationMethod(documentRef);
     const detection = scoreDetection({
       hasStructuredJob: Boolean(structuredJob),
       hasSpecificContainer: selected.isSpecific,
@@ -528,6 +579,7 @@
 
     const title =
       structuredJob?.title || getFirstText(documentRef, titleSelectors) || pageTitle;
+    const application = extractApplicationMethod(documentRef, title);
     const company =
       structuredJob?.company || getFirstText(documentRef, companySelectors);
     const visibleCompanyContext = extractVisibleCompanyContext(documentRef);

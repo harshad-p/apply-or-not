@@ -58,7 +58,7 @@
       },
       {
         title: "Easy Apply available",
-        explanation: "The structured application method satisfies the sample requirement.",
+        explanation: "The selected job's application control satisfies the sample requirement.",
         evidence: "Easy Apply",
       },
       {

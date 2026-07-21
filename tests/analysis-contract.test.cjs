@@ -150,10 +150,11 @@ test("builds a private structured GPT-5.6 Responses request", () => {
   assert.match(request.input, /easy_apply/);
   assert.match(request.input, /companyContext/);
   assert.match(request.input, /companyEvidenceSource/);
-  assert.equal(PROMPT_VERSION, "job-fit-v5");
+  assert.equal(PROMPT_VERSION, "job-fit-v6");
   assert.match(request.instructions, /transferable skills/i);
   assert.match(request.instructions, /SQL Server experience is relevant evidence for PostgreSQL/i);
   assert.match(request.instructions, /only OpenAI/i);
+  assert.match(request.instructions, /extracted page-control evidence/i);
 });
 
 test("attaches trusted provider metadata outside the model output", () => {

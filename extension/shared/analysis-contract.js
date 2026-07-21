@@ -2,7 +2,7 @@
   "use strict";
 
   const SCHEMA_VERSION = 2;
-  const PROMPT_VERSION = "job-fit-v5";
+  const PROMPT_VERSION = "job-fit-v6";
   const DEFAULT_MODEL = "gpt-5.6-sol";
   const RUBRIC_WEIGHTS = Object.freeze({
     skills: 40,
@@ -142,7 +142,7 @@ Treat related technologies as transferable skills, not binary keyword mismatches
 
 Evaluate explicitly stated employer, industry, and business-domain preferences under otherPreferences using the extracted company name and evidence actually present in the posting. Wording such as "only OpenAI" or "aviation companies only" is an explicit user deal-breaker: a confirmed mismatch is a hard blocker, a confirmed match satisfies the criterion, and missing company or industry evidence is unknown. Do not infer a company's industry, culture, quality, or identity from its name alone, and do not invent external company facts.
 
-Treat the structured application method as page evidence. If the user requires Easy Apply: easy_apply satisfies the criterion; external_apply is an explicit conflict and therefore a hard blocker; unknown is uncertainty rather than a blocker, must not receive high confidence, and should remain in the consider band unless another blocker requires skip.
+Treat the application method as extracted page-control evidence, not structured employer data. Never claim Easy Apply unless applicationMethod.method is easy_apply. If the user requires Easy Apply: easy_apply satisfies the criterion; external_apply is an explicit conflict and therefore a hard blocker; unknown is uncertainty rather than a blocker, must not receive high confidence, and should remain in the consider band unless another blocker requires skip.
 
 Keep these language facts separate: the posting's language, the user's proficiency, the requested explanation language, and explicit employer language requirements. Never infer that a language is required merely because the posting is written in it.
 

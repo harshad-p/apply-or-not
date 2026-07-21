@@ -19,7 +19,7 @@ function signatureInput(overrides = {}) {
     },
     userCriteria: "Easy Apply only.",
     preferredLanguage: "English",
-    promptVersion: "job-fit-v5",
+    promptVersion: "job-fit-v6",
     ...overrides,
   };
 }
@@ -44,7 +44,7 @@ test("creates stable cache signatures from every analysis input", () => {
   );
   assert.notEqual(
     original,
-    createSignature(signatureInput({ promptVersion: "job-fit-v6" })),
+    createSignature(signatureInput({ promptVersion: "job-fit-v7" })),
   );
 });
 
