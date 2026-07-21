@@ -1,9 +1,25 @@
 "use strict";
 
-importScripts("../shared/analysis-contract.js");
+importScripts(
+  "../shared/analysis-contract.js",
+  "../shared/analysis-cache.js",
+  "../shared/action-badge.js",
+  "../shared/analysis-runner.js",
+);
 
 const extensionApi = globalThis.browser ?? globalThis.chrome;
 const relayUrl = "http://127.0.0.1:8787";
+const updateActionBadge = globalThis.ApplyOrNotBadge.createBadgeUpdater(
+  extensionApi.action,
+);
+
+async function safelyUpdateBadge(tabId, text, color) {
+  try {
+    await updateActionBadge(tabId, text, color);
+  } catch (error) {
+    console.warn("Unable to update the toolbar badge.", error);
+  }
+}
 
 async function readJsonResponse(response) {
   let body = null;
@@ -65,6 +81,13 @@ async function analyzeJob(payload) {
   }
 }
 
+const analysisRunner = globalThis.ApplyOrNotAnalysisRunner.createAnalysisRunner({
+  analyze: analyzeJob,
+  storage: extensionApi.storage.local,
+  cacheApi: globalThis.ApplyOrNotCache,
+  updateBadge: safelyUpdateBadge,
+});
+
 extensionApi.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   let operation;
 
@@ -73,7 +96,9 @@ extensionApi.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   } else if (message?.type === "analysis:key:set") {
     operation = configureRelay(message.apiKey);
   } else if (message?.type === "analysis:run") {
-    operation = analyzeJob(message.payload);
+    operation = analysisRunner.start(message.payload, message.context);
+  } else if (message?.type === "analysis:status") {
+    operation = analysisRunner.getStatus(message.signature);
   } else {
     return false;
   }

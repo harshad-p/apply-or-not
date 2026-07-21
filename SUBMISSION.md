@@ -41,7 +41,8 @@ Apply or Not runs as a local-first Safari and Chromium extension. Preferences
 and cached results stay in the browser. A localhost relay keeps the API key out
 of the extension and sends non-stored, structured requests to OpenAI. The
 toolbar shows the score, cached results can be reopened without another API
-call, and the extension warns before a billable reanalysis. There is also a
+call, and analysis continues if I close the popup to keep reading. The extension
+also warns before a billable reanalysis. There is a
 clearly labeled synthetic demo that judges can run without an API key.
 
 I built the project step by step with Codex using GPT-5.6 Sol. Codex helped me
@@ -76,12 +77,12 @@ regression test.
   company is better.
 - **0:45–1:05 — Extraction:** Open the bundled synthetic job page. Show job
   detection, Schema.org/visible-text extraction, and Easy Apply recognition.
-- **1:05–1:35 — GPT-5.6 result:** Run live analysis. Show the score badge,
-  recommendation, evidence, and how German being optional is separated from the
-  English working-language requirement.
-- **1:35–1:50 — Cost and privacy:** Reopen the cached result, show the billable
+- **1:05–1:40 — GPT-5.6 result:** Start live analysis, close the popup, and
+  continue scrolling the job. Reopen it to show the in-progress or saved result,
+  then show the score, evidence, and language assessment.
+- **1:40–1:55 — Cost and privacy:** Reopen the cached result, show the billable
   reanalysis warning, and briefly show the localhost relay with no key visible.
-- **1:50–2:10 — Judge demo:** Run the no-cost synthetic demo and point out its
+- **1:55–2:10 — Judge demo:** Run the no-cost synthetic demo and point out its
   explicit labeling.
 - **2:10–2:25 — Codex:** Show the commit history/tests and explain that Codex
   helped build and debug the extension iteratively with GPT-5.6 Sol.

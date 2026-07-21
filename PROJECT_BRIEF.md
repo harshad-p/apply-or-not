@@ -96,12 +96,12 @@ contain at least:
 - Explicitly stated language requirements
 
 The score must follow an explainable rubric rather than arbitrary sentiment.
-The implemented v3 rubric uses fixed application-side weights and discrete model
+The implemented rubric uses fixed application-side weights and discrete model
 classifications so GPT-5.6 interprets evidence but cannot freely choose the final
 percentage.
-Prompt v4 also treats adjacent technologies as transferable evidence rather than
-binary keyword mismatches, while preserving gaps for genuinely product-specific
-requirements.
+Prompt v6 also treats adjacent technologies as transferable evidence, evaluates
+employer/domain preferences from available company evidence, and accepts Easy
+Apply only from the selected job's application control.
 Do not invent facts that are absent from the posting or the user's profile.
 Treat low extraction quality or ambiguous wording as uncertainty, not as a
 negative signal.
@@ -153,6 +153,11 @@ Use a small provider interface so model backends remain swappable:
 Provider selection must not change the normalized analysis-result schema. Keep
 prompts versioned and testable. Validate model output before displaying it, and
 handle timeouts, malformed responses, rate limits, and unavailable providers.
+
+The background worker owns each in-flight analysis, its persisted status, cache
+write, and toolbar update. The popup is only a view: closing it must not cancel
+or discard an analysis, and reopening it should show the running state or saved
+result.
 
 ### Possible hosted service after the first release
 

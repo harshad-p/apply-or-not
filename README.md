@@ -100,7 +100,7 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.13.5 is a submission candidate: the popup extracts the active job, sends it through the
+Version 0.14.0 is a submission candidate: the popup extracts the active job, sends it through the
 localhost relay to GPT-5.6, validates the response, and displays the score,
 recommendation, confidence, evidence, language assessment, and returned model.
 The toolbar badge shows the score with a recommendation color.
@@ -109,6 +109,10 @@ Successful analyses are cached locally by stable job identity, saved criteria,
 explanation language, and prompt version. Dynamic page fragments do not make the
 same job look new, so reopening the popup restores the result and keeps the
 billable action labeled **Reanalyze this job**.
+
+Analysis runs in the extension's background worker rather than the temporary
+popup. The user can close the popup, continue reading the job description, and
+reopen it to see the in-progress state or the saved result.
 
 The extractor also detects visible Easy Apply and external-application controls.
 Prompt v6 treats application method as selected-job page-control evidence, recognizes

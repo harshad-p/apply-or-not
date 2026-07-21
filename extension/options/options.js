@@ -134,6 +134,7 @@ clearButton.addEventListener("click", async () => {
       "preferredLanguage",
       "settingsVersion",
       "analysisCacheV1",
+      "analysisRunsV1",
     ]);
     criteriaInput.value = "";
     languageInput.value = "English";

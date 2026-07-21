@@ -342,24 +342,11 @@ async function findCachedAnalysis(extraction) {
   return entry;
 }
 
-async function saveCachedAnalysis(extraction, analysis, createdAt) {
+async function requestAnalysis(extraction, tabId) {
   const context = createCacheContext(extraction);
-  const stored = await extensionApi.storage.local.get([
-    cacheApi.CACHE_STORAGE_KEY,
-  ]);
-  const cache = cacheApi.upsertEntry(stored[cacheApi.CACHE_STORAGE_KEY], {
-    ...context,
-    createdAt,
-    analysis,
-  });
-  await extensionApi.storage.local.set({
-    [cacheApi.CACHE_STORAGE_KEY]: cache,
-  });
-}
-
-async function requestAnalysis(extraction) {
   const response = await extensionApi.runtime.sendMessage({
     type: "analysis:run",
+    context: { ...context, tabId },
     payload: {
       userCriteria: currentSettings.userCriteria,
       preferredLanguage: currentSettings.preferredLanguage,
@@ -371,6 +358,59 @@ async function requestAnalysis(extraction) {
     throw new Error(response?.error || "The local AI helper did not respond.");
   }
   return response.result;
+}
+
+async function getAnalysisStatus(extraction) {
+  const { signature } = createCacheContext(extraction);
+  const response = await extensionApi.runtime.sendMessage({
+    type: "analysis:status",
+    signature,
+  });
+  if (!response?.ok) return { state: "idle" };
+  return response.result;
+}
+
+function renderAnalysisPending(extraction) {
+  hideAnalysisDetails();
+  resultMark.textContent = "…";
+  resultMark.dataset.state = "";
+  resultEyebrow.textContent = "GPT-5.6 analysis";
+  resultTitle.textContent = "Analysis is still running";
+  resultDescription.textContent =
+    "You can close this popup and continue reading. The background worker will save the result.";
+  settingsStatus.textContent = "Analyzing";
+  settingsStatus.dataset.state = "pending";
+  settingsNote.textContent = `${extraction.extraction.characterCount.toLocaleString()} characters were extracted. Reopen the popup in a few seconds to see the result.`;
+  extractButton.textContent = "Analysis in progress…";
+  extractButton.dataset.action = "pending";
+  extractButton.disabled = true;
+}
+
+function wait(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+async function monitorBackgroundAnalysis(extraction, tabId) {
+  for (let attempt = 0; attempt < 90; attempt += 1) {
+    await wait(1000);
+    const status = await getAnalysisStatus(extraction);
+    if (status.state === "running") continue;
+
+    const cached = await findCachedAnalysis(extraction);
+    if (cached) {
+      renderAnalysis(cached.analysis, extraction, tabId, {
+        createdAt: cached.createdAt,
+        fromCache: true,
+      });
+      return;
+    }
+
+    if (status.state === "error") {
+      renderAnalysisError(new Error(status.error), extraction, tabId);
+      return;
+    }
+    break;
+  }
 }
 
 async function restoreCachedResultOnOpen() {
@@ -386,12 +426,24 @@ async function restoreCachedResultOnOpen() {
       return;
     }
 
+    const status = await getAnalysisStatus(extraction);
+    if (status.state === "running") {
+      renderAnalysisPending(extraction);
+      await monitorBackgroundAnalysis(extraction, activeTab.id);
+      return;
+    }
+
     const cached = await findCachedAnalysis(extraction);
     if (cached) {
       renderAnalysis(cached.analysis, extraction, activeTab.id, {
         createdAt: cached.createdAt,
         fromCache: true,
       });
+      return;
+    }
+
+    if (status.state === "error") {
+      renderAnalysisError(new Error(status.error), extraction, activeTab.id);
       return;
     }
 
@@ -456,18 +508,10 @@ async function extractCurrentPage({ forceAnalysis = false } = {}) {
     resultMark.dataset.state = "";
 
     try {
-      const analysis = await requestAnalysis(extraction);
-      const createdAt = Date.now();
-      let cacheSaved = true;
-      try {
-        await saveCachedAnalysis(extraction, analysis, createdAt);
-      } catch (error) {
-        cacheSaved = false;
-        console.error("Unable to cache the analysis result.", error);
-      }
-      renderAnalysis(analysis, extraction, activeTab.id, {
-        createdAt,
-        cacheSaved,
+      const completed = await requestAnalysis(extraction, activeTab.id);
+      renderAnalysis(completed.analysis, extraction, activeTab.id, {
+        createdAt: completed.createdAt,
+        cacheSaved: completed.cacheSaved,
       });
     } catch (error) {
       renderAnalysisError(error, extraction, activeTab.id);
