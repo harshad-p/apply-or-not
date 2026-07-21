@@ -24,7 +24,7 @@ function signatureInput(overrides = {}) {
   };
 }
 
-test("creates stable cache signatures from every analysis input", () => {
+test("creates stable cache signatures from job identity and analysis settings", () => {
   const original = createSignature(signatureInput());
 
   assert.equal(original, createSignature(signatureInput()));
@@ -32,14 +32,22 @@ test("creates stable cache signatures from every analysis input", () => {
     original,
     createSignature(signatureInput({ userCriteria: "Remote only." })),
   );
-  assert.notEqual(
+  assert.equal(
     original,
     createSignature({
       ...signatureInput(),
       job: {
         ...signatureInput().job,
+        description: "LinkedIn dynamically changed surrounding page text.",
         application: { method: "external_apply", label: "Apply" },
       },
+    }),
+  );
+  assert.notEqual(
+    original,
+    createSignature({
+      ...signatureInput(),
+      job: { ...signatureInput().job, title: "Platform Engineer" },
     }),
   );
   assert.notEqual(

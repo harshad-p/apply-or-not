@@ -395,6 +395,7 @@ async function restoreCachedResultOnOpen() {
       return;
     }
 
+    await setToolbarBadge(activeTab.id);
     extractButton.textContent = "Analyze this job";
     extractButton.dataset.action = "analyze";
     settingsNote.textContent =
