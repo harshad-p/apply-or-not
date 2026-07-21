@@ -116,7 +116,7 @@ popup. The user can close the popup, continue reading the job description, and
 reopen it to see the in-progress state or the saved result.
 
 The extractor also detects visible Easy Apply and external-application controls.
-Prompt v7 treats application method as selected-job page-control evidence, recognizes
+Prompt v8 treats application method as selected-job page-control evidence, recognizes
 transferable skills across related technologies, evaluates explicit employer
 and industry preferences from posting evidence, and forces closed listings to
 score 0 regardless of technical fit. It scores only the

@@ -2,7 +2,7 @@
   "use strict";
 
   const SCHEMA_VERSION = 2;
-  const PROMPT_VERSION = "job-fit-v7";
+  const PROMPT_VERSION = "job-fit-v8";
   const DEFAULT_MODEL = "gpt-5.6-sol";
   const RUBRIC_WEIGHTS = Object.freeze({
     skills: 40,

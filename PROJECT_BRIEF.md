@@ -99,7 +99,7 @@ The score must follow an explainable rubric rather than arbitrary sentiment.
 The implemented rubric uses fixed application-side weights and discrete model
 classifications so GPT-5.6 interprets evidence but cannot freely choose the final
 percentage.
-Prompt v7 also treats adjacent technologies as transferable evidence, evaluates
+Prompt v8 also treats adjacent technologies as transferable evidence, evaluates
 employer/domain preferences from available company evidence, and accepts Easy
 Apply only from the selected job's application control. A listing that trusted
 page extraction identifies as no longer accepting applications receives a

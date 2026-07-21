@@ -1,8 +1,4 @@
-# Job-fit analysis prompt — v7
-
-This historical prompt has been superseded by `job-fit-v8.md`. Version 8 keeps
-the closed-application rule and invalidates results created before the complete
-browser validation path enforced it.
+# Job-fit analysis prompt — v8
 
 The executable prompt and strict JSON Schema live in
 `extension/shared/analysis-contract.js`. Keep both versions synchronized.
@@ -34,8 +30,8 @@ structured employer data. Never claim Easy Apply unless
 Availability is independent of applicant fit. When trusted extraction reports
 `applicationStatus.status` as `closed`, the role cannot currently be applied to.
 It must receive a score of 0 and a `skip` recommendation. Application code
-enforces this result even if the model's weighted fit classifications are
-positive.
+enforces and validates this result with the extracted job context even if the
+model's weighted fit classifications are positive.
 
 ## Fixed rubric
 
@@ -53,4 +49,5 @@ requested language.
 
 Schema version 2 remains unchanged. `normalizeAnalysis` overwrites
 model-selected scores and recommendations using trusted rules before validation
-and display.
+and display. Prompt version 8 also invalidates any cached result produced before
+the complete browser flow enforced the closed-listing override.
