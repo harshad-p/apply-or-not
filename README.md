@@ -100,7 +100,7 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.15.0 is a submission candidate: the popup extracts the active job, sends it through the
+Version 0.15.1 is a submission candidate: the popup extracts the active job, sends it through the
 localhost relay to GPT-5.6, validates the response, and displays the score,
 recommendation, confidence, evidence, language assessment, and returned model.
 The toolbar badge shows the score with a recommendation color.
@@ -250,16 +250,12 @@ extraction. Use `http://localhost:4173/fixtures/not-a-job.html` to verify that a
 ordinary article is rejected.
 
 For recording the video, open
-`http://localhost:4173/fixtures/demo-scenarios.html`. It links to seven polished,
-clearly synthetic scenarios: a German posting with English as the working
-language, transferable SQL Server/PostgreSQL skills, an aviation-analytics
-domain preference, and a deliberately mismatched role with explicit blockers.
-The launcher also links to the strong-match and synthetic employer-preference
-fixtures. Suggested criteria are shown only on the launcher, never inside the
-job descriptions sent to the model.
-
-The seventh scenario is an otherwise strong match marked **No longer accepting
-applications**. It demonstrates the deterministic availability rule: the final
+`http://localhost:4173/fixtures/demo-scenarios.html`. It links to four polished,
+clearly synthetic scenarios: an English strong match, a German strong match, an
+English mismatch, and an otherwise strong match that no longer accepts
+applications. One suggested applicant profile works across all four pages and
+appears only on the launcher, never inside the descriptions sent to the model.
+The closed scenario demonstrates the deterministic availability rule: its final
 result is always **0 · Skip**, even when the skills and working arrangement fit.
 
 For the employer-preference video example, compare the fictional Northstar page

@@ -15,44 +15,30 @@
       <section class="scenario-header">
         <h1>Synthetic job scenarios</h1>
         <p>
-          These fictional pages are designed for a safe, repeatable product
-          demonstration. Open one, then use the extension normally.
+          Four fictional pages, one consistent applicant profile. Open a page,
+          then use the extension normally.
         </p>
+        <p class="demo-profile"><strong>Suggested preferences:</strong> “I am a senior backend developer with C#, .NET, ASP.NET Core, Azure, and SQL Server. I work in English, prefer hybrid or remote work, German must not be mandatory, and I prefer Easy Apply.”</p>
       </section>
       <section class="scenario-grid">
-        <a class="scenario-card" href="demo-language-de.html">
-          <strong>1. German posting, English role</strong>
-          <span>Shows that the posting language is not automatically a job requirement.</span>
-          <code>Try: “I work in English. German must not be mandatory.”</code>
+        <a class="scenario-card" href="job-posting-en.html" data-expected-outcome="strong-match">
+          <strong>1. English · Strong match</strong>
+          <span>C#, ASP.NET Core, Azure, SQL Server, English, hybrid or remote, and Easy Apply.</span>
+          <code>Expected: Apply</code>
         </a>
-        <a class="scenario-card" href="demo-transferable-sql.html">
-          <strong>2. Transferable database skills</strong>
-          <span>Tests whether SQL Server experience is treated as relevant to PostgreSQL.</span>
-          <code>Try: “I have strong Microsoft SQL Server experience.”</code>
+        <a class="scenario-card" href="demo-language-de.html" data-expected-outcome="strong-match">
+          <strong>2. German · Strong match</strong>
+          <span>A German-language description for an English-speaking .NET role with optional German.</span>
+          <code>Expected: Apply</code>
         </a>
-        <a class="scenario-card" href="demo-domain-aviation.html">
-          <strong>3. Preferred business domain</strong>
-          <span>Includes explicit aviation-analytics company evidence on the job page.</span>
-          <code>Try: “I want to work in aviation or analytics.”</code>
+        <a class="scenario-card" href="demo-hard-blocker.html" data-expected-outcome="weak-match">
+          <strong>3. English · Not a strong match</strong>
+          <span>Mandatory React, frontend leadership, German C1, onsite work, and external application.</span>
+          <code>Expected: Skip</code>
         </a>
-        <a class="scenario-card" href="demo-hard-blocker.html">
-          <strong>4. Genuine blockers</strong>
-          <span>German C1, frontend specialization, onsite work, and external application are explicit.</span>
-          <code>Try: “English, backend .NET, hybrid, and Easy Apply only.”</code>
-        </a>
-        <a class="scenario-card" href="job-posting-en.html">
-          <strong>5. Strong general match</strong>
-          <span>C#, ASP.NET Core, Azure, SQL Server, hybrid work, and optional German.</span>
-          <code>Try your normal backend profile.</code>
-        </a>
-        <a class="scenario-card" href="job-posting-openai-synthetic.html">
-          <strong>6. Employer-only preference</strong>
-          <span>Clearly labeled synthetic OpenAI variant for the company-switch moment.</span>
-          <code>Try: “I only want to apply to OpenAI.”</code>
-        </a>
-        <a class="scenario-card" href="demo-closed-applications.html">
-          <strong>7. Applications closed</strong>
-          <span>Shows that availability overrides an otherwise excellent fit.</span>
+        <a class="scenario-card" href="demo-closed-applications.html" data-expected-outcome="closed">
+          <strong>4. English · Strong match, applications closed</strong>
+          <span>The skills, language, and work arrangement fit—but the listing is no longer open.</span>
           <code>Expected result: 0 · Skip</code>
         </a>
       </section>

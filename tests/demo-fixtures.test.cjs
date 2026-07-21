@@ -5,9 +5,8 @@ const path = require("node:path");
 
 const fixtureDirectory = path.join(__dirname, "../extension/fixtures");
 const scenarioFiles = [
+  "job-posting-en.html",
   "demo-language-de.html",
-  "demo-transferable-sql.html",
-  "demo-domain-aviation.html",
   "demo-hard-blocker.html",
   "demo-closed-applications.html",
 ];
@@ -36,4 +35,8 @@ test("scenario launcher links to every video fixture", () => {
     "utf8",
   );
   for (const file of scenarioFiles) assert.match(launcher, new RegExp(file));
+  assert.equal(
+    (launcher.match(/class="scenario-card"/g) || []).length,
+    scenarioFiles.length,
+  );
 });
