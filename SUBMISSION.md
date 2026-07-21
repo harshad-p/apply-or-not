@@ -77,6 +77,8 @@ regression test.
   company is better.
 - **0:45–1:05 — Extraction:** Open the bundled synthetic job page. Show job
   detection, Schema.org/visible-text extraction, and Easy Apply recognition.
+  Use the bundled scenario launcher to switch pages without showing a real job
+  listing or personal data.
 - **1:05–1:40 — GPT-5.6 result:** Start live analysis, close the popup, and
   continue scrolling the job. Reopen it to show the in-progress or saved result,
   then show the score, evidence, and language assessment.

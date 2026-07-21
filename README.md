@@ -100,7 +100,7 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.14.0 is a submission candidate: the popup extracts the active job, sends it through the
+Version 0.14.1 is a submission candidate: the popup extracts the active job, sends it through the
 localhost relay to GPT-5.6, validates the response, and displays the score,
 recommendation, confidence, evidence, language assessment, and returned model.
 The toolbar badge shows the score with a recommendation color.
@@ -246,6 +246,15 @@ Open `http://localhost:4173/fixtures/job-posting-en.html`,
 `http://localhost:4173/fixtures/job-posting-linkedin-like.html` to test job
 extraction. Use `http://localhost:4173/fixtures/not-a-job.html` to verify that an
 ordinary article is rejected.
+
+For recording the video, open
+`http://localhost:4173/fixtures/demo-scenarios.html`. It links to four polished,
+clearly synthetic scenarios: a German posting with English as the working
+language, transferable SQL Server/PostgreSQL skills, an aviation-analytics
+domain preference, and a deliberately mismatched role with explicit blockers.
+The launcher also links to the strong-match and synthetic employer-preference
+fixtures. Suggested criteria are shown only on the launcher, never inside the
+job descriptions sent to the model.
 
 For the employer-preference video example, compare the fictional Northstar page
 with `http://localhost:4173/fixtures/job-posting-openai-synthetic.html`. The page
