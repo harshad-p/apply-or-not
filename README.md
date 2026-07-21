@@ -17,20 +17,20 @@ Ireland, Australia, etc. But recently as part of a next step in my career,
 I moved to Germany, and started targeting Software Development jobs in the German job market.  
 That is when I hit a few roadblocks: 
 
-The job postings were in English, but had either a hard German language requirement, or it was a plus
+The job postings were in English, but had either a hard German language requirement, or it was a plus.
 Still no issue right? I can just read through the job description and figure it out. 
-But some job descriptions were in German. So what? Browsers these days can translate the page to your preferred language. Yes. But only if the whole page is in a different language than your preferred language. For some jobs where part of it is in German, I have to painstakingly select partial text and translate it. Sometimes, these description although in German, have an English language requirement, or no preference at all. 
-Imagine doing all this repeatedly. Everyday.  
+But some job descriptions were in German. So what? Browsers these days can translate the page to your preferred language. Yes. But only if the whole page is in a different language than your preferred language. For some jobs where part of it is in German, I have to painstakingly select partial text and translate it. Sometimes, these descriptions, although in German, have an English language requirement, or no preference at all.
+Imagine doing all this repeatedly. Every day.
 
 And that's how the idea of Apply or Not was born. Someway I can expedite this decision. 
 Only if someone could tell me if the job description fits my criteria. 
 Not just the language part, but it could also make it easier if it tells me if I should apply 
 or not based upon my skillset. Maybe I enjoy working for companies in the manufacturing domain. 
-Maybe I like working across cross-funcional teams directly, etc. 
+Maybe I like working across cross-functional teams directly, etc.
 
 And it doesn't have to be used by people in Germany. I think if there are people targeting jobs in other countries, and are facing a similar issue, they could use it too. 
 
-Of course, the decision given comes with it's own risk. But I would like to emphasize that it is a decision support, not the final verdict. A pre-analysis to save time. 
+Of course, the decision given comes with its own risk. But I would like to emphasize that it is a decision support, not the final verdict. A pre-analysis to save time.
 
 So, Apply or Not analyzes the original posting without requiring the user to translate the page first, then presents its summary and reasoning in the user's preferred language. 
 It also distinguishes the language used to write the job description from an actual
@@ -74,10 +74,11 @@ badge. It also added fixtures and regression tests after each milestone, then
 helped diagnose real Safari and LinkedIn behavior reported during hands-on use.
 
 Codex accelerated repetitive implementation, cross-file changes, test creation,
-and debugging. The human product decisions remained central: expanding the
+and debugging. The human product decisions remained central: expanding
 my original Germany-focused need into a tool for applicants everywhere;
 separating a posting's language from an actual language requirement; accepting
-rambling free-form preferences; treating Easy Apply as structured evidence;
+rambling free-form preferences; treating Easy Apply as evidence from the
+selected job's application control;
 keeping API keys outside the extension; and adding caching, billing
 confirmation, a no-cost judge demo, and the final visual identity in response to
 real usage. 
@@ -99,7 +100,7 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.10 is a submission candidate: the popup extracts the active job, sends it through the
+Version 0.13.5 is a submission candidate: the popup extracts the active job, sends it through the
 localhost relay to GPT-5.6, validates the response, and displays the score,
 recommendation, confidence, evidence, language assessment, and returned model.
 The toolbar badge shows the score with a recommendation color.
