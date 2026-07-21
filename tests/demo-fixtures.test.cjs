@@ -9,6 +9,7 @@ const scenarioFiles = [
   "demo-transferable-sql.html",
   "demo-domain-aviation.html",
   "demo-hard-blocker.html",
+  "demo-closed-applications.html",
 ];
 
 test("video demo scenarios contain valid, clearly labeled JobPosting data", () => {

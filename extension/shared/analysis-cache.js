@@ -41,6 +41,7 @@
         pageUrl || "",
         job?.title || "",
         job?.company || "",
+        job?.application?.status || "unknown",
         userCriteria || "",
         preferredLanguage || "",
         promptVersion || "",

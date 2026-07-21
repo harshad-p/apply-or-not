@@ -98,6 +98,30 @@ test("sends the expected GPT-5.6 request through an injected fetch", async () =>
   assert.equal(result.provider.responseId, "resp_mock");
 });
 
+test("relay forces zero when extracted application status is closed", async () => {
+  const closedPayload = payload();
+  closedPayload.job.application = {
+    method: "unknown",
+    status: "closed",
+    statusLabel: "No longer accepting applications",
+    statusConfidence: "high",
+  };
+  const result = await analyzeWithOpenAI(closedPayload, {
+    apiKey: "test-key-not-real",
+    fetchImpl: async () => ({
+      ok: true,
+      json: async () => ({
+        id: "resp_closed",
+        model: "gpt-5.6-sol",
+        output_text: JSON.stringify(modelOutput()),
+      }),
+    }),
+  });
+
+  assert.equal(result.score, 0);
+  assert.equal(result.recommendation, "skip");
+});
+
 test("rejects malformed model output", () => {
   assert.throws(
     () =>

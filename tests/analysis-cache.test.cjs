@@ -15,11 +15,15 @@ function signatureInput(overrides = {}) {
     job: {
       title: "Backend Engineer",
       description: "Build APIs with C#.",
-      application: { method: "easy_apply", label: "Easy Apply" },
+      application: {
+        method: "easy_apply",
+        label: "Easy Apply",
+        status: "unknown",
+      },
     },
     userCriteria: "Easy Apply only.",
     preferredLanguage: "English",
-    promptVersion: "job-fit-v6",
+    promptVersion: "job-fit-v7",
     ...overrides,
   };
 }
@@ -31,6 +35,19 @@ test("creates stable cache signatures from job identity and analysis settings", 
   assert.notEqual(
     original,
     createSignature(signatureInput({ userCriteria: "Remote only." })),
+  );
+  assert.notEqual(
+    original,
+    createSignature({
+      ...signatureInput(),
+      job: {
+        ...signatureInput().job,
+        application: {
+          ...signatureInput().job.application,
+          status: "closed",
+        },
+      },
+    }),
   );
   assert.equal(
     original,
@@ -52,7 +69,7 @@ test("creates stable cache signatures from job identity and analysis settings", 
   );
   assert.notEqual(
     original,
-    createSignature(signatureInput({ promptVersion: "job-fit-v7" })),
+    createSignature(signatureInput({ promptVersion: "job-fit-v8" })),
   );
 });
 

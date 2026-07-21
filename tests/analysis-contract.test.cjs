@@ -104,6 +104,25 @@ test("normalization replaces model-selected score and recommendation", () => {
   assert.equal(normalized.recommendation, "apply");
 });
 
+test("closed applications force a zero score and skip recommendation", () => {
+  const normalized = normalizeAnalysis(
+    validAnalysis(),
+    { id: "openai", model: "gpt-5.6-sol" },
+    {
+      job: {
+        application: {
+          status: "closed",
+          statusLabel: "No longer accepting applications",
+        },
+      },
+    },
+  );
+
+  assert.equal(normalized.score, 0);
+  assert.equal(normalized.recommendation, "skip");
+  assert.match(normalized.hardBlockers[0].title, /applications closed/i);
+});
+
 test("unknown evidence remains in the consider band", () => {
   const analysis = validAnalysis({
     rubric: {
@@ -137,6 +156,9 @@ test("builds a private structured GPT-5.6 Responses request", () => {
         method: "easy_apply",
         label: "Easy Apply",
         confidence: "high",
+        status: "closed",
+        statusLabel: "No longer accepting applications",
+        statusConfidence: "high",
       },
     },
   });
@@ -148,13 +170,15 @@ test("builds a private structured GPT-5.6 Responses request", () => {
   assert.equal(request.text.format.strict, true);
   assert.match(request.input, /Backend API development/);
   assert.match(request.input, /easy_apply/);
+  assert.match(request.input, /No longer accepting applications/);
   assert.match(request.input, /companyContext/);
   assert.match(request.input, /companyEvidenceSource/);
-  assert.equal(PROMPT_VERSION, "job-fit-v6");
+  assert.equal(PROMPT_VERSION, "job-fit-v7");
   assert.match(request.instructions, /transferable skills/i);
   assert.match(request.instructions, /SQL Server experience is relevant evidence for PostgreSQL/i);
   assert.match(request.instructions, /only OpenAI/i);
   assert.match(request.instructions, /extracted page-control evidence/i);
+  assert.match(request.instructions, /score of 0/i);
 });
 
 test("attaches trusted provider metadata outside the model output", () => {

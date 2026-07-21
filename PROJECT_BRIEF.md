@@ -99,9 +99,11 @@ The score must follow an explainable rubric rather than arbitrary sentiment.
 The implemented rubric uses fixed application-side weights and discrete model
 classifications so GPT-5.6 interprets evidence but cannot freely choose the final
 percentage.
-Prompt v6 also treats adjacent technologies as transferable evidence, evaluates
+Prompt v7 also treats adjacent technologies as transferable evidence, evaluates
 employer/domain preferences from available company evidence, and accepts Easy
-Apply only from the selected job's application control.
+Apply only from the selected job's application control. A listing that trusted
+page extraction identifies as no longer accepting applications receives a
+deterministic score of 0 and a `skip` recommendation regardless of fit.
 Do not invent facts that are absent from the posting or the user's profile.
 Treat low extraction quality or ambiguous wording as uncertainty, not as a
 negative signal.

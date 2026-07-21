@@ -2,7 +2,7 @@
   "use strict";
 
   const SCHEMA_VERSION = 2;
-  const PROMPT_VERSION = "job-fit-v6";
+  const PROMPT_VERSION = "job-fit-v7";
   const DEFAULT_MODEL = "gpt-5.6-sol";
   const RUBRIC_WEIGHTS = Object.freeze({
     skills: 40,
@@ -144,9 +144,11 @@ Evaluate explicitly stated employer, industry, and business-domain preferences u
 
 Treat the application method as extracted page-control evidence, not structured employer data. Never claim Easy Apply unless applicationMethod.method is easy_apply. If the user requires Easy Apply: easy_apply satisfies the criterion; external_apply is an explicit conflict and therefore a hard blocker; unknown is uncertainty rather than a blocker, must not receive high confidence, and should remain in the consider band unless another blocker requires skip.
 
+Application availability is independent of fit. If applicationStatus.status is closed, the role cannot currently be applied to: identify it as a hard blocker and recommend skip with a score of 0. Treat the extracted status as authoritative page evidence. Do not infer that applications are open when availability is unknown.
+
 Keep these language facts separate: the posting's language, the user's proficiency, the requested explanation language, and explicit employer language requirements. Never infer that a language is required merely because the posting is written in it.
 
-Use these score bands consistently: 80–100 = apply, 60–79 = consider, 0–59 = skip. A hard blocker must be both an explicit user deal-breaker and an explicit conflict in the posting; if one exists, recommend skip and keep the score below 60. Treat missing or ambiguous information as uncertainty rather than a negative fact.
+Use these score bands consistently: 80–100 = apply, 60–79 = consider, 0–59 = skip. Except for a closed application, a hard blocker must be both an explicit user deal-breaker and an explicit conflict in the posting; if one exists, recommend skip and keep the score below 60. Treat missing or ambiguous information as uncertainty rather than a negative fact.
 
 Write the summary, titles, and explanations in the requested explanation language. Keep evidence as a short quotation or close excerpt from the original posting language.`;
 
@@ -166,6 +168,13 @@ Write the summary, titles, and explanations in the requested explanation languag
             method: job?.application?.method || "unknown",
             label: job?.application?.label || "Application method not detected",
             confidence: job?.application?.confidence || "low",
+          },
+          applicationStatus: {
+            status: job?.application?.status || "unknown",
+            label:
+              job?.application?.statusLabel ||
+              "Application availability not determined",
+            confidence: job?.application?.statusConfidence || "low",
           },
         },
       },
@@ -225,7 +234,12 @@ Write the summary, titles, and explanations in the requested explanation languag
     return valid;
   }
 
-  function calculateRubricScore(value) {
+  function isApplicationClosed(context) {
+    return context?.job?.application?.status === "closed";
+  }
+
+  function calculateRubricScore(value, context) {
+    if (isApplicationClosed(context)) return 0;
     let earned = 0;
     let available = 0;
     for (const [dimension, weight] of Object.entries(RUBRIC_WEIGHTS)) {
@@ -239,10 +253,39 @@ Write the summary, titles, and explanations in the requested explanation languag
     return value?.hardBlockers?.length ? Math.min(baseScore, 35) : baseScore;
   }
 
-  function applyDeterministicScore(value) {
-    const score = calculateRubricScore(value);
+  function applyDeterministicScore(value, context) {
+    let scoredValue = value;
+    if (isApplicationClosed(context)) {
+      const evidence =
+        context.job.application.statusLabel || "Applications closed";
+      const alreadyExplained = (value.hardBlockers || []).some((blocker) =>
+        [blocker?.title, blocker?.evidence]
+          .filter(Boolean)
+          .some((text) =>
+            String(text).toLocaleLowerCase().includes(
+              String(evidence).toLocaleLowerCase(),
+            ),
+          ),
+      );
+      if (!alreadyExplained) {
+        scoredValue = {
+          ...value,
+          hardBlockers: [
+            {
+              title: "Applications closed",
+              explanation:
+                "The job page says this role is no longer accepting applications.",
+              evidence,
+            },
+            ...(value.hardBlockers || []),
+          ].slice(0, 4),
+        };
+      }
+    }
+
+    const score = calculateRubricScore(scoredValue, context);
     return {
-      ...value,
+      ...scoredValue,
       score,
       recommendation: expectedRecommendation(score),
     };
@@ -272,7 +315,7 @@ Write the summary, titles, and explanations in the requested explanation languag
     }
   }
 
-  function validateModelOutput(value) {
+  function validateModelOutput(value, context) {
     const errors = [];
     if (!isPlainObject(value)) {
       return { valid: false, errors: ["Analysis must be an object."] };
@@ -282,7 +325,10 @@ Write the summary, titles, and explanations in the requested explanation languag
 
     if (!Number.isInteger(value.score) || value.score < 0 || value.score > 100) {
       errors.push("score must be an integer from 0 to 100.");
-    } else if (rubricValid && value.score !== calculateRubricScore(value)) {
+    } else if (
+      rubricValid &&
+      value.score !== calculateRubricScore(value, context)
+    ) {
       errors.push("score does not match the deterministic rubric.");
     }
 
@@ -355,9 +401,9 @@ Write the summary, titles, and explanations in the requested explanation languag
     return { valid: errors.length === 0, errors };
   }
 
-  function normalizeAnalysis(value, provider) {
-    const scoredValue = applyDeterministicScore(value);
-    const validation = validateModelOutput(scoredValue);
+  function normalizeAnalysis(value, provider, context) {
+    const scoredValue = applyDeterministicScore(value, context);
+    const validation = validateModelOutput(scoredValue, context);
     if (!validation.valid) {
       throw new Error(`Invalid analysis result: ${validation.errors.join(" ")}`);
     }

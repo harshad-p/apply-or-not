@@ -141,6 +141,16 @@
     "[data-test='applyButton']",
     "[data-testid='apply-button']",
   ].join(", ");
+  const selectedJobStatusSelector = [
+    ".jobs-unified-top-card",
+    ".job-details-jobs-unified-top-card",
+    ".jobs-details",
+    "[data-testid*='job-header' i]",
+    "[data-test*='job-header' i]",
+    "[itemprop='JobPosting']",
+  ].join(", ");
+  const closedApplicationPattern =
+    /\b(?:no longer accepting applications|applications? (?:are |is )?(?:now )?closed|applications? (?:are |is )?no longer being accepted|application (?:period|window) (?:has )?(?:ended|closed)|position (?:has been|is) filled|job (?:is )?(?:no longer available|closed|expired))\b|\b(?:keine bewerbungen mehr|bewerbungsfrist abgelaufen|bewerbungsphase beendet|stelle nicht mehr verfügbar)\b|n[’']accepte plus (?:les )?candidatures|candidatures? clôturées?|ya no se aceptan solicitudes|oferta cerrada|応募受付(?:は)?終了|募集終了/iu;
 
   function normalizeText(value) {
     return String(value ?? "")
@@ -273,6 +283,7 @@
           location: getLocationText(node.jobLocation),
           description: htmlToText(documentRef, node.description),
           companyContext,
+          validThrough: normalizeText(node.validThrough),
         };
       } catch {
         // Invalid JSON-LD from the page should not prevent visible-text extraction.
@@ -480,6 +491,48 @@
     );
   }
 
+  function findClosedApplicationEvidence(value) {
+    const match = normalizeText(value).match(closedApplicationPattern);
+    return normalizeText(match?.[0]);
+  }
+
+  function extractApplicationStatus(
+    documentRef,
+    description = "",
+    validThrough = "",
+  ) {
+    let evidence = findClosedApplicationEvidence(description);
+
+    if (!evidence) {
+      try {
+        for (const element of documentRef.querySelectorAll(selectedJobStatusSelector)) {
+          if (!isElementVisible(element, documentRef)) continue;
+          evidence = findClosedApplicationEvidence(
+            element.innerText || element.textContent,
+          );
+          if (evidence) break;
+        }
+      } catch {
+        // A missing site-specific status region is ordinary, not an error.
+      }
+    }
+
+    if (!evidence && validThrough) {
+      const deadline = Date.parse(validThrough);
+      if (Number.isFinite(deadline) && deadline < Date.now()) {
+        evidence = `Application deadline passed: ${validThrough}`;
+      }
+    }
+
+    return evidence
+      ? { status: "closed", statusLabel: evidence, statusConfidence: "high" }
+      : {
+          status: "unknown",
+          statusLabel: "Application availability not determined",
+          statusConfidence: "low",
+        };
+  }
+
   function countDescriptionSignals(description) {
     return descriptionSignalPatterns.reduce(
       (count, pattern) => count + Number(pattern.test(description)),
@@ -579,7 +632,14 @@
 
     const title =
       structuredJob?.title || getFirstText(documentRef, titleSelectors) || pageTitle;
-    const application = extractApplicationMethod(documentRef, title);
+    const application = {
+      ...extractApplicationMethod(documentRef, title),
+      ...extractApplicationStatus(
+        documentRef,
+        description,
+        structuredJob?.validThrough,
+      ),
+    };
     const company =
       structuredJob?.company || getFirstText(documentRef, companySelectors);
     const visibleCompanyContext = extractVisibleCompanyContext(documentRef);
@@ -623,6 +683,7 @@
   const api = Object.freeze({
     extract,
     extractApplicationMethod,
+    extractApplicationStatus,
     findJobPostingNode,
     getStructuredCompanyContext,
     isKnownJobPageUrl,

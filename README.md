@@ -100,24 +100,26 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.14.1 is a submission candidate: the popup extracts the active job, sends it through the
+Version 0.15.0 is a submission candidate: the popup extracts the active job, sends it through the
 localhost relay to GPT-5.6, validates the response, and displays the score,
 recommendation, confidence, evidence, language assessment, and returned model.
 The toolbar badge shows the score with a recommendation color.
 
-Successful analyses are cached locally by stable job identity, saved criteria,
-explanation language, and prompt version. Dynamic page fragments do not make the
-same job look new, so reopening the popup restores the result and keeps the
-billable action labeled **Reanalyze this job**.
+Successful analyses are cached locally by stable job identity, application
+availability, saved criteria, explanation language, and prompt version. Dynamic
+page fragments do not make the same job look new, while a newly closed listing
+invalidates its earlier result. Reopening the popup restores a valid result and
+keeps the billable action labeled **Reanalyze this job**.
 
 Analysis runs in the extension's background worker rather than the temporary
 popup. The user can close the popup, continue reading the job description, and
 reopen it to see the in-progress state or the saved result.
 
 The extractor also detects visible Easy Apply and external-application controls.
-Prompt v6 treats application method as selected-job page-control evidence, recognizes
+Prompt v7 treats application method as selected-job page-control evidence, recognizes
 transferable skills across related technologies, evaluates explicit employer
-and industry preferences from posting evidence, and scores only the
+and industry preferences from posting evidence, and forces closed listings to
+score 0 regardless of technical fit. It scores only the
 preferences the user actually stated. GPT-5.6 classifies fixed rubric dimensions
 while trusted application code calculates the final percentage, preventing the
 model from freely choosing a different number on reanalysis.
@@ -248,13 +250,17 @@ extraction. Use `http://localhost:4173/fixtures/not-a-job.html` to verify that a
 ordinary article is rejected.
 
 For recording the video, open
-`http://localhost:4173/fixtures/demo-scenarios.html`. It links to four polished,
+`http://localhost:4173/fixtures/demo-scenarios.html`. It links to seven polished,
 clearly synthetic scenarios: a German posting with English as the working
 language, transferable SQL Server/PostgreSQL skills, an aviation-analytics
 domain preference, and a deliberately mismatched role with explicit blockers.
 The launcher also links to the strong-match and synthetic employer-preference
 fixtures. Suggested criteria are shown only on the launcher, never inside the
 job descriptions sent to the model.
+
+The seventh scenario is an otherwise strong match marked **No longer accepting
+applications**. It demonstrates the deterministic availability rule: the final
+result is always **0 · Skip**, even when the skills and working arrangement fit.
 
 For the employer-preference video example, compare the fictional Northstar page
 with `http://localhost:4173/fixtures/job-posting-openai-synthetic.html`. The page

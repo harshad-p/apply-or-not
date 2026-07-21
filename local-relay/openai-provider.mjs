@@ -34,7 +34,7 @@ function extractOutputText(response) {
   return textParts.join("");
 }
 
-function parseOpenAIResponse(response) {
+function parseOpenAIResponse(response, context) {
   let modelOutput;
   try {
     modelOutput = JSON.parse(extractOutputText(response));
@@ -45,11 +45,15 @@ function parseOpenAIResponse(response) {
     throw error;
   }
 
-  return normalizeAnalysis(modelOutput, {
-    id: "openai",
-    model: response.model || DEFAULT_MODEL,
-    responseId: response.id || "",
-  });
+  return normalizeAnalysis(
+    modelOutput,
+    {
+      id: "openai",
+      model: response.model || DEFAULT_MODEL,
+      responseId: response.id || "",
+    },
+    context,
+  );
 }
 
 async function readError(response) {
@@ -110,6 +114,12 @@ function validatePayload(payload) {
   ) {
     throw new Error("Extracted application method is invalid.");
   }
+  if (
+    payload.job.application?.status &&
+    !["closed", "unknown"].includes(payload.job.application.status)
+  ) {
+    throw new Error("Extracted application status is invalid.");
+  }
 }
 
 async function analyzeWithOpenAI(
@@ -151,7 +161,7 @@ async function analyzeWithOpenAI(
       });
 
       if (response.ok) {
-        return parseOpenAIResponse(await response.json());
+        return parseOpenAIResponse(await response.json(), payload);
       }
 
       const errorMessage = await readError(response);

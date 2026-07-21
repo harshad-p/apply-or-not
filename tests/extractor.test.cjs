@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 const {
   extract,
   extractApplicationMethod,
+  extractApplicationStatus,
   findJobPostingNode,
   getStructuredCompanyContext,
   isKnownJobPageUrl,
@@ -284,4 +285,41 @@ test("distinguishes an external Apply control from Easy Apply", () => {
     label: "Apply now",
     confidence: "medium",
   });
+});
+
+test("detects a closed application from the selected job description", () => {
+  const documentRef = {
+    defaultView: {
+      getComputedStyle: () => ({ display: "block", visibility: "visible" }),
+    },
+    querySelectorAll: () => [],
+  };
+
+  assert.deepEqual(
+    extractApplicationStatus(
+      documentRef,
+      "This role is no longer accepting applications.",
+    ),
+    {
+      status: "closed",
+      statusLabel: "no longer accepting applications",
+      statusConfidence: "high",
+    },
+  );
+});
+
+test("does not scan unrelated aggregator cards for closed status", () => {
+  const documentRef = {
+    location: { href: "https://www.linkedin.com/jobs/view/123" },
+    defaultView: {
+      getComputedStyle: () => ({ display: "block", visibility: "visible" }),
+    },
+    querySelectorAll: () => [],
+  };
+
+  assert.equal(
+    extractApplicationStatus(documentRef, "Applications are currently open.")
+      .status,
+    "unknown",
+  );
 });
