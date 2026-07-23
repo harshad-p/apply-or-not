@@ -102,7 +102,7 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.17.4 is post-submission development on the local
+Version 0.17.5 is post-submission development on the local
 `codex/local-llm-support` branch. The submitted version remains 0.16.1 on
 `main`. The development version can route analysis through either GPT-5.6 or a
 local OpenAI-compatible model, validates both through the same result contract,
@@ -122,13 +122,13 @@ popup. The user can close the popup, continue reading the job description, and
 reopen it to see the in-progress state or the saved result.
 
 The extractor also detects visible Easy Apply and external-application controls.
-Prompt v10 treats application method as selected-job page-control evidence, recognizes
+Prompt v11 treats application method as selected-job page-control evidence, recognizes
 transferable skills across related technologies, evaluates explicit employer
 and industry preferences from posting evidence, and forces closed listings to
 score 0 regardless of technical fit. It scores only the
 preferences the user actually stated. GPT-5.6 classifies fixed rubric dimensions
 while trusted application code calculates the final percentage, preventing the
-model from freely choosing a different number on reanalysis. Version 10 also
+model from freely choosing a different number on reanalysis. Version 11 also
 reinforces that page evidence cannot make an unstated rubric dimension
 applicable and that unknown availability must not be described as open.
 
@@ -272,7 +272,8 @@ Only plain HTTP URLs on `localhost`, `127.0.0.1`, or `::1` are accepted. The
 relay rejects remote provider URLs and URLs containing credentials. Smaller
 local models may be slower or may fail to follow the required schema; in that
 case, choose a stronger structured-output-capable model. Local requests disable
-extended reasoning and cap output length. Local analysis may take several
+extended reasoning, limit the job-description input to 9,000 representative
+characters, and cap structured output at 1,800 tokens. Local analysis may take several
 minutes on older hardware; the relay allows up to five minutes before reporting
 a timeout. While local analysis is running, the popup provides a **Cancel
 analysis** action that sends an explicit cancellation request to the relay and
@@ -280,6 +281,11 @@ stops local-model generation. The relay owns the local job and retains its
 result temporarily, so a Safari connection or background-worker interruption
 does not cancel inference; reopening the popup recovers a running or completed
 analysis.
+
+The relay terminal logs each local job's elapsed time, transmitted description
+size, and prompt/completion token counts when the provider returns them. These
+metrics help distinguish model loading, prompt processing, and output-generation
+costs.
 
 To make one real, billable GPT-5.6 request with fictional data, keep the relay
 running and use another terminal:

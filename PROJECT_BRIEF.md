@@ -99,7 +99,7 @@ The score must follow an explainable rubric rather than arbitrary sentiment.
 The implemented rubric uses fixed application-side weights and discrete model
 classifications so GPT-5.6 interprets evidence but cannot freely choose the final
 percentage.
-Prompt v10 also treats adjacent technologies as transferable evidence, evaluates
+Prompt v11 also treats adjacent technologies as transferable evidence, evaluates
 employer/domain preferences from available company evidence, and accepts Easy
 Apply only from the selected job's application control. A listing that trusted
 page extraction identifies as no longer accepting applications receives a
@@ -147,7 +147,7 @@ inferences, and respect access controls and third-party terms.
 ## LLM providers
 
 The submitted live implementation uses OpenAI GPT-5.6 through the localhost
-relay. Post-submission version 0.17.4 adds a provider selector while keeping the
+relay. Post-submission version 0.17.5 adds a provider selector while keeping the
 same relay boundary:
 
 - OpenAI GPT-5.6 as the default and demonstrated hackathon provider
@@ -163,6 +163,10 @@ propagated through the relay to the model server. The relay retains local job
 state and completed results temporarily so interrupted Safari connections and
 restarted background workers can recover instead of silently canceling or
 leaving a stale in-progress state.
+
+For CPU-bound local inference, the relay limits job-description text to 9,000
+representative characters, requests concise evidence lists with a smaller output
+budget, and logs elapsed time plus provider token counts when available.
 Local inference must be labeled clearly because model quality, structured-output
 support, speed, and hardware requirements vary by model and computer.
 

@@ -181,7 +181,7 @@ test("builds a private structured GPT-5.6 Responses request", () => {
   assert.match(request.input, /No longer accepting applications/);
   assert.match(request.input, /companyContext/);
   assert.match(request.input, /companyEvidenceSource/);
-  assert.equal(PROMPT_VERSION, "job-fit-v10");
+  assert.equal(PROMPT_VERSION, "job-fit-v11");
   assert.match(request.instructions, /transferable skills/i);
   assert.match(request.instructions, /SQL Server experience is relevant evidence for PostgreSQL/i);
   assert.match(request.instructions, /only OpenAI/i);
@@ -207,7 +207,7 @@ test("builds a structured OpenAI-compatible local request", () => {
   assert.equal(request.stream, false);
   assert.equal(request.temperature, 0);
   assert.equal(request.reasoning_effort, "none");
-  assert.equal(request.max_tokens, 4000);
+  assert.equal(request.max_tokens, 1800);
   assert.equal(request.messages[0].role, "system");
   assert.match(request.messages[1].content, /Backend API development/);
   assert.equal(request.response_format.type, "json_schema");

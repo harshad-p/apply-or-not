@@ -23,7 +23,7 @@ function signatureInput(overrides = {}) {
     },
     userCriteria: "Easy Apply only.",
     preferredLanguage: "English",
-    promptVersion: "job-fit-v10",
+    promptVersion: "job-fit-v11",
     ...overrides,
   };
 }
@@ -69,7 +69,7 @@ test("creates stable cache signatures from job identity and analysis settings", 
   );
   assert.notEqual(
     original,
-    createSignature(signatureInput({ promptVersion: "job-fit-v11" })),
+    createSignature(signatureInput({ promptVersion: "job-fit-v12" })),
   );
   assert.notEqual(
     original,

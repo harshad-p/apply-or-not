@@ -2,7 +2,7 @@
   "use strict";
 
   const SCHEMA_VERSION = 2;
-  const PROMPT_VERSION = "job-fit-v10";
+  const PROMPT_VERSION = "job-fit-v11";
   const DEFAULT_MODEL = "gpt-5.6-sol";
   const SUMMARY_MAX_LENGTH = 240;
   const RUBRIC_WEIGHTS = Object.freeze({
@@ -25,9 +25,9 @@
     type: "object",
     additionalProperties: false,
     properties: {
-      title: { type: "string", minLength: 1, maxLength: 100 },
-      explanation: { type: "string", minLength: 1, maxLength: 500 },
-      evidence: { type: "string", minLength: 1, maxLength: 300 },
+      title: { type: "string", minLength: 1, maxLength: 80 },
+      explanation: { type: "string", minLength: 1, maxLength: 300 },
+      evidence: { type: "string", minLength: 1, maxLength: 200 },
     },
     required: ["title", "explanation", "evidence"],
   };
@@ -102,28 +102,28 @@
       positiveMatches: {
         type: "array",
         items: evidenceItemSchema,
-        maxItems: 6,
+        maxItems: 3,
       },
       concerns: {
         type: "array",
         items: evidenceItemSchema,
-        maxItems: 6,
+        maxItems: 3,
       },
       hardBlockers: {
         type: "array",
         items: evidenceItemSchema,
-        maxItems: 4,
+        maxItems: 2,
       },
       uncertainties: {
         type: "array",
         items: { type: "string", minLength: 1, maxLength: 300 },
-        maxItems: 6,
+        maxItems: 3,
       },
       postingLanguage: { type: "string", minLength: 1, maxLength: 80 },
       languageRequirements: {
         type: "array",
         items: languageRequirementSchema,
-        maxItems: 6,
+        maxItems: 3,
       },
     },
     required: [
@@ -165,7 +165,7 @@ Use these score bands consistently: 80–100 = apply, 60–79 = consider, 0–59
 
 Before returning the rubric, check every dimension against userCriteria itself. Page evidence never makes a dimension applicable by itself. If the user did not explicitly state a criterion for a dimension, set applicable=false even when the posting contains evidence for it. In particular, an Easy Apply or external application control matters only when the user stated an application-method preference. Never describe unknown application availability as open or currently accepting applications.
 
-Write the summary, titles, and explanations in the requested explanation language. The summary must be one or two concise sentences and no more than ${SUMMARY_MAX_LENGTH} characters; put supporting details in the evidence lists instead. Keep evidence as a short quotation or close excerpt from the original posting language.`;
+Write the summary, titles, and explanations in the requested explanation language. The summary must be one or two concise sentences and no more than ${SUMMARY_MAX_LENGTH} characters; put supporting details in the evidence lists instead. Return no more than three positive matches, three concerns, two hard blockers, three uncertainties, and three language requirements. Keep each explanation to one concise sentence. Keep evidence as a short quotation or close excerpt from the original posting language.`;
 
   function buildInput({ userCriteria, preferredLanguage, job }) {
     return JSON.stringify(
@@ -234,7 +234,7 @@ Write the summary, titles, and explanations in the requested explanation languag
       },
       reasoning_effort: "none",
       temperature: 0,
-      max_tokens: 4000,
+      max_tokens: 1800,
       stream: false,
     };
   }
@@ -315,7 +315,7 @@ Write the summary, titles, and explanations in the requested explanation languag
               evidence,
             },
             ...(value.hardBlockers || []),
-          ].slice(0, 4),
+          ].slice(0, 2),
         };
       }
     }

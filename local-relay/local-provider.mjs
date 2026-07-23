@@ -7,6 +7,37 @@ const {
   buildOpenAICompatibleRequest,
   normalizeAnalysis,
 } = require("../extension/shared/analysis-contract.js");
+const LOCAL_DESCRIPTION_MAX_LENGTH = 9_000;
+
+function compactLocalDescription(value, maximumLength = LOCAL_DESCRIPTION_MAX_LENGTH) {
+  const description = typeof value === "string" ? value.trim() : "";
+  if (description.length <= maximumLength) return description;
+
+  const omission = "\n\n[... page text omitted for local analysis ...]\n\n";
+  const segmentLength = Math.floor(
+    (maximumLength - omission.length * 2) / 3,
+  );
+  const middleStart = Math.floor((description.length - segmentLength) / 2);
+  return [
+    description.slice(0, segmentLength).trimEnd(),
+    description
+      .slice(middleStart, middleStart + segmentLength)
+      .trim(),
+    description.slice(-segmentLength).trimStart(),
+  ].join(omission);
+}
+
+function compactLocalPayload(payload) {
+  const originalDescription = payload?.job?.description;
+  const description = compactLocalDescription(originalDescription);
+  return {
+    ...payload,
+    job: {
+      ...payload.job,
+      description,
+    },
+  };
+}
 
 function buildChatCompletionsUrl(baseUrl) {
   return `${baseUrl.replace(/\/+$/u, "")}/chat/completions`;
@@ -80,10 +111,12 @@ async function analyzeWithLocalModel(
     fetchImpl = globalThis.fetch,
     timeoutMs = 300_000,
     signal,
+    onMetrics = () => {},
   } = {},
 ) {
   validatePayload(payload);
   const config = validateProviderConfig(providerConfig);
+  const compactedPayload = compactLocalPayload(payload);
   if (config.id !== "local") {
     throw new Error("Local model configuration is missing.");
   }
@@ -105,7 +138,7 @@ async function analyzeWithLocalModel(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(
-        buildOpenAICompatibleRequest(payload, config.model),
+        buildOpenAICompatibleRequest(compactedPayload, config.model),
       ),
       signal: controller.signal,
     });
@@ -113,7 +146,15 @@ async function analyzeWithLocalModel(
     if (!response.ok) {
       throw new Error(await readLocalError(response));
     }
-    return parseLocalResponse(await response.json(), config, payload);
+    const responseBody = await response.json();
+    onMetrics({
+      originalDescriptionCharacters: payload.job.description.length,
+      sentDescriptionCharacters: compactedPayload.job.description.length,
+      promptTokens: responseBody?.usage?.prompt_tokens ?? null,
+      completionTokens: responseBody?.usage?.completion_tokens ?? null,
+      totalTokens: responseBody?.usage?.total_tokens ?? null,
+    });
+    return parseLocalResponse(responseBody, config, payload);
   } catch (error) {
     if (error?.name === "AbortError") {
       if (signal?.aborted) {
@@ -134,8 +175,11 @@ async function analyzeWithLocalModel(
 }
 
 export {
+  LOCAL_DESCRIPTION_MAX_LENGTH,
   analyzeWithLocalModel,
   buildChatCompletionsUrl,
+  compactLocalDescription,
+  compactLocalPayload,
   extractLocalOutputText,
   parseLocalResponse,
   readLocalError,

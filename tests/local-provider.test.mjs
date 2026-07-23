@@ -1,8 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  LOCAL_DESCRIPTION_MAX_LENGTH,
   analyzeWithLocalModel,
   buildChatCompletionsUrl,
+  compactLocalDescription,
   extractLocalOutputText,
   parseLocalResponse,
 } from "../local-relay/local-provider.mjs";
@@ -57,6 +59,16 @@ test("builds the standard local chat-completions endpoint", () => {
   );
 });
 
+test("compacts oversized job text for local inference", () => {
+  const description = "A".repeat(30_000);
+  const compacted = compactLocalDescription(description);
+
+  assert.ok(compacted.length <= LOCAL_DESCRIPTION_MAX_LENGTH);
+  assert.match(compacted, /page text omitted/);
+  assert.ok(compacted.startsWith("A".repeat(100)));
+  assert.ok(compacted.endsWith("A".repeat(100)));
+});
+
 test("extracts standard and content-part local responses", () => {
   assert.equal(
     extractLocalOutputText({
@@ -98,6 +110,7 @@ test("normalizes a local response with trusted provider metadata", () => {
 
 test("sends a schema-constrained request to the configured loopback server", async () => {
   let capturedRequest;
+  let capturedMetrics;
   const result = await analyzeWithLocalModel(payload(), providerConfig, {
     fetchImpl: async (url, options) => {
       capturedRequest = { url, options };
@@ -107,8 +120,16 @@ test("sends a schema-constrained request to the configured loopback server", asy
           id: "chatcmpl_mock",
           model: "qwen3:8b",
           choices: [{ message: { content: JSON.stringify(modelOutput()) } }],
+          usage: {
+            prompt_tokens: 400,
+            completion_tokens: 200,
+            total_tokens: 600,
+          },
         }),
       };
+    },
+    onMetrics: (metrics) => {
+      capturedMetrics = metrics;
     },
   });
   const requestBody = JSON.parse(capturedRequest.options.body);
@@ -121,6 +142,8 @@ test("sends a schema-constrained request to the configured loopback server", asy
   assert.equal(requestBody.response_format.type, "json_schema");
   assert.equal(requestBody.stream, false);
   assert.equal(result.provider.id, "local");
+  assert.equal(capturedMetrics.promptTokens, 400);
+  assert.equal(capturedMetrics.completionTokens, 200);
 });
 
 test("explains when a local model ignores structured output", () => {

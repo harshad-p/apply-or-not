@@ -162,14 +162,22 @@ function startServer() {
           throw new Error("A local provider is required for a relay job.");
         }
         const controller = new AbortController();
+        const startedAt = Date.now();
         const job = {
           state: "running",
           controller,
+          startedAt,
           updatedAt: Date.now(),
         };
         localRequests.set(requestId, job);
+        console.log(
+          `Local analysis ${requestId} started (${body?.payload?.job?.description?.length || 0} description characters).`,
+        );
         void analyzeWithLocalModel(body?.payload, providerConfig, {
           signal: controller.signal,
+          onMetrics: (metrics) => {
+            job.metrics = metrics;
+          },
         })
           .then((analysis) => {
             Object.assign(job, {
@@ -177,6 +185,13 @@ function startServer() {
               analysis,
               updatedAt: Date.now(),
             });
+            const metrics = job.metrics || {};
+            console.log(
+              `Local analysis ${requestId} completed in ${(
+                (Date.now() - startedAt) /
+                1000
+              ).toFixed(1)}s (${metrics.sentDescriptionCharacters ?? "?"} characters sent, ${metrics.promptTokens ?? "?"} prompt tokens, ${metrics.completionTokens ?? "?"} completion tokens).`,
+            );
           })
           .catch((error) => {
             Object.assign(job, {
@@ -184,6 +199,12 @@ function startServer() {
               error: error.message,
               updatedAt: Date.now(),
             });
+            console.log(
+              `Local analysis ${requestId} ${job.state} after ${(
+                (Date.now() - startedAt) /
+                1000
+              ).toFixed(1)}s: ${error.message}`,
+            );
           });
         sendJson(response, 202, { state: "running" }, origin);
       } catch (error) {
