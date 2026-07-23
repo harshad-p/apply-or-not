@@ -76,7 +76,7 @@ async function readProviderConfig() {
 async function analyzeJob(payload) {
   const providerConfig = await readProviderConfig();
   const controller = new AbortController();
-  const timeoutMs = providerConfig.id === "local" ? 190_000 : 70_000;
+  const timeoutMs = providerConfig.id === "local" ? 315_000 : 70_000;
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {

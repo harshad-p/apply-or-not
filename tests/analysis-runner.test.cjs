@@ -3,9 +3,14 @@ const assert = require("node:assert/strict");
 
 const cacheApi = require("../extension/shared/analysis-cache.js");
 const {
+  RUN_TIMEOUT_MS,
   RUNS_STORAGE_KEY,
   createAnalysisRunner,
 } = require("../extension/shared/analysis-runner.js");
+
+test("allows slow local analysis to remain active for more than five minutes", () => {
+  assert.equal(RUN_TIMEOUT_MS, 330_000);
+});
 
 function createMemoryStorage() {
   const values = {};

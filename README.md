@@ -272,8 +272,9 @@ Only plain HTTP URLs on `localhost`, `127.0.0.1`, or `::1` are accepted. The
 relay rejects remote provider URLs and URLs containing credentials. Smaller
 local models may be slower or may fail to follow the required schema; in that
 case, choose a stronger structured-output-capable model. Local requests disable
-extended reasoning and cap output length so job-fit analysis can finish within
-the extension timeout.
+extended reasoning and cap output length. Local analysis may take several
+minutes on older hardware; the relay allows up to five minutes before reporting
+a timeout.
 
 To make one real, billable GPT-5.6 request with fictional data, keep the relay
 running and use another terminal:

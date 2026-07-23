@@ -2,7 +2,7 @@
   "use strict";
 
   const RUNS_STORAGE_KEY = "analysisRunsV1";
-  const RUN_TIMEOUT_MS = 210_000;
+  const RUN_TIMEOUT_MS = 330_000;
 
   function createAnalysisRunner({
     analyze,

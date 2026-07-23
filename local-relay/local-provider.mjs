@@ -78,7 +78,7 @@ async function analyzeWithLocalModel(
   providerConfig,
   {
     fetchImpl = globalThis.fetch,
-    timeoutMs = 180_000,
+    timeoutMs = 300_000,
   } = {},
 ) {
   validatePayload(payload);
