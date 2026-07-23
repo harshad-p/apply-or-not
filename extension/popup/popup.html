@@ -71,12 +71,9 @@
           data-reanalyze-confirmation
           hidden
         >
-          <p class="confirmation-eyebrow">Billable request</p>
+          <p class="confirmation-eyebrow" data-reanalysis-eyebrow>Provider request</p>
           <h2 id="reanalyze-title">Analyze this job again?</h2>
-          <p id="reanalyze-description">
-            This will call GPT-5.6 again and may incur API charges. Your saved
-            result will remain unless the new request succeeds.
-          </p>
+          <p id="reanalyze-description" data-reanalysis-description></p>
           <div class="confirmation-actions">
             <button
               class="secondary-button"
@@ -105,7 +102,7 @@
       </section>
 
       <footer>
-        <span>Cloud analysis uses your local relay.</span>
+        <span>Analysis uses your local relay.</span>
         <span data-version></span>
       </footer>
     </main>

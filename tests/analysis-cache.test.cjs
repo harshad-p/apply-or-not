@@ -71,6 +71,10 @@ test("creates stable cache signatures from job identity and analysis settings", 
     original,
     createSignature(signatureInput({ promptVersion: "job-fit-v9" })),
   );
+  assert.notEqual(
+    original,
+    createSignature(signatureInput({ providerKey: "local|qwen3:8b" })),
+  );
 });
 
 test("finds a matching unexpired entry", () => {

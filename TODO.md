@@ -31,7 +31,7 @@
   prevent large score changes when the evidence is unchanged.
 - [ ] Add dedicated extraction adapters for Indeed, Glassdoor, and Xing as real
   pages expose gaps in the generic extractor.
-- [ ] Add a configurable local-model provider. Start with a localhost-only,
+- [x] Add a configurable local-model provider. Start with a localhost-only,
   OpenAI-compatible endpoint for Ollama or LM Studio; preserve the normalized
   result schema, deterministic scoring, timeout handling, and provider label.
 - [ ] Add optional, user-triggered company enrichment from an employer website

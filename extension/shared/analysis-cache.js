@@ -35,6 +35,7 @@
     userCriteria,
     preferredLanguage,
     promptVersion,
+    providerKey,
   }) {
     return hashString(
       JSON.stringify([
@@ -45,6 +46,7 @@
         userCriteria || "",
         preferredLanguage || "",
         promptVersion || "",
+        providerKey || "openai",
       ]),
     );
   }

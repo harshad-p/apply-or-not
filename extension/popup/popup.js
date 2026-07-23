@@ -38,6 +38,10 @@ const resultTitle = document.querySelector("[data-result-title]");
 const reanalysisConfirmation = document.querySelector(
   "[data-reanalyze-confirmation]",
 );
+const reanalysisEyebrow = document.querySelector("[data-reanalysis-eyebrow]");
+const reanalysisDescription = document.querySelector(
+  "[data-reanalysis-description]",
+);
 const settingsButton = document.querySelector("[data-settings-button]");
 const settingsNote = document.querySelector("[data-settings-note]");
 const settingsStatus = document.querySelector("[data-settings-status]");
@@ -46,9 +50,38 @@ const versionElement = document.querySelector("[data-version]");
 let currentSettings = {
   userCriteria: "",
   preferredLanguage: "English",
+  analysisProvider: "openai",
+  localBaseUrl: "http://127.0.0.1:11434/v1",
+  localModel: "",
 };
 
+function isLocalProvider() {
+  return currentSettings.analysisProvider === "local";
+}
+
+function selectedProviderLabel() {
+  return isLocalProvider()
+    ? currentSettings.localModel || "local model"
+    : "GPT-5.6";
+}
+
+function selectedProviderKey() {
+  return isLocalProvider()
+    ? [
+        "local",
+        currentSettings.localBaseUrl,
+        currentSettings.localModel,
+      ].join("|")
+    : "openai|gpt-5.6-sol";
+}
+
 function showReanalysisConfirmation() {
+  reanalysisEyebrow.textContent = isLocalProvider()
+    ? "Local model request"
+    : "Billable request";
+  reanalysisDescription.textContent = isLocalProvider()
+    ? `This will ask ${selectedProviderLabel()} to analyze the job again. Your saved result will remain unless the new request succeeds.`
+    : "This will call GPT-5.6 again and may incur API charges. Your saved result will remain unless the new request succeeds.";
   reanalysisConfirmation.hidden = false;
   extractButton.disabled = true;
   demoButton.disabled = true;
@@ -75,12 +108,27 @@ async function loadSettingsStatus() {
     const {
       userCriteria = "",
       preferredLanguage = "English",
+      analysisProvider = "openai",
+      localBaseUrl = "http://127.0.0.1:11434/v1",
+      localModel = "",
     } = await extensionApi.storage.local.get([
       "userCriteria",
       "preferredLanguage",
+      "analysisProvider",
+      "localBaseUrl",
+      "localModel",
     ]);
-    currentSettings = { userCriteria, preferredLanguage };
-    const isConfigured = userCriteria.trim().length > 0;
+    currentSettings = {
+      userCriteria,
+      preferredLanguage,
+      analysisProvider,
+      localBaseUrl,
+      localModel,
+    };
+    const isConfigured =
+      userCriteria.trim().length > 0 &&
+      (analysisProvider !== "local" ||
+        (localBaseUrl.trim().length > 0 && localModel.trim().length > 0));
 
     settingsStatus.textContent = isConfigured ? "Ready" : "Setup needed";
     settingsStatus.dataset.state = isConfigured ? "configured" : "pending";
@@ -266,7 +314,7 @@ function renderAnalysisError(error, extraction, tabId) {
   resultMark.textContent = "!";
   resultMark.dataset.state = "error";
   resultEyebrow.textContent = "Analysis unavailable";
-  resultTitle.textContent = "GPT-5.6 could not analyze this job";
+  resultTitle.textContent = `${selectedProviderLabel()} could not analyze this job`;
   resultDescription.textContent = error.message;
   settingsNote.textContent = `${extraction.extraction.characterCount.toLocaleString()} characters were extracted successfully. Make sure the local relay is running, then retry.`;
   extractButton.textContent = "Try analysis again";
@@ -320,6 +368,7 @@ function createCacheContext(extraction) {
       userCriteria: currentSettings.userCriteria,
       preferredLanguage: currentSettings.preferredLanguage,
       promptVersion: analysisContract.PROMPT_VERSION,
+      providerKey: selectedProviderKey(),
     }),
   };
 }
@@ -374,7 +423,7 @@ function renderAnalysisPending(extraction) {
   hideAnalysisDetails();
   resultMark.textContent = "…";
   resultMark.dataset.state = "";
-  resultEyebrow.textContent = "GPT-5.6 analysis";
+  resultEyebrow.textContent = `${selectedProviderLabel()} analysis`;
   resultTitle.textContent = "Analysis is still running";
   resultDescription.textContent =
     "You can close this popup and continue reading. The background worker will save the result.";
@@ -391,7 +440,7 @@ function wait(milliseconds) {
 }
 
 async function monitorBackgroundAnalysis(extraction, tabId) {
-  for (let attempt = 0; attempt < 90; attempt += 1) {
+  for (let attempt = 0; attempt < 210; attempt += 1) {
     await wait(1000);
     const status = await getAnalysisStatus(extraction);
     if (status.state === "running") continue;
@@ -451,7 +500,9 @@ async function restoreCachedResultOnOpen() {
     extractButton.textContent = "Analyze this job";
     extractButton.dataset.action = "analyze";
     settingsNote.textContent =
-      "No saved result matches this page, preferences, and prompt. Analyze will make one billable GPT-5.6 request.";
+      isLocalProvider()
+        ? `No saved result matches this page, preferences, prompt, and local model. Analyze will ask ${selectedProviderLabel()} through the local relay.`
+        : "No saved result matches this page, preferences, and prompt. Analyze will make one billable GPT-5.6 request.";
   } catch (error) {
     console.info("No cached result could be restored for this page.", error);
     extractButton.textContent = "Read this job posting";
@@ -499,8 +550,8 @@ async function extractCurrentPage({ forceAnalysis = false } = {}) {
       }
     }
 
-    extractButton.textContent = "Analyzing with GPT-5.6…";
-    resultEyebrow.textContent = "GPT-5.6 analysis";
+    extractButton.textContent = `Analyzing with ${selectedProviderLabel()}…`;
+    resultEyebrow.textContent = `${selectedProviderLabel()} analysis`;
     resultTitle.textContent = "Evaluating your fit";
     resultDescription.textContent =
       "Comparing the posting with your saved preferences.";
@@ -523,7 +574,7 @@ async function extractCurrentPage({ forceAnalysis = false } = {}) {
     demoButton.disabled = false;
     if (
       extractButton.textContent === "Reading page…" ||
-      extractButton.textContent === "Analyzing with GPT-5.6…"
+      extractButton.textContent === `Analyzing with ${selectedProviderLabel()}…`
     ) {
       extractButton.textContent = "Try again";
       extractButton.dataset.action = "inspect";

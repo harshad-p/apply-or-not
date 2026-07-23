@@ -21,6 +21,7 @@ body {
 
 button,
 input,
+select,
 textarea,
 body {
   font: inherit;
@@ -101,6 +102,12 @@ form {
   box-shadow: 0 14px 40px rgb(36 69 46 / 5%);
 }
 
+.settings-shell > .settings-card,
+.settings-shell > .privacy-note,
+.settings-shell > .form-actions {
+  margin-top: 18px;
+}
+
 .field-heading {
   display: flex;
   align-items: flex-start;
@@ -130,7 +137,8 @@ label {
 }
 
 textarea,
-input {
+input,
+select {
   width: 100%;
   border: 1px solid #cbd7ce;
   border-radius: 11px;
@@ -155,6 +163,11 @@ input {
   font-size: 14px;
 }
 
+select {
+  padding: 12px 38px 12px 13px;
+  font-size: 14px;
+}
+
 .secret-text-input {
   min-height: 44px;
   height: 44px;
@@ -166,9 +179,30 @@ input {
 }
 
 textarea:focus,
-input:focus {
+input:focus,
+select:focus {
   border-color: #4a8b60;
   box-shadow: 0 0 0 3px rgb(72 142 95 / 16%);
+}
+
+.nested-settings {
+  display: grid;
+  gap: 9px;
+  margin-top: 18px;
+  border-top: 1px solid #e0e7e2;
+  padding-top: 18px;
+}
+
+.nested-settings[hidden] {
+  display: none;
+}
+
+.nested-settings label:not(:first-child) {
+  margin-top: 10px;
+}
+
+.nested-settings code {
+  font-size: 0.95em;
 }
 
 textarea::placeholder {
@@ -394,10 +428,15 @@ button:disabled {
   }
 
   textarea,
-  input {
+  input,
+  select {
     border-color: #405044;
     color: #edf4ee;
     background: #151d17;
+  }
+
+  .nested-settings {
+    border-top-color: #344239;
   }
 
   .character-count,

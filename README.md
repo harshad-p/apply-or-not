@@ -45,17 +45,19 @@ mean that proficiency in that language is mandatory.
 - Separation of a posting's written language from explicit language requirements
 - Editable, free-form user criteria
 - OpenAI GPT-5.6 analysis with structured results
-- A provider boundary designed for future local and cloud model options
+- Optional local-model analysis through Ollama or LM Studio
 - Toolbar score badge, detailed popup, and local-only settings storage
 - Plain HTML, CSS, and JavaScript with no framework or bundler
 
 ## Privacy
 
-The extension stores settings and cached results locally. Live analysis sends
-the extracted job description and user criteria through the localhost relay to
-OpenAI. The key can come from the developer's environment or be sent once from
-the settings page to relay memory. It is never stored in extension code or
-browser storage. OpenAI requests use `store: false`.
+The extension stores settings and cached results locally. The selected provider
+determines where analysis goes: OpenAI mode sends the extracted job description
+and user criteria through the localhost relay to OpenAI, while local mode sends
+them only to an OpenAI-compatible model server on the same computer. The OpenAI
+key can come from the developer's environment or be sent once from the settings
+page to relay memory. It is never stored in extension code or browser storage.
+OpenAI requests use `store: false`.
 
 ## OpenAI Build Week
 
@@ -100,16 +102,20 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.16.1 is a submission candidate: the popup extracts the active job, sends it through the
-localhost relay to GPT-5.6, validates the response, and displays the score,
-recommendation, confidence, evidence, language assessment, and returned model.
-The toolbar badge shows the score with a recommendation color.
+Version 0.17.0 is post-submission development on the local
+`codex/local-llm-support` branch. The submitted version remains 0.16.1 on
+`main`. The development version can route analysis through either GPT-5.6 or a
+local OpenAI-compatible model, validates both through the same result contract,
+and displays the score, recommendation, confidence, evidence, language
+assessment, and returned model. The toolbar badge shows the score with a
+recommendation color.
 
 Successful analyses are cached locally by stable job identity, application
-availability, saved criteria, explanation language, and prompt version. Dynamic
-page fragments do not make the same job look new, while a newly closed listing
-invalidates its earlier result. Reopening the popup restores a valid result and
-keeps the billable action labeled **Reanalyze this job**.
+availability, saved criteria, explanation language, prompt version, and selected
+provider/model. Dynamic page fragments do not make the same job look new, while
+a newly closed listing or provider change invalidates its earlier result.
+Reopening the popup restores a valid result and keeps the action labeled
+**Reanalyze this job**.
 
 Analysis runs in the extension's background worker rather than the temporary
 popup. The user can close the popup, continue reading the job description, and
@@ -132,21 +138,19 @@ visit external company profiles.
 
 Validated results are cached locally for up to 30 days and reused only when the
 stable job identity, application availability, preferences, explanation
-language, and prompt version still match. Reanalysis shows an explicit in-popup
-confirmation because it creates another billable model request. The popup uses
-one dedicated results scroller so long explanations remain responsive in Safari.
+language, prompt version, and provider still match. Reanalysis shows an explicit
+in-popup confirmation; OpenAI mode warns that another request may be billable,
+while local mode identifies the selected local model. The popup uses one
+dedicated results scroller so long explanations remain responsive in Safari.
 The Apply click identity is installed across the toolbar, popup, settings page,
 README, and submission artwork.
 
 ## Next steps
 
-The submitted version deliberately keeps the live path focused on GPT-5.6. The
-next product steps are:
+The submitted version deliberately keeps the live path focused on GPT-5.6.
+Post-submission local-model support is implemented on the development branch.
+The remaining product steps are:
 
-- Add a configurable local-LLM provider, starting with OpenAI-compatible local
-  endpoints such as [Ollama](https://docs.ollama.com/api/openai-compatibility)
-  and [LM Studio](https://lmstudio.ai/docs/developer/openai-compat). The same
-  validated result contract and deterministic scoring rules must apply.
 - Add dedicated extraction adapters for Indeed, Glassdoor, and Xing as real
   layouts expose gaps in the generic extractor.
 - Explain and translate visible labels in dynamically generated application
@@ -176,6 +180,10 @@ The extension source is in [`extension`](extension).
   repository. It needs no API key, Node.js, Python, relay, or internet request.
 - **Live GPT-5.6 analysis:** Node.js 18 or newer, an OpenAI Platform API key with
   available API credit, an internet connection, and local port `8787` available.
+- **Local-model analysis:** Node.js 18 or newer, local port `8787`, and an
+  OpenAI-compatible Ollama or LM Studio server running on a loopback address.
+  The selected model must support structured JSON output and have enough context
+  capacity for the job description and rubric.
 - **Four fictional video scenarios:** Python 3 only to serve the static pages,
   with local port `4173` available. Python is not needed on real job sites.
 - **Offline automated tests:** Node.js 18 or newer; no API key or network call.
@@ -217,7 +225,7 @@ current page. It also has access only to the local relay at
 `http://127.0.0.1:8787`; the extension cannot send requests directly to arbitrary
 internet hosts.
 
-## Start the local GPT-5.6 relay
+## Start the localhost analysis relay
 
 Use Node.js 18 or newer. Start the relay without putting a key in this
 repository:
@@ -239,6 +247,29 @@ node local-relay/server.mjs
 
 The relay listens only on `127.0.0.1`, accepts browser-extension origins, and
 keeps the key only in the local process. Stop it with `Control-C`.
+
+### Use a local model instead of OpenAI
+
+The same relay also supports local OpenAI-compatible
+`/v1/chat/completions` servers. No OpenAI API key or internet request is needed
+for this mode.
+
+1. Start [Ollama](https://docs.ollama.com/api/openai-compatibility) or
+   [LM Studio](https://lmstudio.ai/docs/developer/openai-compat) and load a
+   model that supports structured JSON output.
+2. Keep `node local-relay/server.mjs` running.
+3. Open the extension settings and select
+   **Local model · Ollama or LM Studio**.
+4. Enter the local server base URL and exact model identifier, then save:
+   - Ollama commonly uses `http://127.0.0.1:11434/v1`.
+   - LM Studio commonly uses `http://127.0.0.1:1234/v1`.
+5. Analyze a job normally. The popup identifies the returned local model, and
+   the same schema validation and deterministic scoring rules still apply.
+
+Only plain HTTP URLs on `localhost`, `127.0.0.1`, or `::1` are accepted. The
+relay rejects remote provider URLs and URLs containing credentials. Smaller
+local models may be slower or may fail to follow the required schema; in that
+case, choose a stronger structured-output-capable model.
 
 To make one real, billable GPT-5.6 request with fictional data, keep the relay
 running and use another terminal:

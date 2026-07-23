@@ -1,9 +1,11 @@
 import http from "node:http";
+import { analyzeWithLocalModel } from "./local-provider.mjs";
 import { analyzeWithOpenAI } from "./openai-provider.mjs";
 import {
   isAllowedOrigin,
   isExtensionOrigin,
   validateApiKey,
+  validateProviderConfig,
 } from "./configuration.mjs";
 
 const host = "127.0.0.1";
@@ -87,6 +89,15 @@ function startServer() {
           provider: "openai",
           model: "gpt-5.6-sol",
           configured: Boolean(apiKey),
+          providers: {
+            openai: {
+              model: "gpt-5.6-sol",
+              configured: Boolean(apiKey),
+            },
+            local: {
+              configured: true,
+            },
+          },
         },
         origin,
       );
@@ -110,8 +121,17 @@ function startServer() {
 
     if (request.method === "POST" && request.url === "/analyze") {
       try {
-        const payload = await readJson(request);
-        const analysis = await analyzeWithOpenAI(payload, { apiKey, projectId });
+        const requestBody = await readJson(request);
+        const isWrappedRequest =
+          requestBody?.payload && typeof requestBody.payload === "object";
+        const payload = isWrappedRequest ? requestBody.payload : requestBody;
+        const providerConfig = validateProviderConfig(
+          isWrappedRequest ? requestBody.providerConfig : { id: "openai" },
+        );
+        const analysis =
+          providerConfig.id === "local"
+            ? await analyzeWithLocalModel(payload, providerConfig)
+            : await analyzeWithOpenAI(payload, { apiKey, projectId });
         sendJson(response, 200, { analysis }, origin);
       } catch (error) {
         console.error(`Analysis failed: ${error.message}`);
@@ -136,5 +156,8 @@ function startServer() {
         : "OpenAI is not configured. Enter a key in the extension settings.",
     );
     console.log("The OpenAI API key is kept only in this relay process.");
+    console.log(
+      "Local model requests are restricted to localhost and loopback addresses.",
+    );
   });
 }

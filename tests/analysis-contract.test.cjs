@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 const {
   DEFAULT_MODEL,
   PROMPT_VERSION,
+  buildOpenAICompatibleRequest,
   buildOpenAIRequest,
   calculateRubricScore,
   normalizeAnalysis,
@@ -184,6 +185,25 @@ test("builds a private structured GPT-5.6 Responses request", () => {
   assert.match(request.instructions, /only OpenAI/i);
   assert.match(request.instructions, /extracted page-control evidence/i);
   assert.match(request.instructions, /score of 0/i);
+});
+
+test("builds a structured OpenAI-compatible local request", () => {
+  const request = buildOpenAICompatibleRequest(
+    {
+      userCriteria: "I prefer backend roles.",
+      preferredLanguage: "English",
+      job: { description: "Backend API development" },
+    },
+    "qwen3:8b",
+  );
+
+  assert.equal(request.model, "qwen3:8b");
+  assert.equal(request.stream, false);
+  assert.equal(request.temperature, 0);
+  assert.equal(request.messages[0].role, "system");
+  assert.match(request.messages[1].content, /Backend API development/);
+  assert.equal(request.response_format.type, "json_schema");
+  assert.equal(request.response_format.json_schema.strict, true);
 });
 
 test("attaches trusted provider metadata outside the model output", () => {

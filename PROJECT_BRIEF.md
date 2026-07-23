@@ -146,12 +146,13 @@ inferences, and respect access controls and third-party terms.
 
 ## LLM providers
 
-The current live implementation uses OpenAI GPT-5.6 through the localhost
-relay. Keep the provider boundary small so future backends remain swappable:
+The submitted live implementation uses OpenAI GPT-5.6 through the localhost
+relay. Post-submission version 0.17.0 adds a provider selector while keeping the
+same relay boundary:
 
 - OpenAI GPT-5.6 as the default and demonstrated hackathon provider
 - A configurable OpenAI-compatible local LLM endpoint, such as Ollama or LM
-  Studio, as the first post-submission provider
+  Studio, restricted to loopback HTTP addresses
 - Optional compatible cloud providers later, only with explicit configuration
 
 Provider selection must not change the normalized analysis-result schema. Keep
@@ -203,8 +204,9 @@ This hosted tier is a future option, not part of the initial local-only release.
 Standard OpenAI API keys must not be stored in extension code or browser
 storage. For local development, use a localhost-only relay that reads the key
 from the developer's environment. A future hosted service must keep its key on
-the server. Local-model providers may be called directly when they do not use a
-cloud secret.
+the server. Local-model requests also pass through the localhost relay so URL
+validation, timeouts, response normalization, and schema checks remain in one
+place.
 
 ## Technical constraints
 

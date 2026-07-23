@@ -2,6 +2,11 @@ const extensionApi = globalThis.browser ?? globalThis.chrome;
 const form = document.querySelector("[data-settings-form]");
 const criteriaInput = document.querySelector("#user-criteria");
 const languageInput = document.querySelector("#preferred-language");
+const providerInput = document.querySelector("[data-provider]");
+const localSettings = document.querySelector("[data-local-settings]");
+const localBaseUrlInput = document.querySelector("[data-local-base-url]");
+const localModelInput = document.querySelector("[data-local-model]");
+const openAISettings = document.querySelector("[data-openai-settings]");
 const characterCount = document.querySelector("[data-character-count]");
 const apiKeyInput = document.querySelector("[data-api-key]");
 const connectKeyButton = document.querySelector("[data-connect-key-button]");
@@ -9,6 +14,7 @@ const connectionStatus = document.querySelector("[data-connection-status]");
 const clearButton = document.querySelector("[data-clear-button]");
 const saveButton = document.querySelector("[data-save-button]");
 const saveStatus = document.querySelector("[data-save-status]");
+const DEFAULT_LOCAL_BASE_URL = "http://127.0.0.1:11434/v1";
 
 function updateCharacterCount() {
   characterCount.textContent = `${criteriaInput.value.length.toLocaleString()} / 8,000`;
@@ -29,18 +35,35 @@ function showConnectionStatus(message, state = "") {
   connectionStatus.dataset.state = state;
 }
 
+function updateProviderVisibility() {
+  const isLocal = providerInput.value === "local";
+  localSettings.hidden = !isLocal;
+  openAISettings.hidden = isLocal;
+  localBaseUrlInput.required = isLocal;
+  localModelInput.required = isLocal;
+}
+
 async function checkRelayStatus() {
   try {
     const response = await extensionApi.runtime.sendMessage({
       type: "analysis:health",
     });
     if (!response?.ok) throw new Error(response?.error || "Relay unavailable.");
-    showConnectionStatus(
-      response.result.configured
-        ? "Relay connected · OpenAI configured for this session."
-        : "Relay connected · API key still needed.",
-      response.result.configured ? "configured" : "",
-    );
+    const openAIConfigured =
+      response.result.providers?.openai?.configured === true;
+    if (providerInput.value === "local") {
+      showConnectionStatus(
+        "Relay connected · local model settings will be used for analysis.",
+        "configured",
+      );
+    } else {
+      showConnectionStatus(
+        openAIConfigured
+          ? "Relay connected · OpenAI configured for this session."
+          : "Relay connected · API key still needed.",
+        openAIConfigured ? "configured" : "",
+      );
+    }
   } catch {
     showConnectionStatus(
       "Relay is not running. Start node local-relay/server.mjs first.",
@@ -54,14 +77,25 @@ async function restoreSettings() {
     const {
       userCriteria = "",
       preferredLanguage = "English",
+      analysisProvider = "openai",
+      localBaseUrl = DEFAULT_LOCAL_BASE_URL,
+      localModel = "",
     } = await extensionApi.storage.local.get([
       "userCriteria",
       "preferredLanguage",
+      "analysisProvider",
+      "localBaseUrl",
+      "localModel",
     ]);
 
     criteriaInput.value = userCriteria;
     languageInput.value = preferredLanguage;
+    providerInput.value = analysisProvider;
+    localBaseUrlInput.value = localBaseUrl;
+    localModelInput.value = localModel;
+    updateProviderVisibility();
     updateCharacterCount();
+    await checkRelayStatus();
   } catch (error) {
     console.error("Unable to load extension settings.", error);
     showStatus("Could not load your saved preferences.", "error");
@@ -78,6 +112,19 @@ languageInput.addEventListener("input", () => {
   languageInput.setCustomValidity("");
   markSettingsDirty();
 });
+
+providerInput.addEventListener("change", () => {
+  updateProviderVisibility();
+  markSettingsDirty();
+  checkRelayStatus();
+});
+
+for (const input of [localBaseUrlInput, localModelInput]) {
+  input.addEventListener("input", () => {
+    input.setCustomValidity("");
+    markSettingsDirty();
+  });
+}
 
 connectKeyButton.addEventListener("click", async () => {
   const apiKey = apiKeyInput.value.trim();
@@ -132,17 +179,25 @@ clearButton.addEventListener("click", async () => {
     await extensionApi.storage.local.remove([
       "userCriteria",
       "preferredLanguage",
+      "analysisProvider",
+      "localBaseUrl",
+      "localModel",
       "settingsVersion",
       "analysisCacheV1",
       "analysisRunsV1",
     ]);
     criteriaInput.value = "";
     languageInput.value = "English";
+    providerInput.value = "openai";
+    localBaseUrlInput.value = DEFAULT_LOCAL_BASE_URL;
+    localModelInput.value = "";
+    updateProviderVisibility();
     criteriaInput.setCustomValidity("");
     languageInput.setCustomValidity("");
     updateCharacterCount();
     saveButton.textContent = "Save preferences";
     showStatus("Preferences and saved results cleared.");
+    await checkRelayStatus();
   } catch (error) {
     console.error("Unable to clear extension settings.", error);
     showStatus("Could not clear your preferences. Please try again.", "error");
@@ -156,12 +211,28 @@ form.addEventListener("submit", async (event) => {
 
   const userCriteria = criteriaInput.value.trim();
   const preferredLanguage = languageInput.value.trim();
+  const analysisProvider = providerInput.value;
+  const localBaseUrl = localBaseUrlInput.value.trim();
+  const localModel = localModelInput.value.trim();
 
   criteriaInput.setCustomValidity(
     userCriteria ? "" : "Describe what you want from a job.",
   );
   languageInput.setCustomValidity(
     preferredLanguage ? "" : "Enter your preferred explanation language.",
+  );
+  localBaseUrlInput.setCustomValidity(
+    analysisProvider !== "local" ||
+      /^http:\/\/(?:127\.0\.0\.1|localhost|\[::1\])(?::\d+)?(?:\/|$)/iu.test(
+        localBaseUrl,
+      )
+      ? ""
+      : "Use an HTTP localhost or loopback URL.",
+  );
+  localModelInput.setCustomValidity(
+    analysisProvider !== "local" || localModel
+      ? ""
+      : "Enter the local model identifier.",
   );
 
   if (!form.reportValidity()) {
@@ -177,7 +248,10 @@ form.addEventListener("submit", async (event) => {
     await extensionApi.storage.local.set({
       userCriteria,
       preferredLanguage,
-      settingsVersion: 1,
+      analysisProvider,
+      localBaseUrl,
+      localModel,
+      settingsVersion: 2,
     });
     criteriaInput.value = userCriteria;
     languageInput.value = preferredLanguage;
@@ -198,4 +272,3 @@ form.addEventListener("submit", async (event) => {
 
 updateCharacterCount();
 restoreSettings();
-checkRelayStatus();

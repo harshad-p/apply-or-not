@@ -11,6 +11,7 @@ if (typeof importScripts === "function") {
 
 const extensionApi = globalThis.browser ?? globalThis.chrome;
 const relayUrl = "http://127.0.0.1:8787";
+const DEFAULT_LOCAL_BASE_URL = "http://127.0.0.1:11434/v1";
 const updateActionBadge = globalThis.ApplyOrNotBadge.createBadgeUpdater(
   extensionApi.action,
 );
@@ -52,15 +53,37 @@ async function configureRelay(apiKey) {
   return readJsonResponse(response);
 }
 
+async function readProviderConfig() {
+  const {
+    analysisProvider = "openai",
+    localModel = "",
+    localBaseUrl = DEFAULT_LOCAL_BASE_URL,
+  } = await extensionApi.storage.local.get([
+    "analysisProvider",
+    "localModel",
+    "localBaseUrl",
+  ]);
+
+  return analysisProvider === "local"
+    ? {
+        id: "local",
+        model: localModel,
+        baseUrl: localBaseUrl,
+      }
+    : { id: "openai" };
+}
+
 async function analyzeJob(payload) {
+  const providerConfig = await readProviderConfig();
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 70000);
+  const timeoutMs = providerConfig.id === "local" ? 190_000 : 70_000;
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(`${relayUrl}/analyze`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ payload, providerConfig }),
       signal: controller.signal,
     });
     const body = await readJsonResponse(response);
@@ -76,7 +99,11 @@ async function analyzeJob(payload) {
     return body.analysis;
   } catch (error) {
     if (error?.name === "AbortError") {
-      throw new Error("GPT-5.6 analysis timed out. Please try again.");
+      throw new Error(
+        providerConfig.id === "local"
+          ? "Local model analysis timed out. Try a smaller model or shorter job description."
+          : "GPT-5.6 analysis timed out. Please try again.",
+      );
     }
     throw error;
   } finally {

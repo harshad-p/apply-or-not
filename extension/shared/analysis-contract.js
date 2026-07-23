@@ -202,6 +202,26 @@ Write the summary, titles, and explanations in the requested explanation languag
     };
   }
 
+  function buildOpenAICompatibleRequest(payload, model) {
+    return {
+      model,
+      messages: [
+        { role: "system", content: instructions },
+        { role: "user", content: buildInput(payload) },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "job_fit_analysis",
+          strict: true,
+          schema: modelOutputSchema,
+        },
+      },
+      temperature: 0,
+      stream: false,
+    };
+  }
+
   function expectedRecommendation(score) {
     if (score >= 80) return "apply";
     if (score >= 60) return "consider";
@@ -427,6 +447,7 @@ Write the summary, titles, and explanations in the requested explanation languag
     RUBRIC_WEIGHTS,
     SCHEMA_VERSION,
     applyDeterministicScore,
+    buildOpenAICompatibleRequest,
     buildOpenAIRequest,
     calculateRubricScore,
     expectedRecommendation,

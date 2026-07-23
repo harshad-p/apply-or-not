@@ -76,9 +76,60 @@
           </datalist>
           <p class="field-help">You can enter any language.</p>
         </section>
+
+        <section class="settings-card" aria-labelledby="provider-label">
+          <label id="provider-label" for="analysis-provider">
+            Analysis provider
+          </label>
+          <p class="field-description">
+            Use GPT-5.6 through OpenAI, or run a compatible model on this
+            computer.
+          </p>
+          <select id="analysis-provider" name="analysisProvider" data-provider>
+            <option value="openai">OpenAI · GPT-5.6 Sol</option>
+            <option value="local">Local model · Ollama or LM Studio</option>
+          </select>
+
+          <div class="nested-settings" data-local-settings hidden>
+            <label for="local-base-url">Local server base URL</label>
+            <input
+              id="local-base-url"
+              name="localBaseUrl"
+              type="url"
+              maxlength="500"
+              autocomplete="off"
+              spellcheck="false"
+              value="http://127.0.0.1:11434/v1"
+              data-local-base-url
+            >
+            <p class="field-help">
+              Ollama usually uses <code>http://127.0.0.1:11434/v1</code>;
+              LM Studio usually uses <code>http://127.0.0.1:1234/v1</code>.
+              Only localhost and loopback addresses are accepted.
+            </p>
+
+            <label for="local-model">Model identifier</label>
+            <input
+              id="local-model"
+              name="localModel"
+              type="text"
+              maxlength="200"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              placeholder="For example: qwen3:8b"
+              data-local-model
+            >
+            <p class="field-help">
+              Use the exact model name shown by Ollama or LM Studio. The model
+              must support structured JSON output.
+            </p>
+          </div>
+          <p class="connection-status" role="status" aria-live="polite" data-connection-status></p>
+        </section>
       </form>
 
-      <section class="settings-card" aria-labelledby="api-key-label">
+      <section class="settings-card" aria-labelledby="api-key-label" data-openai-settings>
           <label id="api-key-label" for="api-key">OpenAI API key</label>
           <p class="field-description">
             Optional shortcut for the local demo. Start the relay, then send a
@@ -102,17 +153,17 @@
           <p class="field-help">
             Never saved in browser storage. The relay forgets it when Node stops.
           </p>
-          <p class="connection-status" role="status" aria-live="polite" data-connection-status></p>
       </section>
 
       <aside class="privacy-note">
           <span class="privacy-icon" aria-hidden="true">✓</span>
           <div>
-            <strong>Local storage, explicit cloud analysis</strong>
+            <strong>Local storage, explicit provider choice</strong>
             <p>
               Preferences and cached results stay here. API keys stay only in
-              the relay process. Live analysis sends your criteria and job text
-              through that relay to OpenAI.
+              the relay process. OpenAI analysis sends the job and preferences
+              to OpenAI; local analysis sends them only to the loopback model
+              server you selected.
             </p>
           </div>
       </aside>
