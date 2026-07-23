@@ -256,6 +256,11 @@ extensionApi.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     operation = checkRelay();
   } else if (message?.type === "analysis:key:set") {
     operation = configureRelay(message.apiKey);
+  } else if (message?.type === "analysis:start") {
+    analysisRunner
+      .start(message.payload, message.context)
+      .catch((error) => console.error("Background analysis failed.", error));
+    operation = Promise.resolve({ started: true });
   } else if (message?.type === "analysis:run") {
     operation = analysisRunner.start(message.payload, message.context);
   } else if (message?.type === "analysis:cancel") {

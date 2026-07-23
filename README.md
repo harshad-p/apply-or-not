@@ -102,7 +102,7 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.17.5 is post-submission development on the local
+Version 0.17.6 is post-submission development on the local
 `codex/local-llm-support` branch. The submitted version remains 0.16.1 on
 `main`. The development version can route analysis through either GPT-5.6 or a
 local OpenAI-compatible model, validates both through the same result contract,
@@ -120,6 +120,10 @@ Reopening the popup restores a valid result and keeps the action labeled
 Analysis runs in the extension's background worker rather than the temporary
 popup. The user can close the popup, continue reading the job description, and
 reopen it to see the in-progress state or the saved result.
+The popup receives an immediate start acknowledgement and polls the background
+state instead of holding one long Safari message channel open. Completed
+results display the measured analysis duration alongside the model and prompt
+version.
 
 The extractor also detects visible Easy Apply and external-application controls.
 Prompt v11 treats application method as selected-job page-control evidence, recognizes

@@ -180,15 +180,23 @@ function startServer() {
           },
         })
           .then((analysis) => {
+            const durationMs = Date.now() - startedAt;
+            const timedAnalysis = {
+              ...analysis,
+              provider: {
+                ...analysis.provider,
+                durationMs,
+              },
+            };
             Object.assign(job, {
               state: "completed",
-              analysis,
+              analysis: timedAnalysis,
               updatedAt: Date.now(),
             });
             const metrics = job.metrics || {};
             console.log(
               `Local analysis ${requestId} completed in ${(
-                (Date.now() - startedAt) /
+                durationMs /
                 1000
               ).toFixed(1)}s (${metrics.sentDescriptionCharacters ?? "?"} characters sent, ${metrics.promptTokens ?? "?"} prompt tokens, ${metrics.completionTokens ?? "?"} completion tokens).`,
             );

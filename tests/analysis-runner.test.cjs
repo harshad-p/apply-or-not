@@ -52,7 +52,14 @@ test("finishes and caches analysis independently of a popup consumer", async () 
 
   await new Promise((resolve) => setTimeout(resolve, 30));
   const cache = storage.values[cacheApi.CACHE_STORAGE_KEY];
-  assert.equal(cache.entries[0].analysis, analysis);
+  assert.deepEqual(
+    {
+      score: cache.entries[0].analysis.score,
+      recommendation: cache.entries[0].analysis.recommendation,
+    },
+    analysis,
+  );
+  assert.ok(cache.entries[0].analysis.provider.durationMs >= 0);
   assert.equal((await runner.getStatus(context.signature)).state, "idle");
   assert.deepEqual(badges, ["…", "87"]);
   assert.deepEqual(storage.values[RUNS_STORAGE_KEY], {});

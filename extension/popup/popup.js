@@ -83,6 +83,15 @@ function selectedProviderKey() {
     : "openai|gpt-5.6-sol";
 }
 
+function formatDuration(milliseconds) {
+  if (!Number.isFinite(milliseconds) || milliseconds < 0) return "";
+  const seconds = milliseconds / 1000;
+  if (seconds < 60) return `${seconds.toFixed(seconds < 10 ? 1 : 0)}s`;
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.round(seconds % 60);
+  return `${minutes}m ${remainingSeconds}s`;
+}
+
 function showReanalysisConfirmation() {
   reanalysisEyebrow.textContent = isLocalProvider()
     ? "Local model request"
@@ -296,7 +305,17 @@ function renderAnalysis(
       : "New result could not be saved";
   settingsStatus.textContent = fromCache ? "Saved result" : "Analyzed";
   settingsStatus.dataset.state = recommendation.state;
-  settingsNote.textContent = `${savedLabel} · ${new Date(createdAt).toLocaleString()} · ${presentation.formatModelLabel(analysis.provider.model)} · ${analysis.promptVersion} · response ${analysis.provider.responseId || "not supplied"}`;
+  const durationLabel = formatDuration(analysis.provider.durationMs);
+  settingsNote.textContent = [
+    savedLabel,
+    new Date(createdAt).toLocaleString(),
+    presentation.formatModelLabel(analysis.provider.model),
+    durationLabel ? `completed in ${durationLabel}` : "",
+    analysis.promptVersion,
+    `response ${analysis.provider.responseId || "not supplied"}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   extractButton.textContent = "Reanalyze this job";
   extractButton.dataset.action = "reanalyze";
   setToolbarBadge(tabId, String(analysis.score), recommendation.badgeColor);
@@ -410,7 +429,7 @@ async function requestAnalysis(extraction, tabId) {
   const context = createCacheContext(extraction);
   activeAnalysisContext = { ...context, extraction, tabId };
   const response = await extensionApi.runtime.sendMessage({
-    type: "analysis:run",
+    type: "analysis:start",
     context: { ...context, tabId },
     payload: {
       userCriteria: currentSettings.userCriteria,
@@ -620,11 +639,8 @@ async function extractCurrentPage({ forceAnalysis = false } = {}) {
     renderAnalysisPending(extraction, activeTab.id);
 
     try {
-      const completed = await requestAnalysis(extraction, activeTab.id);
-      renderAnalysis(completed.analysis, extraction, activeTab.id, {
-        createdAt: completed.createdAt,
-        cacheSaved: completed.cacheSaved,
-      });
+      await requestAnalysis(extraction, activeTab.id);
+      await monitorBackgroundAnalysis(extraction, activeTab.id);
     } catch (error) {
       if (error.message === "Analysis canceled.") {
         const context = activeAnalysisContext;

@@ -65,8 +65,16 @@
       await updateBadge(context.tabId, "…", "#526158");
 
       try {
-        const analysis = await analyze(payload, { context, signal });
+        const returnedAnalysis = await analyze(payload, { context, signal });
         const createdAt = now();
+        const analysis = {
+          ...returnedAnalysis,
+          provider: {
+            ...returnedAnalysis.provider,
+            durationMs:
+              returnedAnalysis.provider?.durationMs ?? createdAt - startedAt,
+          },
+        };
         await saveAnalysis(context, analysis, createdAt);
         await clearStatus(context.signature);
         const color =
