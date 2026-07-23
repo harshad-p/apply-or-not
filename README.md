@@ -122,13 +122,15 @@ popup. The user can close the popup, continue reading the job description, and
 reopen it to see the in-progress state or the saved result.
 
 The extractor also detects visible Easy Apply and external-application controls.
-Prompt v8 treats application method as selected-job page-control evidence, recognizes
+Prompt v9 treats application method as selected-job page-control evidence, recognizes
 transferable skills across related technologies, evaluates explicit employer
 and industry preferences from posting evidence, and forces closed listings to
 score 0 regardless of technical fit. It scores only the
 preferences the user actually stated. GPT-5.6 classifies fixed rubric dimensions
 while trusted application code calculates the final percentage, preventing the
-model from freely choosing a different number on reanalysis.
+model from freely choosing a different number on reanalysis. Version 9 also
+reinforces that page evidence cannot make an unstated rubric dimension
+applicable and that unknown availability must not be described as open.
 
 Company evidence is collected conservatively from Schema.org organization and
 industry fields, known job-site company-name elements, and recognizable company
@@ -269,7 +271,9 @@ for this mode.
 Only plain HTTP URLs on `localhost`, `127.0.0.1`, or `::1` are accepted. The
 relay rejects remote provider URLs and URLs containing credentials. Smaller
 local models may be slower or may fail to follow the required schema; in that
-case, choose a stronger structured-output-capable model.
+case, choose a stronger structured-output-capable model. Local requests disable
+extended reasoning and cap output length so job-fit analysis can finish within
+the extension timeout.
 
 To make one real, billable GPT-5.6 request with fictional data, keep the relay
 running and use another terminal:

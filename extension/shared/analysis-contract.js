@@ -2,7 +2,7 @@
   "use strict";
 
   const SCHEMA_VERSION = 2;
-  const PROMPT_VERSION = "job-fit-v8";
+  const PROMPT_VERSION = "job-fit-v9";
   const DEFAULT_MODEL = "gpt-5.6-sol";
   const RUBRIC_WEIGHTS = Object.freeze({
     skills: 40,
@@ -50,10 +50,16 @@
     type: "object",
     additionalProperties: false,
     properties: {
-      applicable: { type: "boolean" },
+      applicable: {
+        type: "boolean",
+        description:
+          "True only when userCriteria explicitly states a preference or requirement in this dimension. Job-page evidence alone never makes a dimension applicable.",
+      },
       outcome: {
         type: "string",
         enum: ["match", "partial", "unknown", "gap", "conflict"],
+        description:
+          "How the posting evidence relates to the explicit user criterion. Use unknown for missing or ambiguous evidence; conflict only for an explicit contradiction.",
       },
     },
     required: ["applicable", "outcome"],
@@ -150,6 +156,8 @@ Keep these language facts separate: the posting's language, the user's proficien
 
 Use these score bands consistently: 80–100 = apply, 60–79 = consider, 0–59 = skip. Except for a closed application, a hard blocker must be both an explicit user deal-breaker and an explicit conflict in the posting; if one exists, recommend skip and keep the score below 60. Treat missing or ambiguous information as uncertainty rather than a negative fact.
 
+Before returning the rubric, check every dimension against userCriteria itself. Page evidence never makes a dimension applicable by itself. If the user did not explicitly state a criterion for a dimension, set applicable=false even when the posting contains evidence for it. In particular, an Easy Apply or external application control matters only when the user stated an application-method preference. Never describe unknown application availability as open or currently accepting applications.
+
 Write the summary, titles, and explanations in the requested explanation language. Keep evidence as a short quotation or close excerpt from the original posting language.`;
 
   function buildInput({ userCriteria, preferredLanguage, job }) {
@@ -217,7 +225,9 @@ Write the summary, titles, and explanations in the requested explanation languag
           schema: modelOutputSchema,
         },
       },
+      reasoning_effort: "none",
       temperature: 0,
+      max_tokens: 4000,
       stream: false,
     };
   }
