@@ -79,6 +79,7 @@ async function analyzeWithLocalModel(
   {
     fetchImpl = globalThis.fetch,
     timeoutMs = 300_000,
+    signal,
   } = {},
 ) {
   validatePayload(payload);
@@ -92,6 +93,12 @@ async function analyzeWithLocalModel(
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const cancel = () => controller.abort();
+  if (signal?.aborted) {
+    controller.abort();
+  } else {
+    signal?.addEventListener("abort", cancel, { once: true });
+  }
 
   try {
     const response = await fetchImpl(buildChatCompletionsUrl(config.baseUrl), {
@@ -109,6 +116,9 @@ async function analyzeWithLocalModel(
     return parseLocalResponse(await response.json(), config, payload);
   } catch (error) {
     if (error?.name === "AbortError") {
+      if (signal?.aborted) {
+        throw new Error("Local model analysis canceled.");
+      }
       throw new Error("Local model analysis timed out.");
     }
     if (error instanceof TypeError) {
@@ -118,6 +128,7 @@ async function analyzeWithLocalModel(
     }
     throw error;
   } finally {
+    signal?.removeEventListener("abort", cancel);
     clearTimeout(timeout);
   }
 }

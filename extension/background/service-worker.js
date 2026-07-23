@@ -73,11 +73,17 @@ async function readProviderConfig() {
     : { id: "openai" };
 }
 
-async function analyzeJob(payload) {
+async function analyzeJob(payload, { signal } = {}) {
   const providerConfig = await readProviderConfig();
   const controller = new AbortController();
   const timeoutMs = providerConfig.id === "local" ? 315_000 : 70_000;
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const cancel = () => controller.abort();
+  if (signal?.aborted) {
+    controller.abort();
+  } else {
+    signal?.addEventListener("abort", cancel, { once: true });
+  }
 
   try {
     const response = await fetch(`${relayUrl}/analyze`, {
@@ -99,6 +105,9 @@ async function analyzeJob(payload) {
     return body.analysis;
   } catch (error) {
     if (error?.name === "AbortError") {
+      if (signal?.aborted) {
+        throw new Error("Analysis canceled.");
+      }
       throw new Error(
         providerConfig.id === "local"
           ? "Local model analysis timed out. Try a smaller model or shorter job description."
@@ -107,6 +116,7 @@ async function analyzeJob(payload) {
     }
     throw error;
   } finally {
+    signal?.removeEventListener("abort", cancel);
     clearTimeout(timeout);
   }
 }
@@ -127,6 +137,8 @@ extensionApi.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     operation = configureRelay(message.apiKey);
   } else if (message?.type === "analysis:run") {
     operation = analysisRunner.start(message.payload, message.context);
+  } else if (message?.type === "analysis:cancel") {
+    operation = analysisRunner.cancel(message.signature);
   } else if (message?.type === "analysis:status") {
     operation = analysisRunner.getStatus(message.signature);
   } else {

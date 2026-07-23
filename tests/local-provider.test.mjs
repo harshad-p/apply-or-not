@@ -136,3 +136,21 @@ test("explains when a local model ignores structured output", () => {
     /supports structured output/,
   );
 });
+
+test("propagates external cancellation to the local model request", async () => {
+  const controller = new AbortController();
+  const operation = analyzeWithLocalModel(payload(), providerConfig, {
+    signal: controller.signal,
+    fetchImpl: async (_url, { signal }) =>
+      new Promise((_resolve, reject) => {
+        signal.addEventListener(
+          "abort",
+          () => reject(new DOMException("Aborted", "AbortError")),
+          { once: true },
+        );
+      }),
+  });
+
+  controller.abort();
+  await assert.rejects(operation, /canceled/);
+});

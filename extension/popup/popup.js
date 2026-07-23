@@ -23,6 +23,7 @@ const confirmReanalysisButton = document.querySelector(
 const cancelReanalysisButton = document.querySelector(
   "[data-cancel-reanalysis]",
 );
+const cancelAnalysisButton = document.querySelector("[data-cancel-analysis]");
 const extractButton = document.querySelector("[data-extract-button]");
 const demoButton = document.querySelector("[data-demo-button]");
 const jobLabel = document.querySelector("[data-job-label]");
@@ -54,6 +55,13 @@ let currentSettings = {
   localBaseUrl: "http://127.0.0.1:11434/v1",
   localModel: "",
 };
+let activeAnalysisContext = null;
+
+function hideCancelAnalysis() {
+  cancelAnalysisButton.hidden = true;
+  cancelAnalysisButton.disabled = false;
+  cancelAnalysisButton.textContent = "Cancel analysis";
+}
 
 function isLocalProvider() {
   return currentSettings.analysisProvider === "local";
@@ -196,6 +204,7 @@ async function setToolbarBadge(tabId, text = "", color = "#526158") {
 }
 
 function renderExtraction(extraction) {
+  hideCancelAnalysis();
   hideAnalysisDetails();
   const { characterCount, source, wasTruncated } = extraction.extraction;
   const detectionScore = extraction.detection.score;
@@ -235,6 +244,8 @@ function renderAnalysis(
     demo = false,
   } = {},
 ) {
+  activeAnalysisContext = null;
+  hideCancelAnalysis();
   hideAnalysisDetails();
   const recommendation = presentation.getRecommendationPresentation(
     analysis.recommendation,
@@ -292,6 +303,7 @@ function renderAnalysis(
 }
 
 function renderExtractionError(error, tabId) {
+  hideCancelAnalysis();
   console.error("Unable to extract the current page.", error);
   hideAnalysisDetails();
   resultMark.textContent = "!";
@@ -309,6 +321,8 @@ function renderExtractionError(error, tabId) {
 }
 
 function renderAnalysisError(error, extraction, tabId) {
+  activeAnalysisContext = null;
+  hideCancelAnalysis();
   console.error("Unable to analyze the job posting.", error);
   hideAnalysisDetails();
   resultMark.textContent = "!";
@@ -393,6 +407,7 @@ async function findCachedAnalysis(extraction) {
 
 async function requestAnalysis(extraction, tabId) {
   const context = createCacheContext(extraction);
+  activeAnalysisContext = { ...context, extraction, tabId };
   const response = await extensionApi.runtime.sendMessage({
     type: "analysis:run",
     context: { ...context, tabId },
@@ -409,6 +424,47 @@ async function requestAnalysis(extraction, tabId) {
   return response.result;
 }
 
+async function renderAnalysisCanceled(context) {
+  if (activeAnalysisContext?.signature === context.signature) {
+    activeAnalysisContext = null;
+  }
+  hideCancelAnalysis();
+  hideAnalysisDetails();
+  resultMark.textContent = "×";
+  resultMark.dataset.state = "uncertain";
+  resultEyebrow.textContent = "Analysis canceled";
+  resultTitle.textContent = "No analysis is running";
+  resultDescription.textContent =
+    "The local-model request was stopped. You can start a new analysis whenever you are ready.";
+  settingsStatus.textContent = "Canceled";
+  settingsStatus.dataset.state = "pending";
+  settingsNote.textContent = `${context.extraction.extraction.characterCount.toLocaleString()} characters were extracted successfully.`;
+  extractButton.textContent = "Analyze this job";
+  extractButton.dataset.action = "analyze";
+  extractButton.disabled = false;
+  demoButton.disabled = false;
+  await setToolbarBadge(context.tabId);
+}
+
+async function cancelActiveAnalysis() {
+  const context = activeAnalysisContext;
+  if (!context) return;
+
+  cancelAnalysisButton.disabled = true;
+  cancelAnalysisButton.textContent = "Canceling…";
+  const response = await extensionApi.runtime.sendMessage({
+    type: "analysis:cancel",
+    signature: context.signature,
+  });
+  if (!response?.ok) {
+    cancelAnalysisButton.disabled = false;
+    cancelAnalysisButton.textContent = "Cancel analysis";
+    throw new Error(response?.error || "The analysis could not be canceled.");
+  }
+
+  await renderAnalysisCanceled(context);
+}
+
 async function getAnalysisStatus(extraction) {
   const { signature } = createCacheContext(extraction);
   const response = await extensionApi.runtime.sendMessage({
@@ -419,7 +475,9 @@ async function getAnalysisStatus(extraction) {
   return response.result;
 }
 
-function renderAnalysisPending(extraction) {
+function renderAnalysisPending(extraction, tabId) {
+  const context = createCacheContext(extraction);
+  activeAnalysisContext = { ...context, extraction, tabId };
   hideAnalysisDetails();
   resultMark.textContent = "…";
   resultMark.dataset.state = "";
@@ -433,6 +491,7 @@ function renderAnalysisPending(extraction) {
   extractButton.textContent = "Analysis in progress…";
   extractButton.dataset.action = "pending";
   extractButton.disabled = true;
+  cancelAnalysisButton.hidden = !isLocalProvider();
 }
 
 function wait(milliseconds) {
@@ -440,7 +499,7 @@ function wait(milliseconds) {
 }
 
 async function monitorBackgroundAnalysis(extraction, tabId) {
-  for (let attempt = 0; attempt < 210; attempt += 1) {
+  for (let attempt = 0; attempt < 340; attempt += 1) {
     await wait(1000);
     const status = await getAnalysisStatus(extraction);
     if (status.state === "running") continue;
@@ -477,7 +536,7 @@ async function restoreCachedResultOnOpen() {
 
     const status = await getAnalysisStatus(extraction);
     if (status.state === "running") {
-      renderAnalysisPending(extraction);
+      renderAnalysisPending(extraction, activeTab.id);
       await monitorBackgroundAnalysis(extraction, activeTab.id);
       return;
     }
@@ -557,6 +616,7 @@ async function extractCurrentPage({ forceAnalysis = false } = {}) {
       "Comparing the posting with your saved preferences.";
     resultMark.textContent = "…";
     resultMark.dataset.state = "";
+    renderAnalysisPending(extraction, activeTab.id);
 
     try {
       const completed = await requestAnalysis(extraction, activeTab.id);
@@ -565,7 +625,12 @@ async function extractCurrentPage({ forceAnalysis = false } = {}) {
         cacheSaved: completed.cacheSaved,
       });
     } catch (error) {
-      renderAnalysisError(error, extraction, activeTab.id);
+      if (error.message === "Analysis canceled.") {
+        const context = activeAnalysisContext;
+        if (context) await renderAnalysisCanceled(context);
+      } else {
+        renderAnalysisError(error, extraction, activeTab.id);
+      }
     }
   } catch (error) {
     renderExtractionError(error, activeTab?.id);
@@ -625,6 +690,18 @@ confirmReanalysisButton?.addEventListener("click", async () => {
 
 cancelReanalysisButton?.addEventListener("click", () => {
   hideReanalysisConfirmation({ restoreFocus: true });
+});
+
+cancelAnalysisButton?.addEventListener("click", async () => {
+  try {
+    await cancelActiveAnalysis();
+  } catch (error) {
+    renderAnalysisError(
+      error,
+      activeAnalysisContext.extraction,
+      activeAnalysisContext.tabId,
+    );
+  }
 });
 
 demoButton?.addEventListener("click", runJudgeDemo);

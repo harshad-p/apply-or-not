@@ -374,6 +374,16 @@ button:focus-visible {
   background: #e7eee9;
 }
 
+.secondary-button.cancel-analysis-button {
+  border-color: #d79c94;
+  color: #8a3329;
+  background: #fbe6e3;
+}
+
+.secondary-button.cancel-analysis-button:hover {
+  background: #f5d7d2;
+}
+
 button:disabled {
   cursor: wait;
   opacity: 0.72;
@@ -544,6 +554,16 @@ footer {
 
   .secondary-button:hover {
     background: #273229;
+  }
+
+  .secondary-button.cancel-analysis-button {
+    border-color: #754b47;
+    color: #efb5ae;
+    background: #372321;
+  }
+
+  .secondary-button.cancel-analysis-button:hover {
+    background: #482b28;
   }
 
   .reanalyze-confirmation {

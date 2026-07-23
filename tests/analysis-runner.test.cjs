@@ -78,3 +78,55 @@ test("records a background error for a reopened popup", async () => {
   assert.equal(status.state, "error");
   assert.equal(status.error, "Provider unavailable");
 });
+
+test("cancels an active analysis and clears its persisted status", async () => {
+  const storage = createMemoryStorage();
+  const badges = [];
+  const runner = createAnalysisRunner({
+    analyze: (_payload, { signal }) =>
+      new Promise((_resolve, reject) => {
+        signal.addEventListener(
+          "abort",
+          () => reject(new DOMException("Aborted", "AbortError")),
+          { once: true },
+        );
+      }),
+    storage,
+    cacheApi,
+    updateBadge: async (_tabId, text) => badges.push(text),
+  });
+  const context = {
+    pageUrl: "https://example.test/jobs/789",
+    signature: "canceled-job-signature",
+    tabId: 9,
+  };
+
+  const operation = runner.start({}, context);
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  assert.deepEqual(await runner.cancel(context.signature), { canceled: true });
+  await assert.rejects(operation, /Analysis canceled/);
+  assert.equal((await runner.getStatus(context.signature)).state, "idle");
+  assert.deepEqual(badges, ["…", ""]);
+});
+
+test("recovers an orphaned running status immediately", async () => {
+  const storage = createMemoryStorage();
+  const signature = "orphaned-job-signature";
+  storage.values[RUNS_STORAGE_KEY] = {
+    [signature]: {
+      state: "running",
+      pageUrl: "https://example.test/jobs/orphaned",
+      tabId: 10,
+      startedAt: Date.now(),
+    },
+  };
+  const runner = createAnalysisRunner({
+    analyze: async () => {},
+    storage,
+    cacheApi,
+  });
+
+  const status = await runner.getStatus(signature);
+  assert.equal(status.state, "error");
+  assert.match(status.error, /interrupted/);
+});

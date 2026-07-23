@@ -147,7 +147,7 @@ inferences, and respect access controls and third-party terms.
 ## LLM providers
 
 The submitted live implementation uses OpenAI GPT-5.6 through the localhost
-relay. Post-submission version 0.17.1 adds a provider selector while keeping the
+relay. Post-submission version 0.17.2 adds a provider selector while keeping the
 same relay boundary:
 
 - OpenAI GPT-5.6 as the default and demonstrated hackathon provider
@@ -158,6 +158,9 @@ same relay boundary:
 Provider selection must not change the normalized analysis-result schema. Keep
 prompts versioned and testable. Validate model output before displaying it, and
 handle timeouts, malformed responses, rate limits, and unavailable providers.
+Local requests can be canceled from the popup, with cancellation propagated
+through the relay to the model server. Interrupted background runs are detected
+and reported immediately when the popup reopens.
 Local inference must be labeled clearly because model quality, structured-output
 support, speed, and hardware requirements vary by model and computer.
 

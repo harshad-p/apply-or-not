@@ -120,6 +120,10 @@ function startServer() {
     }
 
     if (request.method === "POST" && request.url === "/analyze") {
+      const controller = new AbortController();
+      response.on("close", () => {
+        if (!response.writableEnded) controller.abort();
+      });
       try {
         const requestBody = await readJson(request);
         const isWrappedRequest =
@@ -130,12 +134,16 @@ function startServer() {
         );
         const analysis =
           providerConfig.id === "local"
-            ? await analyzeWithLocalModel(payload, providerConfig)
+            ? await analyzeWithLocalModel(payload, providerConfig, {
+                signal: controller.signal,
+              })
             : await analyzeWithOpenAI(payload, { apiKey, projectId });
         sendJson(response, 200, { analysis }, origin);
       } catch (error) {
         console.error(`Analysis failed: ${error.message}`);
-        sendJson(response, 400, { error: error.message }, origin);
+        if (!response.destroyed) {
+          sendJson(response, 400, { error: error.message }, origin);
+        }
       }
       return;
     }

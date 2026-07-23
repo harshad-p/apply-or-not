@@ -102,7 +102,7 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.17.1 is post-submission development on the local
+Version 0.17.2 is post-submission development on the local
 `codex/local-llm-support` branch. The submitted version remains 0.16.1 on
 `main`. The development version can route analysis through either GPT-5.6 or a
 local OpenAI-compatible model, validates both through the same result contract,
@@ -274,7 +274,11 @@ local models may be slower or may fail to follow the required schema; in that
 case, choose a stronger structured-output-capable model. Local requests disable
 extended reasoning and cap output length. Local analysis may take several
 minutes on older hardware; the relay allows up to five minutes before reporting
-a timeout.
+a timeout. While local analysis is running, the popup provides a **Cancel
+analysis** action that aborts the extension request, relay request, and local
+model generation. If the browser interrupts a background worker, reopening the
+popup reports the interrupted run immediately instead of leaving a stale
+in-progress state.
 
 To make one real, billable GPT-5.6 request with fictional data, keep the relay
 running and use another terminal:
