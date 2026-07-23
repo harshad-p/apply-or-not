@@ -73,7 +73,52 @@ async function readProviderConfig() {
     : { id: "openai" };
 }
 
-async function analyzeJob(payload, { signal } = {}) {
+function waitForPoll(milliseconds, signal) {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(resolve, milliseconds);
+    signal.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timeout);
+        reject(new DOMException("Aborted", "AbortError"));
+      },
+      { once: true },
+    );
+  });
+}
+
+async function analyzeWithRelayJob(payload, providerConfig, requestId, signal) {
+  const startResponse = await fetch(`${relayUrl}/analyze/start`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ payload, providerConfig, requestId }),
+    signal,
+  });
+  await readJsonResponse(startResponse);
+
+  while (true) {
+    await waitForPoll(1000, signal);
+    const statusResponse = await fetch(
+      `${relayUrl}/analyze/status?requestId=${encodeURIComponent(requestId)}`,
+      { signal },
+    );
+    const status = await readJsonResponse(statusResponse);
+    if (status.state === "completed") {
+      return status.analysis;
+    }
+    if (status.state === "error") {
+      throw new Error(status.error || "Local model analysis failed.");
+    }
+    if (status.state === "canceled") {
+      throw new Error("Analysis canceled.");
+    }
+    if (status.state === "missing") {
+      throw new Error("The local relay lost the analysis job. Please try again.");
+    }
+  }
+}
+
+async function analyzeJob(payload, { context, signal } = {}) {
   const providerConfig = await readProviderConfig();
   const controller = new AbortController();
   const timeoutMs = providerConfig.id === "local" ? 315_000 : 70_000;
@@ -86,6 +131,23 @@ async function analyzeJob(payload, { signal } = {}) {
   }
 
   try {
+    if (providerConfig.id === "local") {
+      const analysis = await analyzeWithRelayJob(
+        payload,
+        providerConfig,
+        context?.signature || "",
+        controller.signal,
+      );
+      const validation = globalThis.ApplyOrNotAnalysis.validateModelOutput(
+        analysis,
+        payload,
+      );
+      if (!validation.valid) {
+        throw new Error("Local AI helper returned an invalid analysis result.");
+      }
+      return analysis;
+    }
+
     const response = await fetch(`${relayUrl}/analyze`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -121,11 +183,70 @@ async function analyzeJob(payload, { signal } = {}) {
   }
 }
 
+async function cancelAnalysis(signature) {
+  const relayCancellation = fetch(`${relayUrl}/analyze/cancel`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ requestId: signature }),
+  }).then((response) => readJsonResponse(response));
+  const runnerCancellation = analysisRunner.cancel(signature);
+  const [relayResult, runnerResult] = await Promise.allSettled([
+    relayCancellation,
+    runnerCancellation,
+  ]);
+
+  if (runnerResult.status === "rejected") {
+    throw runnerResult.reason;
+  }
+  if (relayResult.status === "rejected") {
+    console.warn("The relay could not confirm local-model cancellation.", relayResult.reason);
+  }
+  return runnerResult.value;
+}
+
+async function recoverAnalysis(signature, status) {
+  if (status?.providerId !== "local") return null;
+
+  try {
+    const response = await fetch(
+      `${relayUrl}/analyze/status?requestId=${encodeURIComponent(signature)}`,
+    );
+    const recovered = await readJsonResponse(response);
+    if (recovered.state === "completed") {
+      const validation = globalThis.ApplyOrNotAnalysis.validateModelOutput(
+        recovered.analysis,
+      );
+      if (!validation.valid) {
+        return {
+          state: "error",
+          error: "The local relay retained an invalid analysis result.",
+        };
+      }
+    }
+    if (recovered.state === "missing" || recovered.state === "canceled") {
+      return {
+        state: "error",
+        error:
+          recovered.state === "canceled"
+            ? "The local analysis was canceled."
+            : "The local relay no longer has this analysis. Please try again.",
+      };
+    }
+    return recovered;
+  } catch (error) {
+    return {
+      state: "error",
+      error: `Could not recover the local analysis: ${error.message}`,
+    };
+  }
+}
+
 const analysisRunner = globalThis.ApplyOrNotAnalysisRunner.createAnalysisRunner({
   analyze: analyzeJob,
   storage: extensionApi.storage.local,
   cacheApi: globalThis.ApplyOrNotCache,
   updateBadge: safelyUpdateBadge,
+  recover: recoverAnalysis,
 });
 
 extensionApi.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -138,7 +259,7 @@ extensionApi.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   } else if (message?.type === "analysis:run") {
     operation = analysisRunner.start(message.payload, message.context);
   } else if (message?.type === "analysis:cancel") {
-    operation = analysisRunner.cancel(message.signature);
+    operation = cancelAnalysis(message.signature);
   } else if (message?.type === "analysis:status") {
     operation = analysisRunner.getStatus(message.signature);
   } else {

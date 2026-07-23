@@ -130,3 +130,30 @@ test("recovers an orphaned running status immediately", async () => {
   assert.equal(status.state, "error");
   assert.match(status.error, /interrupted/);
 });
+
+test("restores a completed relay job after the worker restarts", async () => {
+  const storage = createMemoryStorage();
+  const signature = "recoverable-job-signature";
+  const analysis = { score: 91, recommendation: "apply" };
+  storage.values[RUNS_STORAGE_KEY] = {
+    [signature]: {
+      state: "running",
+      pageUrl: "https://example.test/jobs/recoverable",
+      tabId: 11,
+      providerId: "local",
+      startedAt: Date.now(),
+    },
+  };
+  const runner = createAnalysisRunner({
+    analyze: async () => {},
+    storage,
+    cacheApi,
+    recover: async () => ({ state: "completed", analysis }),
+  });
+
+  assert.equal((await runner.getStatus(signature)).state, "idle");
+  assert.equal(
+    storage.values[cacheApi.CACHE_STORAGE_KEY].entries[0].analysis,
+    analysis,
+  );
+});

@@ -13,6 +13,8 @@ const port = Number.parseInt(process.env.APPLY_OR_NOT_PORT || "8787", 10);
 let apiKey = process.env.OPENAI_API_KEY || "";
 const projectId = process.env.OPENAI_PROJECT_ID || "";
 const maximumBodyBytes = 128 * 1024;
+const localRequests = new Map();
+const localJobRetentionMs = 10 * 60 * 1000;
 
 startServer();
 
@@ -65,9 +67,30 @@ function readJson(request) {
   });
 }
 
+function pruneLocalJobs() {
+  const cutoff = Date.now() - localJobRetentionMs;
+  for (const [requestId, job] of localRequests) {
+    if (job.updatedAt < cutoff && job.state !== "running") {
+      localRequests.delete(requestId);
+    }
+  }
+}
+
+function localJobResponse(job) {
+  if (!job) return { state: "missing" };
+  if (job.state === "completed") {
+    return { state: job.state, analysis: job.analysis };
+  }
+  if (job.state === "error") {
+    return { state: job.state, error: job.error };
+  }
+  return { state: job.state };
+}
+
 function startServer() {
   const server = http.createServer(async (request, response) => {
     const origin = request.headers.origin || "";
+    const requestUrl = new URL(request.url, `http://${host}:${port}`);
 
     if (!isAllowedOrigin(origin)) {
       sendJson(response, 403, { error: "Request origin is not allowed." });
@@ -119,11 +142,78 @@ function startServer() {
       return;
     }
 
+    if (request.method === "POST" && request.url === "/analyze/start") {
+      try {
+        pruneLocalJobs();
+        const body = await readJson(request);
+        const requestId =
+          typeof body?.requestId === "string" ? body.requestId.trim() : "";
+        if (!/^[a-f0-9]{16}$/u.test(requestId)) {
+          throw new Error("Local analysis request ID is invalid.");
+        }
+        const existing = localRequests.get(requestId);
+        if (existing) {
+          sendJson(response, 200, localJobResponse(existing), origin);
+          return;
+        }
+
+        const providerConfig = validateProviderConfig(body?.providerConfig);
+        if (providerConfig.id !== "local") {
+          throw new Error("A local provider is required for a relay job.");
+        }
+        const controller = new AbortController();
+        const job = {
+          state: "running",
+          controller,
+          updatedAt: Date.now(),
+        };
+        localRequests.set(requestId, job);
+        void analyzeWithLocalModel(body?.payload, providerConfig, {
+          signal: controller.signal,
+        })
+          .then((analysis) => {
+            Object.assign(job, {
+              state: "completed",
+              analysis,
+              updatedAt: Date.now(),
+            });
+          })
+          .catch((error) => {
+            Object.assign(job, {
+              state: controller.signal.aborted ? "canceled" : "error",
+              error: error.message,
+              updatedAt: Date.now(),
+            });
+          });
+        sendJson(response, 202, { state: "running" }, origin);
+      } catch (error) {
+        sendJson(response, 400, { error: error.message }, origin);
+      }
+      return;
+    }
+
+    if (
+      request.method === "GET" &&
+      requestUrl.pathname === "/analyze/status"
+    ) {
+      const requestId = requestUrl.searchParams.get("requestId") || "";
+      if (!/^[a-f0-9]{16}$/u.test(requestId)) {
+        sendJson(response, 400, { error: "Local analysis request ID is invalid." }, origin);
+        return;
+      }
+      pruneLocalJobs();
+      sendJson(
+        response,
+        200,
+        localJobResponse(localRequests.get(requestId)),
+        origin,
+      );
+      return;
+    }
+
     if (request.method === "POST" && request.url === "/analyze") {
-      const controller = new AbortController();
-      response.on("close", () => {
-        if (!response.writableEnded) controller.abort();
-      });
+      let requestId = "";
+      let controller;
       try {
         const requestBody = await readJson(request);
         const isWrappedRequest =
@@ -132,6 +222,21 @@ function startServer() {
         const providerConfig = validateProviderConfig(
           isWrappedRequest ? requestBody.providerConfig : { id: "openai" },
         );
+        requestId =
+          typeof requestBody?.requestId === "string"
+            ? requestBody.requestId.trim()
+            : "";
+        if (requestId && !/^[a-f0-9]{16}$/u.test(requestId)) {
+          throw new Error("Local analysis request ID is invalid.");
+        }
+        controller = new AbortController();
+        if (providerConfig.id === "local" && requestId) {
+          localRequests.set(requestId, {
+            state: "running",
+            controller,
+            updatedAt: Date.now(),
+          });
+        }
         const analysis =
           providerConfig.id === "local"
             ? await analyzeWithLocalModel(payload, providerConfig, {
@@ -144,6 +249,35 @@ function startServer() {
         if (!response.destroyed) {
           sendJson(response, 400, { error: error.message }, origin);
         }
+      } finally {
+        if (requestId && localRequests.get(requestId)?.controller === controller) {
+          localRequests.delete(requestId);
+        }
+      }
+      return;
+    }
+
+    if (request.method === "POST" && request.url === "/analyze/cancel") {
+      try {
+        const body = await readJson(request);
+        const requestId =
+          typeof body?.requestId === "string" ? body.requestId.trim() : "";
+        if (!/^[a-f0-9]{16}$/u.test(requestId)) {
+          throw new Error("Local analysis request ID is invalid.");
+        }
+        const job = localRequests.get(requestId);
+        job?.controller?.abort();
+        if (job) {
+          Object.assign(job, { state: "canceled", updatedAt: Date.now() });
+        }
+        sendJson(
+          response,
+          200,
+          { canceled: Boolean(job) },
+          origin,
+        );
+      } catch (error) {
+        sendJson(response, 400, { error: error.message }, origin);
       }
       return;
     }

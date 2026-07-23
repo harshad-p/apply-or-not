@@ -376,6 +376,7 @@ function createCacheContext(extraction) {
   const pageUrl = extraction.page.url;
   return {
     pageUrl,
+    providerId: currentSettings.analysisProvider,
     signature: cacheApi.createSignature({
       pageUrl,
       job: extraction.job,

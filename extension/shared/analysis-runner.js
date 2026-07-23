@@ -9,6 +9,7 @@
     storage,
     cacheApi,
     updateBadge = async () => {},
+    recover = null,
     now = () => Date.now(),
   }) {
     const inFlight = new Map();
@@ -58,12 +59,13 @@
         state: "running",
         pageUrl: context.pageUrl,
         tabId: context.tabId,
+        providerId: context.providerId || "",
         startedAt,
       });
       await updateBadge(context.tabId, "…", "#526158");
 
       try {
-        const analysis = await analyze(payload, { signal });
+        const analysis = await analyze(payload, { context, signal });
         const createdAt = now();
         await saveAnalysis(context, analysis, createdAt);
         await clearStatus(context.signature);
@@ -140,6 +142,48 @@
       if (!status) return { state: "idle" };
 
       if (status.state === "running" && !inFlight.has(signature)) {
+        if (typeof recover === "function") {
+          const recovered = await recover(signature, status);
+          if (recovered?.state === "running") {
+            return status;
+          }
+          if (recovered?.state === "completed" && recovered.analysis) {
+            const createdAt = recovered.createdAt || now();
+            await saveAnalysis(
+              {
+                pageUrl: status.pageUrl,
+                signature,
+                tabId: status.tabId,
+              },
+              recovered.analysis,
+              createdAt,
+            );
+            await clearStatus(signature);
+            const color =
+              recovered.analysis.score >= 80
+                ? "#2f7d4a"
+                : recovered.analysis.score >= 60
+                  ? "#b46b12"
+                  : "#a84035";
+            await updateBadge(
+              status.tabId,
+              String(recovered.analysis.score),
+              color,
+            );
+            return { state: "idle" };
+          }
+          if (recovered?.state === "error") {
+            const failed = {
+              ...status,
+              state: "error",
+              finishedAt: now(),
+              error: recovered.error || "The background analysis failed.",
+            };
+            await setStatus(signature, failed);
+            await updateBadge(status.tabId, "!", "#a84035");
+            return failed;
+          }
+        }
         const interrupted = {
           ...status,
           state: "error",
