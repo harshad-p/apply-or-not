@@ -102,7 +102,7 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.17.2 is post-submission development on the local
+Version 0.17.3 is post-submission development on the local
 `codex/local-llm-support` branch. The submitted version remains 0.16.1 on
 `main`. The development version can route analysis through either GPT-5.6 or a
 local OpenAI-compatible model, validates both through the same result contract,
@@ -122,13 +122,13 @@ popup. The user can close the popup, continue reading the job description, and
 reopen it to see the in-progress state or the saved result.
 
 The extractor also detects visible Easy Apply and external-application controls.
-Prompt v9 treats application method as selected-job page-control evidence, recognizes
+Prompt v10 treats application method as selected-job page-control evidence, recognizes
 transferable skills across related technologies, evaluates explicit employer
 and industry preferences from posting evidence, and forces closed listings to
 score 0 regardless of technical fit. It scores only the
 preferences the user actually stated. GPT-5.6 classifies fixed rubric dimensions
 while trusted application code calculates the final percentage, preventing the
-model from freely choosing a different number on reanalysis. Version 9 also
+model from freely choosing a different number on reanalysis. Version 10 also
 reinforces that page evidence cannot make an unstated rubric dimension
 applicable and that unknown availability must not be described as open.
 

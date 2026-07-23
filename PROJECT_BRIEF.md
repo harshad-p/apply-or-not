@@ -99,7 +99,7 @@ The score must follow an explainable rubric rather than arbitrary sentiment.
 The implemented rubric uses fixed application-side weights and discrete model
 classifications so GPT-5.6 interprets evidence but cannot freely choose the final
 percentage.
-Prompt v9 also treats adjacent technologies as transferable evidence, evaluates
+Prompt v10 also treats adjacent technologies as transferable evidence, evaluates
 employer/domain preferences from available company evidence, and accepts Easy
 Apply only from the selected job's application control. A listing that trusted
 page extraction identifies as no longer accepting applications receives a
@@ -147,7 +147,7 @@ inferences, and respect access controls and third-party terms.
 ## LLM providers
 
 The submitted live implementation uses OpenAI GPT-5.6 through the localhost
-relay. Post-submission version 0.17.2 adds a provider selector while keeping the
+relay. Post-submission version 0.17.3 adds a provider selector while keeping the
 same relay boundary:
 
 - OpenAI GPT-5.6 as the default and demonstrated hackathon provider

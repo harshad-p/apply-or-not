@@ -2,8 +2,9 @@
   "use strict";
 
   const SCHEMA_VERSION = 2;
-  const PROMPT_VERSION = "job-fit-v9";
+  const PROMPT_VERSION = "job-fit-v10";
   const DEFAULT_MODEL = "gpt-5.6-sol";
+  const SUMMARY_MAX_LENGTH = 240;
   const RUBRIC_WEIGHTS = Object.freeze({
     skills: 40,
     workArrangement: 15,
@@ -91,7 +92,13 @@
         type: "string",
         enum: ["low", "medium", "high"],
       },
-      summary: { type: "string", minLength: 1, maxLength: 700 },
+      summary: {
+        type: "string",
+        minLength: 1,
+        maxLength: SUMMARY_MAX_LENGTH,
+        description:
+          "A concise one- or two-sentence recommendation overview. Put supporting detail in the evidence lists.",
+      },
       positiveMatches: {
         type: "array",
         items: evidenceItemSchema,
@@ -158,7 +165,7 @@ Use these score bands consistently: 80–100 = apply, 60–79 = consider, 0–59
 
 Before returning the rubric, check every dimension against userCriteria itself. Page evidence never makes a dimension applicable by itself. If the user did not explicitly state a criterion for a dimension, set applicable=false even when the posting contains evidence for it. In particular, an Easy Apply or external application control matters only when the user stated an application-method preference. Never describe unknown application availability as open or currently accepting applications.
 
-Write the summary, titles, and explanations in the requested explanation language. Keep evidence as a short quotation or close excerpt from the original posting language.`;
+Write the summary, titles, and explanations in the requested explanation language. The summary must be one or two concise sentences and no more than ${SUMMARY_MAX_LENGTH} characters; put supporting details in the evidence lists instead. Keep evidence as a short quotation or close excerpt from the original posting language.`;
 
   function buildInput({ userCriteria, preferredLanguage, job }) {
     return JSON.stringify(
@@ -431,8 +438,32 @@ Write the summary, titles, and explanations in the requested explanation languag
     return { valid: errors.length === 0, errors };
   }
 
+  function compactSummary(value) {
+    if (typeof value !== "string") return value;
+
+    const compact = value.replace(/\s+/gu, " ").trim();
+    if (compact.length <= SUMMARY_MAX_LENGTH) return compact;
+
+    const candidate = compact.slice(0, SUMMARY_MAX_LENGTH + 1);
+    const sentenceEnd = Math.max(
+      candidate.lastIndexOf("."),
+      candidate.lastIndexOf("!"),
+      candidate.lastIndexOf("?"),
+    );
+    if (sentenceEnd >= 80) {
+      return candidate.slice(0, sentenceEnd + 1);
+    }
+
+    const wordEnd = candidate.lastIndexOf(" ", SUMMARY_MAX_LENGTH - 1);
+    const cutoff = wordEnd >= 80 ? wordEnd : SUMMARY_MAX_LENGTH - 1;
+    return `${candidate.slice(0, cutoff).trimEnd()}…`;
+  }
+
   function normalizeAnalysis(value, provider, context) {
-    const scoredValue = applyDeterministicScore(value, context);
+    const preparedValue = isPlainObject(value)
+      ? { ...value, summary: compactSummary(value.summary) }
+      : value;
+    const scoredValue = applyDeterministicScore(preparedValue, context);
     const validation = validateModelOutput(scoredValue, context);
     if (!validation.valid) {
       throw new Error(`Invalid analysis result: ${validation.errors.join(" ")}`);
@@ -456,10 +487,12 @@ Write the summary, titles, and explanations in the requested explanation languag
     RUBRIC_FACTORS,
     RUBRIC_WEIGHTS,
     SCHEMA_VERSION,
+    SUMMARY_MAX_LENGTH,
     applyDeterministicScore,
     buildOpenAICompatibleRequest,
     buildOpenAIRequest,
     calculateRubricScore,
+    compactSummary,
     expectedRecommendation,
     instructions,
     modelOutputSchema,

@@ -4,9 +4,11 @@ const assert = require("node:assert/strict");
 const {
   DEFAULT_MODEL,
   PROMPT_VERSION,
+  SUMMARY_MAX_LENGTH,
   buildOpenAICompatibleRequest,
   buildOpenAIRequest,
   calculateRubricScore,
+  compactSummary,
   normalizeAnalysis,
   validateModelOutput,
 } = require("../extension/shared/analysis-contract.js");
@@ -179,7 +181,7 @@ test("builds a private structured GPT-5.6 Responses request", () => {
   assert.match(request.input, /No longer accepting applications/);
   assert.match(request.input, /companyContext/);
   assert.match(request.input, /companyEvidenceSource/);
-  assert.equal(PROMPT_VERSION, "job-fit-v9");
+  assert.equal(PROMPT_VERSION, "job-fit-v10");
   assert.match(request.instructions, /transferable skills/i);
   assert.match(request.instructions, /SQL Server experience is relevant evidence for PostgreSQL/i);
   assert.match(request.instructions, /only OpenAI/i);
@@ -187,6 +189,8 @@ test("builds a private structured GPT-5.6 Responses request", () => {
   assert.match(request.instructions, /score of 0/i);
   assert.match(request.instructions, /Page evidence never makes a dimension applicable/i);
   assert.match(request.instructions, /Never describe unknown application availability as open/i);
+  assert.match(request.instructions, /one or two concise sentences/i);
+  assert.equal(request.text.format.schema.properties.summary.maxLength, 240);
 });
 
 test("builds a structured OpenAI-compatible local request", () => {
@@ -220,4 +224,26 @@ test("attaches trusted provider metadata outside the model output", () => {
   assert.equal(normalized.promptVersion, PROMPT_VERSION);
   assert.equal(normalized.provider.model, "gpt-5.6-sol");
   assert.equal(normalized.provider.responseId, "resp_test");
+});
+
+test("compacts verbose summaries without cutting through a word", () => {
+  const verbose = `${"This role strongly matches the applicant's backend experience and stated language preferences. ".repeat(5)}Additional detail.`;
+  const compact = compactSummary(verbose);
+
+  assert.ok(compact.length <= SUMMARY_MAX_LENGTH);
+  assert.match(compact, /[.!?…]$/u);
+  assert.equal(compact.includes("\n"), false);
+});
+
+test("normalization enforces the popup summary limit", () => {
+  const normalized = normalizeAnalysis(
+    validAnalysis({ summary: "Strong match. ".repeat(80) }),
+    { id: "local", model: "qwen3:4b-instruct" },
+  );
+
+  assert.ok(normalized.summary.length <= SUMMARY_MAX_LENGTH);
+  assert.deepEqual(validateModelOutput(normalized), {
+    valid: true,
+    errors: [],
+  });
 });
