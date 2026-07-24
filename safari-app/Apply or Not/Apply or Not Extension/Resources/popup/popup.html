@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Apply or Not</title>
+    <link rel="stylesheet" href="popup.css">
+    <script src="../shared/analysis-contract.js" defer></script>
+    <script src="../shared/demo-data.js" defer></script>
+    <script src="../shared/analysis-cache.js" defer></script>
+    <script src="../shared/presentation.js" defer></script>
+    <script src="../shared/action-badge.js" defer></script>
+    <script src="popup.js" defer></script>
+  </head>
+  <body>
+    <main class="popup-shell">
+      <header class="brand">
+        <img class="brand-mark" src="../icons/apply-click.svg" alt="" aria-hidden="true">
+        <span class="brand-copy">
+          <span class="brand-name">Apply or Not</span>
+          <span class="brand-tagline">To apply or not—that is the question.</span>
+        </span>
+        <span class="status-pill" data-settings-status>Checking setup</span>
+      </header>
+
+      <section class="result-state" aria-labelledby="popup-title">
+        <div class="score-placeholder" aria-hidden="true" data-result-mark>?</div>
+        <p class="eyebrow" data-result-eyebrow>Job-fit check</p>
+        <h1 id="popup-title" data-result-title>Should you apply?</h1>
+        <p class="description" data-result-description>
+          Open a job posting to get a score and an explanation based on your
+          preferences.
+        </p>
+
+        <section class="analysis-details" aria-label="Analysis details" data-analysis-details hidden>
+          <p class="job-label" data-job-label></p>
+          <div class="result-meta">
+            <span data-confidence></span>
+            <span data-model></span>
+            <span>Fixed rubric</span>
+            <span data-application-method></span>
+          </div>
+
+          <div class="reason-group" data-positive-group>
+            <h2>Why it fits</h2>
+            <ul data-positive-list></ul>
+          </div>
+
+          <div class="reason-group" data-concern-group>
+            <h2>Concerns</h2>
+            <ul data-concern-list></ul>
+          </div>
+
+          <div class="reason-group" data-blocker-group>
+            <h2>Hard blockers</h2>
+            <ul data-blocker-list></ul>
+          </div>
+
+          <div class="language-summary" data-language-group>
+            <h2>Language</h2>
+            <p data-language-summary></p>
+          </div>
+        </section>
+
+        <section
+          class="reanalyze-confirmation"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="reanalyze-title"
+          aria-describedby="reanalyze-description"
+          data-reanalyze-confirmation
+          hidden
+        >
+          <p class="confirmation-eyebrow">Billable request</p>
+          <h2 id="reanalyze-title">Analyze this job again?</h2>
+          <p id="reanalyze-description">
+            This will call GPT-5.6 again and may incur API charges. Your saved
+            result will remain unless the new request succeeds.
+          </p>
+          <div class="confirmation-actions">
+            <button
+              class="secondary-button"
+              type="button"
+              data-cancel-reanalysis
+            >
+              Cancel
+            </button>
+            <button type="button" data-confirm-reanalysis>Continue</button>
+          </div>
+        </section>
+
+        <div class="button-stack">
+          <button type="button" data-extract-button hidden>Read this job posting</button>
+          <button class="secondary-button" type="button" data-demo-button>
+            Run no-cost demo
+          </button>
+          <button class="secondary-button" type="button" data-settings-button>
+            Set your preferences
+          </button>
+        </div>
+        <p class="milestone-note" data-settings-note>
+          Tell Apply or Not what you want from a role before analyzing job
+          postings.
+        </p>
+      </section>
+
+      <footer>
+        <span>Cloud analysis uses your local relay.</span>
+        <span data-version></span>
+      </footer>
+    </main>
+  </body>
+</html>

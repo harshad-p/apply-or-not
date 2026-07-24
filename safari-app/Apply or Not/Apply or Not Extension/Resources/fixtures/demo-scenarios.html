@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Apply or Not — Video Demo Scenarios</title>
+    <link rel="stylesheet" href="demo-job.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <span class="brand">Apply or Not</span>
+      <span>Video demo fixtures</span>
+    </header>
+    <main class="shell">
+      <section class="scenario-header">
+        <h1>Synthetic job scenarios</h1>
+        <p>
+          Four fictional pages, one consistent applicant profile. Open a page,
+          then use the extension normally.
+        </p>
+        <p class="demo-profile"><strong>Suggested preferences:</strong> “I am a senior backend developer with C#, .NET, ASP.NET Core, Azure, and SQL Server. I work in English, prefer hybrid or remote work, German must not be mandatory, and I prefer Easy Apply.”</p>
+        <p class="demo-reload"><strong>Before testing:</strong> reload the temporary or unpacked extension after pulling code changes.</p>
+      </section>
+      <section class="scenario-grid">
+        <a class="scenario-card" href="job-posting-en.html" data-expected-outcome="strong-match">
+          <strong>1. English · Strong match</strong>
+          <span>C#, ASP.NET Core, Azure, SQL Server, English, hybrid or remote, and Easy Apply.</span>
+          <code>Expected: Apply</code>
+        </a>
+        <a class="scenario-card" href="demo-language-de.html" data-expected-outcome="strong-match">
+          <strong>2. German · Strong match</strong>
+          <span>A German-language description for an English-speaking .NET role with optional German.</span>
+          <code>Expected: Apply</code>
+        </a>
+        <a class="scenario-card" href="demo-hard-blocker.html" data-expected-outcome="weak-match">
+          <strong>3. English · Not a strong match</strong>
+          <span>Mandatory React, frontend leadership, German C1, onsite work, and external application.</span>
+          <code>Expected: Skip</code>
+        </a>
+        <a class="scenario-card" href="demo-closed-applications.html" data-expected-outcome="closed">
+          <strong>4. English · Strong match, applications closed</strong>
+          <span>The skills, language, and work arrangement fit—but the listing is no longer open.</span>
+          <code>Expected result: 0 · Skip</code>
+        </a>
+      </section>
+    </main>
+  </body>
+</html>
