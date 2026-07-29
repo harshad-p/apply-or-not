@@ -10,6 +10,7 @@ import {
   buildNativeLanguageVerificationRequest,
   buildLocalSummary,
   compactLocalDescription,
+  compactOutputHasLanguageRequirement,
   evidenceAppearsInJob,
   extractLanguageCandidateLines,
   expandCompactLocalOutput,
@@ -27,6 +28,7 @@ import {
   usesNativeOllamaQwen,
   verifiedLanguageRequirements,
   mergeVerifiedLanguages,
+  removeProgrammingLanguageFalsePositives,
 } from "../local-relay/local-provider.mjs";
 
 function modelOutput() {
@@ -127,7 +129,11 @@ test("verifies every required language in a shared multilingual sentence", () =>
     verifiedLanguageRequirements(
       {
         passages: [
-          { index: 0, languages: ["German", "English"] },
+          {
+            index: 0,
+            kind: "human_language_requirement",
+            languages: ["German", "English"],
+          },
         ],
       },
       candidates,
@@ -157,6 +163,92 @@ test("verifies every required language in a shared multilingual sentence", () =>
   assert.deepEqual(
     merged.language.requirements.map(({ language }) => language),
     ["German", "English"],
+  );
+});
+
+test("semantic verification rejects programming languages as human languages", () => {
+  const evidence =
+    "Experience with one modern language such as Java, C++, or C#.";
+  const requirements = verifiedLanguageRequirements(
+    {
+      passages: [
+        {
+          index: 0,
+          kind: "programming_language",
+          languages: [],
+        },
+      ],
+    },
+    [evidence],
+  );
+  assert.deepEqual(requirements, []);
+  const merged = JSON.parse(
+    mergeVerifiedLanguages(
+      JSON.stringify({
+        rubric: { language: "gap" },
+        language: {
+          status: "found",
+          requirements: [
+            { language: "Chinese", evidence },
+            { language: "English", evidence },
+          ],
+        },
+      }),
+      requirements,
+    ),
+  );
+  assert.deepEqual(merged.language, {
+    status: "none",
+    requirements: [],
+  });
+});
+
+test("rejects human-language claims grounded only in programming evidence", () => {
+  const evidence =
+    "Experience programming with at least one modern language such as Java, C++, or C# including object-oriented design";
+  const cleaned = JSON.parse(
+    removeProgrammingLanguageFalsePositives(
+      JSON.stringify({
+        language: {
+          status: "found",
+          requirements: [
+            { language: "Chinese", evidence },
+            { language: "English", evidence },
+          ],
+        },
+      }),
+    ),
+  );
+  assert.deepEqual(cleaned.language, {
+    status: "none",
+    requirements: [],
+  });
+});
+
+test("does not verify programming-language passages without a human-language result", () => {
+  assert.equal(
+    compactOutputHasLanguageRequirement(
+      JSON.stringify({
+        language: { status: "none", requirements: [] },
+      }),
+    ),
+    false,
+  );
+  assert.equal(
+    compactOutputHasLanguageRequirement(
+      JSON.stringify({
+        language: {
+          status: "uncertain",
+          requirements: [
+            {
+              language: "English",
+              evidence: "Kommunikationsfähigkeiten in Deutsch und Englisch",
+            },
+          ],
+        },
+      }),
+    ),
+    true,
   );
 });
 

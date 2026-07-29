@@ -2,7 +2,7 @@
   "use strict";
 
   const SCHEMA_VERSION = 2;
-  const PROMPT_VERSION = "job-fit-v29";
+  const PROMPT_VERSION = "job-fit-v30";
   const DEFAULT_MODEL = "gpt-5.6-sol";
   const SUMMARY_MAX_LENGTH = 240;
   const RUBRIC_WEIGHTS = Object.freeze({
@@ -279,6 +279,7 @@ Rules:
 - Skill options joined by or, "such as", or "for example" are alternatives. C# satisfies "Java, C++, or C#". Treat adjacent technologies as transferable.
 - Set skills=match when the posting contains the user's named core skills and does not explicitly require a missing deal-breaker skill. Do not lower skills for technologies the posting never requires. Blazor is a .NET UI framework, not a JavaScript-framework requirement; a full-stack title alone does not imply React, Angular, or Vue.
 - Never infer a human-language requirement from the posting language. Scan all text for explicit proficiency requirements. jobPosting.languageCandidates repeats possible lines for attention only; classify every candidate against its original context and ignore non-requirements. Standalone qualifications are required unless explicitly optional/preferred or either/or.
+- Java, C#, C++, Python, JavaScript, SQL, and similar technologies are programming languages, never human-language requirements. A phrase such as "one modern language such as Java, C++, or C#" belongs only to skills. Return no human-language items for it.
 - Return every required human language as its own requirement item with a short exact job excerpt. When one sentence names multiple languages joined by words such as "and", "und", commas, or slashes, return one item for EACH named language and repeat the shared sentence as evidence when needed. For example, "Kommunikationsfähigkeiten in Deutsch und Englisch" produces separate German and English items. Never collapse a multi-language statement into only one item. Use language.status=none after a complete scan finds none; uncertain only for genuinely ambiguous language wording.
 - A required language that triggers the user's strong reduction makes rubric.language=conflict. One matching language cannot cancel it.
 - hardBlocker.dimension is not none only when explicit job evidence conflicts with an explicit user instruction to reject/skip/never apply. "Strongly reduce" alone is not a hard blocker. Closed applications are handled by the application.

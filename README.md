@@ -102,7 +102,7 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.21.2 is post-submission development on the local
+Version 0.21.4 is post-submission development on the local
 `codex/local-llm-support` branch. The submitted version remains 0.16.1 on
 `main`. The development version can route analysis through either GPT-5.6 or a
 local OpenAI-compatible model, validates both through the same result contract,
@@ -360,10 +360,15 @@ endpoint, disables hidden reasoning, keeps the model loaded for 30 minutes, and
 lets the multilingual model read German directly instead of invoking the slow
 translation layer. Other local configurations retain the compatible fallback
 path.
-When a likely language-requirement passage names multiple languages, a small
-semantic verification request ensures each language is represented separately.
-For example, `Deutsch und Englisch` is reported as required German and English
-without relying on hardcoded German sentence grammar.
+When the main analysis finds a human-language requirement, a small semantic
+verification request checks likely requirement passages and ensures each
+language is represented separately. For example, `Deutsch und Englisch` is
+reported as required German and English without relying on hardcoded German
+sentence grammar. The verifier is skipped when the main analysis finds no
+human-language requirement, so phrases such as `Java, C++, or C#` neither
+trigger a second model call nor get mistaken for spoken languages.
+Trusted validation also rejects a human-language claim when the model quotes
+only an explicitly programming-related sentence as its evidence.
 Local analysis may still take several
 minutes on older hardware; the relay allows up to five minutes before reporting
 a timeout. While local analysis is running, the popup provides a **Cancel

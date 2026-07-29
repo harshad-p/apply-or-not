@@ -140,7 +140,7 @@ function buildNativeLanguageVerificationRequest(candidates, model) {
       {
         role: "system",
         content:
-          "For each numbered passage, list every human language that the employer explicitly requires. Return each language separately. A conjunction joins separate requirements: Deutsch und Englisch means German and English. Translate language names to the canonical English choices. Ignore programming languages and passages that merely mention a language without requiring ability in it. Return only schema fields.",
+          "Classify each numbered passage. human_language_requirement means an employer requirement for ability in a spoken or written human language. programming_language means Java, C#, C++, Python, JavaScript, SQL, or similar software technology; its languages array MUST be empty. not_a_requirement means no required human-language ability. Only for human_language_requirement, list every required human language separately using the canonical English choices. A conjunction joins separate requirements: Deutsch und Englisch means German and English. Return only schema fields.",
       },
       {
         role: "user",
@@ -161,6 +161,14 @@ function buildNativeLanguageVerificationRequest(candidates, model) {
             additionalProperties: false,
             properties: {
               index: { type: "integer", minimum: 0, maximum: 7 },
+              kind: {
+                type: "string",
+                enum: [
+                  "human_language_requirement",
+                  "programming_language",
+                  "not_a_requirement",
+                ],
+              },
               languages: {
                 type: "array",
                 maxItems: 4,
@@ -170,7 +178,7 @@ function buildNativeLanguageVerificationRequest(candidates, model) {
                 },
               },
             },
-            required: ["index", "languages"],
+            required: ["index", "kind", "languages"],
           },
         },
       },
@@ -192,7 +200,13 @@ function verifiedLanguageRequirements(value, candidates) {
   return value.passages
     .flatMap((passage) => {
       const evidence = candidates[passage?.index];
-      if (!evidence || !Array.isArray(passage.languages)) return [];
+      if (
+        !evidence ||
+        passage?.kind !== "human_language_requirement" ||
+        !Array.isArray(passage.languages)
+      ) {
+        return [];
+      }
       return passage.languages
         .filter((language) => language !== "Other")
         .map((language) => ({ language, evidence }));
@@ -209,11 +223,48 @@ function verifiedLanguageRequirements(value, candidates) {
 }
 
 function mergeVerifiedLanguages(outputText, requirements) {
-  if (requirements.length === 0) return outputText;
   const value = JSON.parse(outputText);
   value.language = {
-    status: "found",
+    status: requirements.length > 0 ? "found" : "none",
     requirements,
+  };
+  return JSON.stringify(value);
+}
+
+function compactOutputHasLanguageRequirement(outputText) {
+  try {
+    const value = JSON.parse(outputText);
+    return (
+      Array.isArray(value?.language?.requirements) &&
+      value.language.requirements.length > 0
+    );
+  } catch {
+    return false;
+  }
+}
+
+function removeProgrammingLanguageFalsePositives(outputText) {
+  const value = JSON.parse(outputText);
+  const requirements = Array.isArray(value?.language?.requirements)
+    ? value.language.requirements
+    : [];
+  const supported = requirements.filter(({ evidence }) => {
+    const text = String(evidence || "");
+    const clearlyProgramming =
+      /\b(?:programming|object[- ]oriented|software development)\b/iu.test(
+        text,
+      ) &&
+      /\b(?:Java|JavaScript|Python|SQL|C#|C\+\+)\b/iu.test(text);
+    const namesHumanLanguage =
+      /\b(?:German|Deutsch|English|Englisch|French|Französisch|Spanish|Spanisch|Italian|Italienisch|Dutch|Niederländisch|Portuguese|Portugiesisch|Japanese|Japanisch|Chinese|Chinesisch|Korean|Koreanisch|Polish|Polnisch|Turkish|Türkisch|Arabic|Arabisch|Russian|Russisch)\b/iu.test(
+        text,
+      );
+    return !clearlyProgramming || namesHumanLanguage;
+  });
+  if (supported.length === requirements.length) return outputText;
+  value.language = {
+    status: supported.length > 0 ? "found" : "none",
+    requirements: supported,
   };
   return JSON.stringify(value);
 }
@@ -1015,8 +1066,19 @@ async function analyzeWithLocalModel(
       throw new Error(await readLocalError(response));
     }
     const providerResponse = await response.json();
+    if (nativeOllamaQwen) {
+      providerResponse.message.content =
+        removeProgrammingLanguageFalsePositives(
+          providerResponse?.message?.content || "",
+        );
+    }
     const languageCandidates = analysisPayload.job.languageCandidates;
-    if (nativeOllamaQwen && languageCandidates.length > 0) {
+    const initialOutput = providerResponse?.message?.content || "";
+    if (
+      nativeOllamaQwen &&
+      languageCandidates.length > 0 &&
+      compactOutputHasLanguageRequirement(initialOutput)
+    ) {
       const verificationResponse = await fetchImpl(
         buildNativeOllamaChatUrl(config.baseUrl),
         {
@@ -1106,6 +1168,7 @@ export {
   buildChatCompletionsUrl,
   buildLocalSummary,
   compactLocalDescription,
+  compactOutputHasLanguageRequirement,
   compactLocalPayload,
   explicitCriteriaDimensions,
   evidenceAppearsInJob,
@@ -1128,4 +1191,5 @@ export {
   usesNativeOllamaQwen,
   verifiedLanguageRequirements,
   mergeVerifiedLanguages,
+  removeProgrammingLanguageFalsePositives,
 };
