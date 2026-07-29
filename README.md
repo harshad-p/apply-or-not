@@ -102,7 +102,7 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.19.1 is post-submission development on the local
+Version 0.20.0 is post-submission development on the local
 `codex/local-llm-support` branch. The submitted version remains 0.16.1 on
 `main`. The development version can route analysis through either GPT-5.6 or a
 local OpenAI-compatible model, validates both through the same result contract,
@@ -328,6 +328,15 @@ for this mode.
      classify the supplied language requirements reliably.
 6. Analyze a job normally. The popup identifies the returned local model, and
    the same schema validation and deterministic scoring rules still apply.
+
+Saving preferences with the local provider selected first asks the model to
+compile the user's free-form text into a shorter reusable profile. This
+one-time request also warms the selected model, and the popup keeps analysis
+unavailable until preparation succeeds. The original preference text remains
+stored and editable and remains the source of truth for trusted scoring. The
+relay validates that named technologies, languages, and proficiency levels
+survive compaction; if validation fails or the profile is not shorter, job
+analysis automatically uses the original text.
 
 Only plain HTTP URLs on `localhost`, `127.0.0.1`, or `::1` are accepted. The
 relay rejects remote provider URLs and URLs containing credentials. Very small

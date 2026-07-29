@@ -147,7 +147,7 @@ inferences, and respect access controls and third-party terms.
 ## LLM providers
 
 The submitted live implementation uses OpenAI GPT-5.6 through the localhost
-relay. Post-submission version 0.19.1 adds a provider selector while keeping the
+relay. Post-submission version 0.20.0 adds a provider selector while keeping the
 same relay boundary:
 
 - OpenAI GPT-5.6 as the default and demonstrated hackathon provider
@@ -167,6 +167,12 @@ leaving a stale in-progress state.
 The popup starts analysis with an immediate acknowledgement and polls for
 completion, avoiding Safari's long-lived message-channel behavior. Trusted
 provider metadata records elapsed analysis time for display with saved results.
+
+For local inference, saving free-form preferences compiles them once into a
+compact reusable profile and warms the selected model before Analyze is
+enabled. Raw preferences remain the trusted source for applicability and
+scoring safeguards. Named technologies, languages, and proficiency levels must
+survive profile validation; otherwise the relay falls back to the raw text.
 
 For CPU-bound local inference, the relay limits job-description text to 9,000
 representative characters and uses a compact classification-only contract with

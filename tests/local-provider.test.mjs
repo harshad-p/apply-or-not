@@ -15,6 +15,9 @@ import {
   extractLocalOutputText,
   parseLocalResponse,
   parseLanguageExtractionResponse,
+  prepareLocalPreferences,
+  preferenceProfileToText,
+  profilePreservesNamedTerms,
   trustedPostingLanguage,
   userExplicitlyRejectsLanguage,
   userStronglyReducesLanguage,
@@ -69,6 +72,81 @@ test("builds the standard local chat-completions endpoint", () => {
     buildChatCompletionsUrl("http://127.0.0.1:11434/v1/"),
     "http://127.0.0.1:11434/v1/chat/completions",
   );
+});
+
+test("prepares and validates a reusable compact preference profile", async () => {
+  const fetchImpl = async (_url, options) => {
+    const request = JSON.parse(options.body);
+    assert.equal(request.max_tokens, 260);
+    return new Response(
+      JSON.stringify({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                coreSkills: ["C#", ".NET"],
+                bonusSkills: ["Blazor"],
+                positivePreferences: ["English working language"],
+                penalties: ["German C1 required"],
+                blockers: [],
+              }),
+            },
+          },
+        ],
+      }),
+      { status: 200 },
+    );
+  };
+  const criteria =
+    "I would really like the role to match my professional experience with C# and .NET. Blazor would be a welcome bonus when it appears in the posting. I prefer English as the working language. Please apply a meaningful penalty when German at C1 level is an explicit requirement, but do not turn that preference into an automatic rejection.";
+  const result = await prepareLocalPreferences(criteria, providerConfig, {
+    fetchImpl,
+  });
+
+  assert.equal(result.optimized, true);
+  assert.match(result.preparedUserCriteria, /Skills: C#; \.NET/);
+  assert.equal(
+    profilePreservesNamedTerms(criteria, result.preparedUserCriteria),
+    true,
+  );
+  assert.equal(
+    preferenceProfileToText({
+      coreSkills: ["C#"],
+      bonusSkills: [],
+      positivePreferences: [],
+      penalties: [],
+      blockers: ["Applications closed"],
+    }),
+    "Skills: C#\nReject: Applications closed",
+  );
+});
+
+test("falls back to raw preferences when preparation loses a named term", async () => {
+  const criteria = "Match C#, .NET, and Blazor. Prefer English.";
+  const result = await prepareLocalPreferences(criteria, providerConfig, {
+    fetchImpl: async () =>
+      new Response(
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  coreSkills: ["C#"],
+                  bonusSkills: [],
+                  positivePreferences: ["English"],
+                  penalties: [],
+                  blockers: [],
+                }),
+              },
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
+  });
+
+  assert.equal(result.optimized, false);
+  assert.equal(result.preparedUserCriteria, criteria);
 });
 
 test("expands the minimal local contract for trusted scoring", () => {

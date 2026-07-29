@@ -79,6 +79,130 @@ function buildChatCompletionsUrl(baseUrl) {
   return `${baseUrl.replace(/\/+$/u, "")}/chat/completions`;
 }
 
+const preferenceProfileSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    coreSkills: { type: "array", maxItems: 20, items: { type: "string" } },
+    bonusSkills: { type: "array", maxItems: 12, items: { type: "string" } },
+    positivePreferences: {
+      type: "array",
+      maxItems: 12,
+      items: { type: "string" },
+    },
+    penalties: { type: "array", maxItems: 12, items: { type: "string" } },
+    blockers: { type: "array", maxItems: 8, items: { type: "string" } },
+  },
+  required: [
+    "coreSkills",
+    "bonusSkills",
+    "positivePreferences",
+    "penalties",
+    "blockers",
+  ],
+};
+
+function buildPreferencePreparationRequest(userCriteria, model) {
+  return {
+    model,
+    messages: [
+      {
+        role: "system",
+        content:
+          "Compress job preferences without changing their meaning. Preserve every named skill, language, proficiency level, condition, exception, strength of preference, penalty, and rejection rule. Do not promote a preference or penalty into a blocker. Use concise phrases and return only the schema fields.",
+      },
+      {
+        role: "user",
+        content: userCriteria,
+      },
+    ],
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "job_preference_profile",
+        strict: true,
+        schema: preferenceProfileSchema,
+      },
+    },
+    reasoning_effort: "none",
+    temperature: 0,
+    max_tokens: 260,
+    stream: false,
+  };
+}
+
+function preferenceProfileToText(profile) {
+  const labels = {
+    coreSkills: "Skills",
+    bonusSkills: "Boosts",
+    positivePreferences: "Prefer",
+    penalties: "Penalize",
+    blockers: "Reject",
+  };
+  return Object.entries(labels)
+    .map(([field, label]) => {
+      const values = Array.isArray(profile?.[field])
+        ? profile[field].map((value) => String(value).trim()).filter(Boolean)
+        : [];
+      return values.length ? `${label}: ${values.join("; ")}` : "";
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+function profilePreservesNamedTerms(userCriteria, preparedUserCriteria) {
+  const importantTerms = String(userCriteria || "").match(
+    /(?:c#|\.net(?:\s+core)?|asp\.net(?:\s+core)?|blazor|react|angular|vue|sql(?:\s+server)?|postgresql|azure|aws|gcp|kubernetes|docker|english|german|deutsch|englisch|[abc][12])/giu,
+  ) || [];
+  const normalizedProfile = String(preparedUserCriteria || "").toLocaleLowerCase();
+  return [...new Set(importantTerms.map((term) => term.toLocaleLowerCase()))]
+    .every((term) => normalizedProfile.includes(term));
+}
+
+async function prepareLocalPreferences(
+  userCriteria,
+  providerConfig,
+  { fetchImpl = globalThis.fetch, signal } = {},
+) {
+  const criteria = String(userCriteria || "").trim();
+  if (!criteria) throw new Error("Preferences are required.");
+  const config = validateProviderConfig(providerConfig);
+  const response = await fetchImpl(buildChatCompletionsUrl(config.baseUrl), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(
+      buildPreferencePreparationRequest(criteria, config.model),
+    ),
+    signal,
+  });
+  if (!response.ok) throw new Error(await readLocalError(response));
+  const body = await response.json();
+  const profile = JSON.parse(extractLocalOutputText(body));
+  const preparedUserCriteria = preferenceProfileToText(profile);
+  if (
+    !preparedUserCriteria ||
+    !profilePreservesNamedTerms(criteria, preparedUserCriteria)
+  ) {
+    return {
+      preparedUserCriteria: criteria,
+      optimized: false,
+      warning:
+        "The compact profile did not preserve every named term, so the original preferences will be used.",
+    };
+  }
+  return {
+    preparedUserCriteria:
+      preparedUserCriteria.length < criteria.length
+        ? preparedUserCriteria
+        : criteria,
+    optimized: preparedUserCriteria.length < criteria.length,
+    warning:
+      preparedUserCriteria.length < criteria.length
+        ? ""
+        : "The compact profile was not shorter, so the original preferences will be used.",
+  };
+}
+
 function extractLocalOutputText(response) {
   const content = response?.choices?.[0]?.message?.content;
   if (typeof content === "string" && content.trim()) return content;
@@ -775,6 +899,10 @@ export {
   extractLocalOutputText,
   parseLocalResponse,
   parseLanguageExtractionResponse,
+  prepareLocalPreferences,
+  buildPreferencePreparationRequest,
+  preferenceProfileToText,
+  profilePreservesNamedTerms,
   readLocalError,
   userExplicitlyRejectsLanguage,
   userStronglyReducesLanguage,

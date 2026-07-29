@@ -1,5 +1,8 @@
 import http from "node:http";
-import { analyzeWithLocalModel } from "./local-provider.mjs";
+import {
+  analyzeWithLocalModel,
+  prepareLocalPreferences,
+} from "./local-provider.mjs";
 import { analyzeWithOpenAI } from "./openai-provider.mjs";
 import {
   isAllowedOrigin,
@@ -136,6 +139,33 @@ function startServer() {
         const body = await readJson(request);
         apiKey = validateApiKey(body?.apiKey);
         sendJson(response, 200, { ok: true, configured: true }, origin);
+      } catch (error) {
+        sendJson(response, 400, { error: error.message }, origin);
+      }
+      return;
+    }
+
+    if (request.method === "POST" && request.url === "/prepare/local") {
+      try {
+        const body = await readJson(request);
+        const providerConfig = validateProviderConfig(body?.providerConfig);
+        if (providerConfig.id !== "local") {
+          throw new Error("A local provider is required for preparation.");
+        }
+        const startedAt = Date.now();
+        const result = await prepareLocalPreferences(
+          body?.userCriteria,
+          providerConfig,
+        );
+        sendJson(
+          response,
+          200,
+          {
+            ...result,
+            durationMs: Date.now() - startedAt,
+          },
+          origin,
+        );
       } catch (error) {
         sendJson(response, 400, { error: error.message }, origin);
       }

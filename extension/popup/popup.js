@@ -54,6 +54,7 @@ let currentSettings = {
   analysisProvider: "openai",
   localBaseUrl: "http://127.0.0.1:11434/v1",
   localModel: "",
+  localPreferenceProfile: null,
 };
 let activeAnalysisContext = null;
 
@@ -129,12 +130,14 @@ async function loadSettingsStatus() {
       analysisProvider = "openai",
       localBaseUrl = "http://127.0.0.1:11434/v1",
       localModel = "",
+      localPreferenceProfile = null,
     } = await extensionApi.storage.local.get([
       "userCriteria",
       "preferredLanguage",
       "analysisProvider",
       "localBaseUrl",
       "localModel",
+      "localPreferenceProfile",
     ]);
     currentSettings = {
       userCriteria,
@@ -142,13 +145,27 @@ async function loadSettingsStatus() {
       analysisProvider,
       localBaseUrl,
       localModel,
+      localPreferenceProfile,
     };
+    const localProfileReady =
+      analysisProvider !== "local" ||
+      (localPreferenceProfile?.sourceCriteria === userCriteria &&
+        localPreferenceProfile?.baseUrl === localBaseUrl &&
+        localPreferenceProfile?.model === localModel &&
+        typeof localPreferenceProfile?.preparedUserCriteria === "string" &&
+        localPreferenceProfile.preparedUserCriteria.trim().length > 0);
     const isConfigured =
       userCriteria.trim().length > 0 &&
       (analysisProvider !== "local" ||
-        (localBaseUrl.trim().length > 0 && localModel.trim().length > 0));
+        (localBaseUrl.trim().length > 0 &&
+          localModel.trim().length > 0 &&
+          localProfileReady));
 
-    settingsStatus.textContent = isConfigured ? "Ready" : "Setup needed";
+    settingsStatus.textContent = isConfigured
+      ? "Ready"
+      : analysisProvider === "local" && userCriteria.trim()
+        ? "Preparation needed"
+        : "Setup needed";
     settingsStatus.dataset.state = isConfigured ? "configured" : "pending";
     extractButton.hidden = !isConfigured;
     settingsButton.textContent = isConfigured
@@ -156,7 +173,9 @@ async function loadSettingsStatus() {
       : "Set your preferences";
     settingsNote.textContent = isConfigured
       ? "Checking this page for a matching saved result does not call the model."
-      : "Tell Apply or Not what you want from a role before analyzing job postings.";
+      : analysisProvider === "local" && userCriteria.trim()
+        ? "Open preferences and save again to prepare and warm the selected local model."
+        : "Tell Apply or Not what you want from a role before analyzing job postings.";
     return isConfigured;
   } catch (error) {
     console.error("Unable to read extension settings.", error);
@@ -407,6 +426,10 @@ function createCacheContext(extraction) {
       pageUrl,
       job: extraction.job,
       userCriteria: currentSettings.userCriteria,
+      preparedUserCriteria:
+        currentSettings.analysisProvider === "local"
+          ? currentSettings.localPreferenceProfile?.preparedUserCriteria || ""
+          : "",
       preferredLanguage: currentSettings.preferredLanguage,
       promptVersion: analysisContract.PROMPT_VERSION,
       providerKey: selectedProviderKey(),
@@ -440,6 +463,10 @@ async function requestAnalysis(extraction, tabId) {
     context: { ...context, tabId },
     payload: {
       userCriteria: currentSettings.userCriteria,
+      preparedUserCriteria:
+        currentSettings.analysisProvider === "local"
+          ? currentSettings.localPreferenceProfile?.preparedUserCriteria || ""
+          : "",
       preferredLanguage: currentSettings.preferredLanguage,
       job: extraction.job,
     },

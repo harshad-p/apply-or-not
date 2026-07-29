@@ -2,7 +2,7 @@
   "use strict";
 
   const SCHEMA_VERSION = 2;
-  const PROMPT_VERSION = "job-fit-v26";
+  const PROMPT_VERSION = "job-fit-v27";
   const DEFAULT_MODEL = "gpt-5.6-sol";
   const SUMMARY_MAX_LENGTH = 240;
   const RUBRIC_WEIGHTS = Object.freeze({
@@ -286,10 +286,15 @@ Rules:
 
 Return only schema fields. Trusted code calculates score and summary.`;
 
-  function buildInput({ userCriteria, preferredLanguage, job }) {
+  function buildInput({
+    userCriteria,
+    preparedUserCriteria,
+    preferredLanguage,
+    job,
+  }) {
     return JSON.stringify(
       {
-        userCriteria,
+        userCriteria: preparedUserCriteria || userCriteria,
         preferredExplanationLanguage: preferredLanguage,
         jobPosting: {
           title: job?.title || "",

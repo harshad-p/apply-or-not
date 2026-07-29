@@ -53,6 +53,15 @@ async function configureRelay(apiKey) {
   return readJsonResponse(response);
 }
 
+async function prepareLocalPreferences(userCriteria, providerConfig) {
+  const response = await fetch(`${relayUrl}/prepare/local`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userCriteria, providerConfig }),
+  });
+  return readJsonResponse(response);
+}
+
 async function readProviderConfig() {
   const {
     analysisProvider = "openai",
@@ -256,6 +265,11 @@ extensionApi.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     operation = checkRelay();
   } else if (message?.type === "analysis:key:set") {
     operation = configureRelay(message.apiKey);
+  } else if (message?.type === "analysis:prepare:local") {
+    operation = prepareLocalPreferences(
+      message.userCriteria,
+      message.providerConfig,
+    );
   } else if (message?.type === "analysis:start") {
     analysisRunner
       .start(message.payload, message.context)

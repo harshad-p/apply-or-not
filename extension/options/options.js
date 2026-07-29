@@ -188,6 +188,7 @@ clearButton.addEventListener("click", async () => {
       "settingsVersion",
       "analysisCacheV1",
       "analysisRunsV1",
+      "localPreferenceProfile",
     ]);
     criteriaInput.value = "";
     languageInput.value = "English";
@@ -256,15 +257,60 @@ form.addEventListener("submit", async (event) => {
       localModel,
       settingsVersion: 4,
     });
+    await extensionApi.storage.local.remove(["localPreferenceProfile"]);
     criteriaInput.value = userCriteria;
     languageInput.value = preferredLanguage;
     updateCharacterCount();
     saved = true;
-    saveButton.textContent = "Saved ✓";
-    showStatus("Preferences saved locally.");
+    if (analysisProvider === "local") {
+      saveButton.textContent = "Preparing local model…";
+      showStatus(
+        "Building a reusable compact profile and warming the local model…",
+      );
+      const response = await extensionApi.runtime.sendMessage({
+        type: "analysis:prepare:local",
+        userCriteria,
+        providerConfig: {
+          id: "local",
+          baseUrl: localBaseUrl,
+          model: localModel,
+        },
+      });
+      if (!response?.ok) {
+        throw new Error(response?.error || "Local preparation failed.");
+      }
+      await extensionApi.storage.local.set({
+        localPreferenceProfile: {
+          sourceCriteria: userCriteria,
+          baseUrl: localBaseUrl,
+          model: localModel,
+          preparedUserCriteria: response.result.preparedUserCriteria,
+          optimized: response.result.optimized,
+          preparedAt: Date.now(),
+        },
+      });
+      const seconds = (response.result.durationMs / 1000).toFixed(1);
+      saveButton.textContent = "Ready ✓";
+      showStatus(
+        response.result.optimized
+          ? `Local model ready in ${seconds}s. The compact profile will be reused for analysis.`
+          : `Local model ready in ${seconds}s. ${response.result.warning}`,
+      );
+    } else {
+      saveButton.textContent = "Saved ✓";
+      showStatus("Preferences saved locally.");
+    }
   } catch (error) {
     console.error("Unable to save extension settings.", error);
-    showStatus("Could not save your preferences. Please try again.", "error");
+    if (saved && analysisProvider === "local") {
+      saveButton.textContent = "Prepare local model again";
+    }
+    showStatus(
+      saved
+        ? `Preferences were saved, but local preparation failed: ${error.message}`
+        : "Could not save your preferences. Please try again.",
+      "error",
+    );
   } finally {
     saveButton.disabled = false;
     if (!saved) {

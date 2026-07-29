@@ -184,7 +184,7 @@ test("builds a private structured GPT-5.6 Responses request", () => {
   assert.match(request.input, /No longer accepting applications/);
   assert.match(request.input, /companyContext/);
   assert.match(request.input, /companyEvidenceSource/);
-  assert.equal(PROMPT_VERSION, "job-fit-v26");
+  assert.equal(PROMPT_VERSION, "job-fit-v27");
   assert.match(request.instructions, /transferable skills/i);
   assert.match(request.instructions, /satisfying one acceptable option fully satisfies/i);
   assert.match(request.instructions, /Java and C\+\+ are not missing skills/i);
@@ -286,6 +286,23 @@ test("builds a compact classification-first request for local inference", () => 
     request.response_format.json_schema.schema.properties.confidence,
     undefined,
   );
+});
+
+test("uses a prepared local profile without discarding the raw source criteria", () => {
+  const request = buildFastLocalRequest(
+    {
+      userCriteria:
+        "Match me with C# and .NET. Strongly reduce fluent German requirements.",
+      preparedUserCriteria:
+        "Skills: C#; .NET\nPenalize: fluent German required",
+      preferredLanguage: "English",
+      job: { description: "C# software development" },
+    },
+    "llama3.2:3b",
+  );
+
+  assert.match(request.messages[1].content, /Skills: C#; \.NET/);
+  assert.doesNotMatch(request.messages[1].content, /Match me with/);
 });
 
 test("builds a focused language fit request with separated inputs", () => {
