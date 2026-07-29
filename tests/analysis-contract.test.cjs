@@ -7,6 +7,7 @@ const {
   PROMPT_VERSION,
   SUMMARY_MAX_LENGTH,
   buildFastLocalRequest,
+  buildLanguageExtractionRequest,
   buildOpenAICompatibleRequest,
   buildOpenAIRequest,
   calculateRubricScore,
@@ -183,7 +184,7 @@ test("builds a private structured GPT-5.6 Responses request", () => {
   assert.match(request.input, /No longer accepting applications/);
   assert.match(request.input, /companyContext/);
   assert.match(request.input, /companyEvidenceSource/);
-  assert.equal(PROMPT_VERSION, "job-fit-v16");
+  assert.equal(PROMPT_VERSION, "job-fit-v17");
   assert.match(request.instructions, /transferable skills/i);
   assert.match(request.instructions, /satisfying one acceptable option fully satisfies/i);
   assert.match(request.instructions, /Java and C\+\+ are not missing skills/i);
@@ -263,6 +264,28 @@ test("builds a compact classification-first request for local inference", () => 
   assert.ok(
     request.response_format.json_schema.schema.properties.rubric.properties
       .skills.properties.evidence,
+  );
+  assert.deepEqual(
+    request.response_format.json_schema.schema.properties
+      .languageRequirementStatus.enum,
+    ["found", "none", "uncertain"],
+  );
+});
+
+test("builds a focused language fit request with separated inputs", () => {
+  const request = buildLanguageExtractionRequest(
+    "Sehr gute Deutschkenntnisse in Wort und Schrift",
+    "Prefer English; strongly reduce required fluent German.",
+    "qwen3:1.7b",
+  );
+
+  assert.equal(request.model, "qwen3:1.7b");
+  assert.equal(request.max_tokens, 300);
+  assert.match(request.messages[1].content, /jobPosting/);
+  assert.match(request.messages[1].content, /applicantLanguageCriteria/);
+  assert.deepEqual(
+    request.response_format.json_schema.schema.properties.status.enum,
+    ["found", "none", "uncertain"],
   );
 });
 

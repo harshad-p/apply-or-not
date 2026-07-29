@@ -102,7 +102,7 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.18.3 is post-submission development on the local
+Version 0.18.4 is post-submission development on the local
 `codex/local-llm-support` branch. The submitted version remains 0.16.1 on
 `main`. The development version can route analysis through either GPT-5.6 or a
 local OpenAI-compatible model, validates both through the same result contract,
@@ -126,7 +126,7 @@ results display the measured analysis duration alongside the model and prompt
 version.
 
 The extractor also detects visible Easy Apply and external-application controls.
-Prompt v16 keeps the v12 alternative-requirement fix and adds a compact,
+Prompt v17 keeps the v12 alternative-requirement fix and adds a compact,
 classification-only path for CPU-bound local models. Trusted code writes the
 summary so a small model cannot produce a contradictory or truncated headline.
 It treats application method as selected-job page-control evidence, recognizes
@@ -304,12 +304,20 @@ for this mode.
    ```sh
    ollama pull qwen3:0.6b
    ```
+
+   For the optional focused language-fit helper:
+
+   ```sh
+   ollama pull qwen3:14b
+   ```
 2. Keep `node local-relay/server.mjs` running.
 3. Open the extension settings and select
    **Local model · Ollama or LM Studio**.
 4. Enter the local server base URL and exact model identifier, then save:
    - Ollama commonly uses `http://127.0.0.1:11434/v1`.
    - LM Studio commonly uses `http://127.0.0.1:1234/v1`.
+   - The tested hybrid uses `qwen3:0.6b` as the primary model and
+     `qwen3:14b` as the optional language extraction model.
 5. Analyze a job normally. The popup identifies the returned local model, and
    the same schema validation and deterministic scoring rules still apply.
 
@@ -320,11 +328,12 @@ schema; in that case, choose a stronger structured-output-capable model. Local r
 extended reasoning, limit the job-description input to 9,000 representative
 characters, ask the model only for rubric classifications and short evidence,
 and cap structured output at 500 tokens. Trusted JavaScript calculates the
-score, writes the summary, expands the popup evidence sections, rejects unsupported
-blockers, and prevents clearly unstated dimensions from changing the score.
-Common explicit German and English requirement phrases are also extracted
-deterministically, so a small model cannot turn “Sehr gute Deutschkenntnisse”
-into missing language evidence.
+score, writes the summary, expands the popup evidence sections, rejects
+unsupported blockers, and prevents clearly unstated dimensions from changing
+the score. The local semantic contract explicitly asks the model to scan for
+language requirements in any language and distinguish requirements found,
+confidently none found, and uncertainty. Trusted code validates the returned
+original-language evidence without attempting to interpret grammar.
 Local analysis may still take several
 minutes on older hardware; the relay allows up to five minutes before reporting
 a timeout. While local analysis is running, the popup provides a **Cancel
@@ -342,6 +351,12 @@ took about 20–31 seconds with `qwen3:0.6b` depending on model warm-up; timing
 varies by hardware and job length.
 This is the latency-first option and may be less nuanced than a larger model or
 GPT-5.6, so the result remains decision support rather than a final decision.
+The optional helper introduces model routing: a stronger model performs the
+focused multilingual language-fit pass while the smaller model handles the
+general rubric. Live tests found that 1.7B and 4B helpers were faster but
+misclassified the supplied German preference; 14B classified it plausibly but
+took about 144 seconds for the focused CPU pass. Leaving the helper blank reuses
+the primary model and may reach the explicit uncertainty fallback more often.
 
 To make one real, billable GPT-5.6 request with fictional data, keep the relay
 running and use another terminal:

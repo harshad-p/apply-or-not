@@ -2,7 +2,7 @@
   "use strict";
 
   const SCHEMA_VERSION = 2;
-  const PROMPT_VERSION = "job-fit-v16";
+  const PROMPT_VERSION = "job-fit-v17";
   const DEFAULT_MODEL = "gpt-5.6-sol";
   const SUMMARY_MAX_LENGTH = 240;
   const RUBRIC_WEIGHTS = Object.freeze({
@@ -185,6 +185,10 @@
         },
       },
       postingLanguage: { type: "string", minLength: 1, maxLength: 40 },
+      languageRequirementStatus: {
+        type: "string",
+        enum: ["found", "none", "uncertain"],
+      },
       languageRequirements: {
         type: "array",
         maxItems: 2,
@@ -196,8 +200,28 @@
       "confidence",
       "hardBlockers",
       "postingLanguage",
+      "languageRequirementStatus",
       "languageRequirements",
     ],
+  };
+
+  const languageExtractionSchema = {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      status: { type: "string", enum: ["found", "none", "uncertain"] },
+      postingLanguage: { type: "string", minLength: 1, maxLength: 40 },
+      outcome: {
+        type: "string",
+        enum: ["match", "partial", "unknown", "gap", "conflict"],
+      },
+      requirements: {
+        type: "array",
+        maxItems: 4,
+        items: languageRequirementSchema,
+      },
+    },
+    required: ["status", "postingLanguage", "outcome", "requirements"],
   };
 
   const instructions = `You assess whether a job seeker should apply to one job posting.
@@ -234,6 +258,10 @@ For each rubric dimension, set applicable=true only if the user stated a criteri
 
 Rules:
 - Missing evidence is unknown, not a conflict. Never infer a language requirement from the posting language.
+- Scan the entire posting specifically for language proficiency requirements, regardless of the posting language or wording. Semantically interpret phrases such as fluency, written/spoken ability, CEFR levels, business proficiency, native-level ability, optional languages, and alternatives.
+- Set languageRequirementStatus=found when explicit requirements are present and return each requirement with its original-language evidence. Set it to none only when you are confident the posting states no language requirement. Set it to uncertain only when the text is ambiguous or you cannot determine the requirement confidently.
+- Keep language-requirement evidence as an exact or very close excerpt from the job posting. Never copy the user's criteria into evidence.
+- When jobPosting.languageEvidence is present, treat it as a focused extraction from the job text and use it when classifying the language rubric.
 - "One of", "at least one", "such as", "for example", and options joined by "or" are alternatives unless all/both/each is explicit. C# fully satisfies "Java, C++, or C#".
 - Treat adjacent skills as transferable. SQL Server supports PostgreSQL/relational SQL; a vendor difference alone is not a conflict.
 - A hard blocker requires an explicit user deal-breaker and explicit contradictory job evidence. A closed application is always a blocker.
@@ -266,6 +294,7 @@ Keep evidence in the posting's original language. Return only the schema fields.
               "Application availability not determined",
             confidence: job?.application?.statusConfidence || "low",
           },
+          languageEvidence: job?.languageEvidence || null,
         },
       },
       null,
@@ -332,6 +361,42 @@ Keep evidence in the posting's original language. Return only the schema fields.
       reasoning_effort: "none",
       temperature: 0,
       max_tokens: 500,
+      stream: false,
+    };
+  }
+
+  function buildLanguageExtractionRequest(
+    description,
+    userCriteria,
+    model,
+  ) {
+    return {
+      model,
+      messages: [
+        {
+          role: "system",
+          content:
+            "Analyze only the language fit between one job posting and the applicant's language preferences. First extract proficiency requirements from the job in any language, then classify their relationship to the applicant criteria as match, partial, unknown, gap, or conflict. A standalone proficiency statement or qualification-list bullet is required unless explicitly marked preferred, optional, nice-to-have, or alternative. Never infer optionality merely from an adjective such as good. Describe the actual proficiency level and preserve exact original-language job evidence. Evidence must never come from applicant criteria. Return found when requirements exist, none only when confidently absent, otherwise uncertain.",
+        },
+        {
+          role: "user",
+          content: JSON.stringify({
+            jobPosting: description,
+            applicantLanguageCriteria: userCriteria,
+          }),
+        },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "language_requirements",
+          strict: true,
+          schema: languageExtractionSchema,
+        },
+      },
+      reasoning_effort: "none",
+      temperature: 0,
+      max_tokens: 300,
       stream: false,
     };
   }
@@ -587,6 +652,7 @@ Keep evidence in the posting's original language. Return only the schema fields.
     SUMMARY_MAX_LENGTH,
     applyDeterministicScore,
     buildFastLocalRequest,
+    buildLanguageExtractionRequest,
     buildOpenAICompatibleRequest,
     buildOpenAIRequest,
     calculateRubricScore,
@@ -595,6 +661,7 @@ Keep evidence in the posting's original language. Return only the schema fields.
     instructions,
     localInstructions,
     localModelOutputSchema,
+    languageExtractionSchema,
     modelOutputSchema,
     normalizeAnalysis,
     validateModelOutput,

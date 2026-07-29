@@ -5,6 +5,7 @@ import { validateProviderConfig } from "./configuration.mjs";
 const require = createRequire(import.meta.url);
 const {
   buildFastLocalRequest,
+  buildLanguageExtractionRequest,
   calculateRubricScore,
   expectedRecommendation,
   normalizeAnalysis,
@@ -60,7 +61,7 @@ function extractLocalOutputText(response) {
   throw new Error("The local model returned no structured analysis text.");
 }
 
-function parseLocalResponse(response, config, context) {
+function parseLocalResponse(response, config, context, languageEvidence) {
   let modelOutput;
   try {
     modelOutput = JSON.parse(extractLocalOutputText(response));
@@ -73,15 +74,54 @@ function parseLocalResponse(response, config, context) {
     throw error;
   }
 
+  if (languageEvidence) {
+    modelOutput.languageRequirementStatus = languageEvidence.status;
+    modelOutput.languageRequirements = languageEvidence.requirements;
+    modelOutput.postingLanguage =
+      languageEvidence.postingLanguage || modelOutput.postingLanguage;
+    modelOutput.rubric.language = {
+      applicable: true,
+      outcome: languageEvidence.outcome,
+      evidence:
+        languageEvidence.requirements[0]?.evidence ||
+        modelOutput.rubric.language?.evidence ||
+        "",
+    };
+  }
+
   return normalizeAnalysis(
     expandLocalAnalysis(modelOutput, context),
     {
       id: "local",
-      model: response.model || config.model,
+      model:
+        (config.languageModel || config.model) !== config.model
+          ? `${response.model || config.model} + ${config.languageModel} language`
+          : response.model || config.model,
       responseId: response.id || "",
     },
     context,
   );
+}
+
+function parseLanguageExtractionResponse(response) {
+  const value = JSON.parse(extractLocalOutputText(response));
+  if (
+    !["found", "none", "uncertain"].includes(value?.status) ||
+    typeof value?.postingLanguage !== "string" ||
+    !["match", "partial", "unknown", "gap", "conflict"].includes(
+      value?.outcome,
+    ) ||
+    !Array.isArray(value?.requirements)
+  ) {
+    throw new Error("The language extraction model returned an invalid result.");
+  }
+  if (value.status === "found" && value.requirements.length === 0) {
+    return { ...value, status: "uncertain" };
+  }
+  if (value.requirements.length > 0) {
+    return { ...value, status: "found" };
+  }
+  return value;
 }
 
 const DIMENSION_LABELS = {
@@ -173,72 +213,30 @@ function trustedPostingLanguage(description, modelLanguage) {
   return modelLanguage;
 }
 
-function extractExplicitLanguageRequirements(description) {
-  const text = typeof description === "string" ? description : "";
-  const requirements = [];
-  const patterns = [
-    {
-      language: "German",
-      level: "very good written and spoken",
-      expression:
-        /(?:sehr\s+gute|hervorragende|ausgezeichnete|verhandlungssichere|fließende)\s+Deutschkenntnisse(?:\s+in\s+Wort\s+und\s+Schrift)?/giu,
-    },
-    {
-      language: "German",
-      level: "C1/C2 or business fluent",
-      expression:
-        /(?:Deutschkenntnisse[^\n.!?]{0,40}(?:C1|C2|Business[- ]Level|verhandlungssicher|fließend)|(?:C1|C2)[^\n.!?]{0,30}Deutschkenntnisse)/giu,
-    },
-    {
-      language: "English",
-      level: "good",
-      expression:
-        /(?:gute|sehr\s+gute|fließende|verhandlungssichere)\s+Englischkenntnisse(?:\s+in\s+Wort\s+und\s+Schrift)?/giu,
-    },
-  ];
-
-  for (const pattern of patterns) {
-    for (const match of text.matchAll(pattern.expression)) {
-      requirements.push({
-        language: pattern.language,
-        level: pattern.level,
-        requirement: "required",
-        evidence: match[0],
-      });
-    }
-  }
-  return requirements.slice(0, 3);
+function normalizeEvidence(value) {
+  return String(value || "")
+    .normalize("NFKC")
+    .replace(/^[\s"'“”‘’*•–—-]+|[\s"'“”‘’*•–—-]+$/gu, "")
+    .replace(/\s+/gu, " ")
+    .toLocaleLowerCase();
 }
 
-function languageOutcomeFromEvidence(requirements, userCriteria, fallback) {
-  const criteria =
-    typeof userCriteria === "string" ? userCriteria.toLocaleLowerCase() : "";
-  const strongGermanRequirement = requirements.some(
-    (requirement) =>
-      requirement.language === "German" &&
-      requirement.requirement === "required" &&
-      /(?:very good|c1|c2|business|fluent)/iu.test(requirement.level),
+function evidenceAppearsInJob(evidence, jobEvidence) {
+  const normalizedEvidence = normalizeEvidence(evidence);
+  const normalizedJob = normalizeEvidence(jobEvidence);
+  return (
+    normalizedEvidence.length >= 3 &&
+    normalizedJob.includes(normalizedEvidence)
   );
-  const userRejectsStrongGerman =
-    /(?:strongly\s+reduce|reject|do\s+not\s+apply|hard\s+requirement|deal[- ]breaker)[^\n.]{0,100}(?:german|deutsch)|(?:german|deutsch)[^\n.]{0,100}(?:strongly\s+reduce|reject|deal[- ]breaker)/iu.test(
-      criteria,
-    );
-  if (strongGermanRequirement && userRejectsStrongGerman) return "conflict";
-
-  const englishRequirement = requirements.some(
-    (requirement) =>
-      requirement.language === "English" &&
-      requirement.requirement === "required",
-  );
-  const userPrefersEnglish =
-    /\benglish\b[^\n.]{0,80}\b(?:working\s+language|preferred|prefer|acceptable)\b|\bprefer[^\n.]{0,80}\benglish\b/iu.test(
-      criteria,
-    );
-  if (englishRequirement && userPrefersEnglish) return "match";
-  return fallback;
 }
 
-function buildLocalSummary(score, rubric, hardBlockers, context) {
+function buildLocalSummary(
+  score,
+  rubric,
+  hardBlockers,
+  context,
+  languageRequirementStatus = "uncertain",
+) {
   if (context?.job?.application?.status === "closed") {
     return "Applications are closed for this role, regardless of the underlying job fit.";
   }
@@ -282,7 +280,11 @@ function buildLocalSummary(score, rubric, hardBlockers, context) {
     parts.push(`Main concern: ${negative.slice(0, 2).join(" and ")}.`);
   } else if (uncertain.length) {
     if (uncertain.length === 1 && uncertain[0] === "language") {
-      parts.push("No explicit language requirement was found in the posting.");
+      parts.push(
+        languageRequirementStatus === "none"
+          ? "No explicit language requirement was found in the posting."
+          : "The local model could not confidently determine the language requirements.",
+      );
     } else {
       parts.push(
         `The posting does not clearly confirm your ${uncertain
@@ -307,16 +309,10 @@ function expandLocalAnalysis(value, context) {
     .filter(Boolean)
     .join("\n")
     .toLocaleLowerCase();
-  const modelLanguageRequirements = (value.languageRequirements || [])
+  const supportedLanguageRequirements = (value.languageRequirements || [])
     .filter((requirement) =>
-      jobEvidence.includes(requirement.evidence.trim().toLocaleLowerCase()),
-    );
-  const deterministicLanguageRequirements =
-    extractExplicitLanguageRequirements(context?.job?.description);
-  const supportedLanguageRequirements = [
-    ...deterministicLanguageRequirements,
-    ...modelLanguageRequirements,
-  ]
+      evidenceAppearsInJob(requirement.evidence, jobEvidence),
+    )
     .filter(
       (requirement, index, all) =>
         all.findIndex(
@@ -327,6 +323,11 @@ function expandLocalAnalysis(value, context) {
         ) === index,
     )
     .slice(0, 3);
+  const languageRequirementStatus =
+    value.languageRequirementStatus === "found" &&
+    supportedLanguageRequirements.length === 0
+      ? "uncertain"
+      : value.languageRequirementStatus;
   const rubric = Object.fromEntries(
     Object.entries(value.rubric || {}).map(([dimension, assessment]) => [
       dimension,
@@ -338,14 +339,8 @@ function expandLocalAnalysis(value, context) {
         outcome:
           dimension === "language" &&
           explicitDimensions.language &&
-          supportedLanguageRequirements.length === 0
+          languageRequirementStatus !== "found"
             ? "unknown"
-            : dimension === "language" && explicitDimensions.language
-              ? languageOutcomeFromEvidence(
-                  supportedLanguageRequirements,
-                  context?.userCriteria,
-                  assessment.outcome,
-                )
             : assessment.outcome,
       },
     ]),
@@ -374,7 +369,7 @@ function expandLocalAnalysis(value, context) {
     .slice(0, 3);
   const hardBlockers = (value.hardBlockers || [])
     .filter((blocker) =>
-      jobEvidence.includes(blocker.evidence.trim().toLocaleLowerCase()),
+      evidenceAppearsInJob(blocker.evidence, jobEvidence),
     )
     .map((blocker) => ({
       title: blocker.title,
@@ -412,7 +407,13 @@ function expandLocalAnalysis(value, context) {
     ...draft,
     score,
     recommendation: expectedRecommendation(score),
-    summary: buildLocalSummary(score, rubric, hardBlockers, context),
+    summary: buildLocalSummary(
+      score,
+      rubric,
+      hardBlockers,
+      context,
+      languageRequirementStatus,
+    ),
   };
 }
 
@@ -468,11 +469,56 @@ async function analyzeWithLocalModel(
   }
 
   try {
+    let languageEvidence = null;
+    let languageUsage = {};
+    if (explicitCriteriaDimensions(payload.userCriteria).language) {
+      try {
+        const languageResponse = await fetchImpl(
+          buildChatCompletionsUrl(config.baseUrl),
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(
+              buildLanguageExtractionRequest(
+                compactedPayload.job.description,
+                payload.userCriteria,
+                config.languageModel,
+              ),
+            ),
+            signal: controller.signal,
+          },
+        );
+        if (!languageResponse.ok) {
+          throw new Error(await readLocalError(languageResponse));
+        }
+        const languageBody = await languageResponse.json();
+        languageEvidence = parseLanguageExtractionResponse(languageBody);
+        languageUsage = languageBody?.usage || {};
+      } catch (error) {
+        if (error?.name === "AbortError") throw error;
+        languageEvidence = {
+          status: "uncertain",
+          postingLanguage: "Unknown",
+          outcome: "unknown",
+          requirements: [],
+        };
+      }
+    }
+
+    const analysisPayload = languageEvidence
+      ? {
+          ...compactedPayload,
+          job: {
+            ...compactedPayload.job,
+            languageEvidence,
+          },
+        }
+      : compactedPayload;
     const response = await fetchImpl(buildChatCompletionsUrl(config.baseUrl), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(
-        buildFastLocalRequest(compactedPayload, config.model),
+        buildFastLocalRequest(analysisPayload, config.model),
       ),
       signal: controller.signal,
     });
@@ -484,11 +530,22 @@ async function analyzeWithLocalModel(
     onMetrics({
       originalDescriptionCharacters: payload.job.description.length,
       sentDescriptionCharacters: compactedPayload.job.description.length,
-      promptTokens: responseBody?.usage?.prompt_tokens ?? null,
-      completionTokens: responseBody?.usage?.completion_tokens ?? null,
-      totalTokens: responseBody?.usage?.total_tokens ?? null,
+      promptTokens:
+        (languageUsage.prompt_tokens || 0) +
+          (responseBody?.usage?.prompt_tokens || 0) || null,
+      completionTokens:
+        (languageUsage.completion_tokens || 0) +
+          (responseBody?.usage?.completion_tokens || 0) || null,
+      totalTokens:
+        (languageUsage.total_tokens || 0) +
+          (responseBody?.usage?.total_tokens || 0) || null,
     });
-    return parseLocalResponse(responseBody, config, payload);
+    return parseLocalResponse(
+      responseBody,
+      config,
+      payload,
+      languageEvidence,
+    );
   } catch (error) {
     if (error?.name === "AbortError") {
       if (signal?.aborted) {
@@ -516,11 +573,11 @@ export {
   compactLocalDescription,
   compactLocalPayload,
   explicitCriteriaDimensions,
-  extractExplicitLanguageRequirements,
+  evidenceAppearsInJob,
   expandLocalAnalysis,
-  languageOutcomeFromEvidence,
   trustedPostingLanguage,
   extractLocalOutputText,
   parseLocalResponse,
+  parseLanguageExtractionResponse,
   readLocalError,
 };

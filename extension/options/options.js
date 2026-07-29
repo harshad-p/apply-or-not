@@ -6,6 +6,9 @@ const providerInput = document.querySelector("[data-provider]");
 const localSettings = document.querySelector("[data-local-settings]");
 const localBaseUrlInput = document.querySelector("[data-local-base-url]");
 const localModelInput = document.querySelector("[data-local-model]");
+const localLanguageModelInput = document.querySelector(
+  "[data-local-language-model]",
+);
 const openAISettings = document.querySelector("[data-openai-settings]");
 const characterCount = document.querySelector("[data-character-count]");
 const apiKeyInput = document.querySelector("[data-api-key]");
@@ -80,12 +83,14 @@ async function restoreSettings() {
       analysisProvider = "openai",
       localBaseUrl = DEFAULT_LOCAL_BASE_URL,
       localModel = "",
+      localLanguageModel = "",
     } = await extensionApi.storage.local.get([
       "userCriteria",
       "preferredLanguage",
       "analysisProvider",
       "localBaseUrl",
       "localModel",
+      "localLanguageModel",
     ]);
 
     criteriaInput.value = userCriteria;
@@ -93,6 +98,7 @@ async function restoreSettings() {
     providerInput.value = analysisProvider;
     localBaseUrlInput.value = localBaseUrl;
     localModelInput.value = localModel;
+    localLanguageModelInput.value = localLanguageModel;
     updateProviderVisibility();
     updateCharacterCount();
     await checkRelayStatus();
@@ -119,7 +125,11 @@ providerInput.addEventListener("change", () => {
   checkRelayStatus();
 });
 
-for (const input of [localBaseUrlInput, localModelInput]) {
+for (const input of [
+  localBaseUrlInput,
+  localModelInput,
+  localLanguageModelInput,
+]) {
   input.addEventListener("input", () => {
     input.setCustomValidity("");
     markSettingsDirty();
@@ -182,6 +192,7 @@ clearButton.addEventListener("click", async () => {
       "analysisProvider",
       "localBaseUrl",
       "localModel",
+      "localLanguageModel",
       "settingsVersion",
       "analysisCacheV1",
       "analysisRunsV1",
@@ -191,6 +202,7 @@ clearButton.addEventListener("click", async () => {
     providerInput.value = "openai";
     localBaseUrlInput.value = DEFAULT_LOCAL_BASE_URL;
     localModelInput.value = "";
+    localLanguageModelInput.value = "";
     updateProviderVisibility();
     criteriaInput.setCustomValidity("");
     languageInput.setCustomValidity("");
@@ -214,6 +226,7 @@ form.addEventListener("submit", async (event) => {
   const analysisProvider = providerInput.value;
   const localBaseUrl = localBaseUrlInput.value.trim();
   const localModel = localModelInput.value.trim();
+  const localLanguageModel = localLanguageModelInput.value.trim();
 
   criteriaInput.setCustomValidity(
     userCriteria ? "" : "Describe what you want from a job.",
@@ -251,7 +264,8 @@ form.addEventListener("submit", async (event) => {
       analysisProvider,
       localBaseUrl,
       localModel,
-      settingsVersion: 2,
+      localLanguageModel,
+      settingsVersion: 3,
     });
     criteriaInput.value = userCriteria;
     languageInput.value = preferredLanguage;

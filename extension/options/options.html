@@ -126,6 +126,28 @@
               the lowest-latency tested option, with less nuance than larger
               models.
             </p>
+
+            <label for="local-language-model">
+              Language extraction model
+            </label>
+            <input
+              id="local-language-model"
+              name="localLanguageModel"
+              type="text"
+              maxlength="200"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              placeholder="Most reliable tested: qwen3:14b"
+              data-local-language-model
+            >
+            <p class="field-help">
+              Optional focused multilingual helper. It reads only the job text,
+              compares grounded language evidence with your preferences, and
+              passes the result to the main analysis. Leave blank to reuse the
+              primary model. More capable helpers are substantially slower on
+              CPU.
+            </p>
           </div>
           <p class="connection-status" role="status" aria-live="polite" data-connection-status></p>
         </section>

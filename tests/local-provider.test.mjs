@@ -6,11 +6,12 @@ import {
   buildChatCompletionsUrl,
   buildLocalSummary,
   compactLocalDescription,
+  evidenceAppearsInJob,
   explicitCriteriaDimensions,
   expandLocalAnalysis,
-  extractExplicitLanguageRequirements,
   extractLocalOutputText,
   parseLocalResponse,
+  parseLanguageExtractionResponse,
   trustedPostingLanguage,
 } from "../local-relay/local-provider.mjs";
 
@@ -39,6 +40,7 @@ function modelOutput() {
     hardBlockers: [],
     uncertainties: [],
     postingLanguage: "English",
+    languageRequirementStatus: "none",
     languageRequirements: [],
   };
 }
@@ -121,12 +123,25 @@ test("corrects obvious posting-language mistakes without translating", () => {
   );
 });
 
-test("extracts explicit German and English requirements without the model", () => {
-  assert.deepEqual(
-    extractExplicitLanguageRequirements(`Sehr gute Deutschkenntnisse in Wort und Schrift
+test("validates original-language evidence without interpreting its grammar", () => {
+  assert.equal(
+    evidenceAppearsInJob(
+      "“Sehr gute Deutschkenntnisse in Wort und Schrift”",
+      "Sehr gute Deutschkenntnisse in Wort und Schrift\nGute Englischkenntnisse",
+    ),
+    true,
+  );
+});
 
-Gute Englischkenntnisse`),
-    [
+test("uses semantic language requirements returned by the local model", () => {
+  const analysis = expandLocalAnalysis({
+    ...modelOutput(),
+    rubric: {
+      ...modelOutput().rubric,
+      language: { applicable: true, outcome: "conflict" },
+    },
+    languageRequirementStatus: "found",
+    languageRequirements: [
       {
         language: "German",
         level: "very good written and spoken",
@@ -140,11 +155,7 @@ Gute Englischkenntnisse`),
         evidence: "Gute Englischkenntnisse",
       },
     ],
-  );
-});
-
-test("treats an explicit strong German requirement as a language conflict", () => {
-  const analysis = expandLocalAnalysis(modelOutput(), {
+  }, {
     userCriteria: `Match me with C# and .NET.
 Prefer positions where English is the working language or German is optional.
 Strongly reduce the score when fluent German, C1, or business-level German is an explicit hard requirement.`,
@@ -176,8 +187,22 @@ test("builds a deterministic local summary from trusted classifications", () => 
       },
       [],
       {},
+      "none",
     ),
     "Strong overall match, led by skills. No explicit language requirement was found in the posting.",
+  );
+  assert.equal(
+    buildLocalSummary(
+      90,
+      {
+        skills: { applicable: true, outcome: "match" },
+        language: { applicable: true, outcome: "unknown" },
+      },
+      [],
+      {},
+      "uncertain",
+    ),
+    "Strong overall match, led by skills. The local model could not confidently determine the language requirements.",
   );
 });
 
@@ -199,6 +224,33 @@ test("extracts standard and content-part local responses", () => {
       ],
     }),
     '{"ok":true}',
+  );
+});
+
+test("normalizes focused language extraction structural consistency", () => {
+  assert.deepEqual(
+    parseLanguageExtractionResponse({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              status: "uncertain",
+              postingLanguage: "German",
+              outcome: "conflict",
+              requirements: [
+                {
+                  language: "German",
+                  level: "Very good",
+                  requirement: "required",
+                  evidence: "Sehr gute Deutschkenntnisse",
+                },
+              ],
+            }),
+          },
+        },
+      ],
+    }).status,
+    "found",
   );
 });
 

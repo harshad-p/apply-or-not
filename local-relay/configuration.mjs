@@ -81,6 +81,7 @@ function validateProviderConfig(value = {}) {
       value.baseUrl || DEFAULT_LOCAL_BASE_URL,
     ),
     model: validateLocalModel(value.model),
+    languageModel: validateLocalModel(value.languageModel || value.model),
   });
 }
 
