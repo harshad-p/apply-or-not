@@ -5,8 +5,10 @@ import {
   analyzeWithLocalModel,
   buildChatCompletionsUrl,
   compactLocalDescription,
+  explicitCriteriaDimensions,
   extractLocalOutputText,
   parseLocalResponse,
+  trustedPostingLanguage,
 } from "../local-relay/local-provider.mjs";
 
 function modelOutput() {
@@ -67,6 +69,53 @@ test("compacts oversized job text for local inference", () => {
   assert.match(compacted, /page text omitted/);
   assert.ok(compacted.startsWith("A".repeat(100)));
   assert.ok(compacted.endsWith("A".repeat(100)));
+});
+
+test("guards local applicability with explicit preference text", () => {
+  assert.deepEqual(
+    explicitCriteriaDimensions(`Match C# and .NET.
+Prefer English or optional German.
+Easy Apply is convenient but not required.`),
+    {
+      workArrangement: false,
+      language: true,
+      seniority: false,
+      applicationMethod: false,
+      otherPreferences: false,
+    },
+  );
+  assert.equal(
+    explicitCriteriaDimensions("I require remote work and Easy Apply.")
+      .workArrangement,
+    true,
+  );
+  assert.equal(
+    explicitCriteriaDimensions("I require remote work and Easy Apply.")
+      .applicationMethod,
+    true,
+  );
+  assert.equal(
+    explicitCriteriaDimensions("I only want aviation companies.")
+      .otherPreferences,
+    true,
+  );
+});
+
+test("corrects obvious posting-language mistakes without translating", () => {
+  assert.equal(
+    trustedPostingLanguage(
+      "The team will build software with strong engineering skills and experience. The job requires APIs and the role will work with product teams.",
+      "German",
+    ),
+    "English",
+  );
+  assert.equal(
+    trustedPostingLanguage(
+      "Wir suchen Sie für die Entwicklung. Die Erfahrung und Kenntnisse mit der Software sind wichtig und das Team arbeitet auf Deutsch.",
+      "English",
+    ),
+    "German",
+  );
 });
 
 test("extracts standard and content-part local responses", () => {

@@ -4,7 +4,9 @@ import { validateProviderConfig } from "./configuration.mjs";
 
 const require = createRequire(import.meta.url);
 const {
-  buildOpenAICompatibleRequest,
+  buildFastLocalRequest,
+  calculateRubricScore,
+  expectedRecommendation,
   normalizeAnalysis,
 } = require("../extension/shared/analysis-contract.js");
 const LOCAL_DESCRIPTION_MAX_LENGTH = 9_000;
@@ -72,7 +74,7 @@ function parseLocalResponse(response, config, context) {
   }
 
   return normalizeAnalysis(
-    modelOutput,
+    expandLocalAnalysis(modelOutput, context),
     {
       id: "local",
       model: response.model || config.model,
@@ -80,6 +82,198 @@ function parseLocalResponse(response, config, context) {
     },
     context,
   );
+}
+
+const DIMENSION_LABELS = {
+  skills: "Skills",
+  workArrangement: "Work arrangement",
+  language: "Language",
+  seniority: "Seniority",
+  applicationMethod: "Application method",
+  otherPreferences: "Other preferences",
+};
+
+const DIMENSION_SUBJECTS = {
+  skills: "skills",
+  workArrangement: "work-arrangement",
+  language: "language",
+  seniority: "seniority",
+  applicationMethod: "application-method",
+  otherPreferences: "other",
+};
+
+function evidenceItem(dimension, assessment) {
+  const label = DIMENSION_LABELS[dimension] || dimension;
+  const subject =
+    DIMENSION_SUBJECTS[dimension] || label.toLocaleLowerCase();
+  const explanations = {
+    match: `The posting supports your stated ${subject} preference.`,
+    partial: `The posting partly supports your stated ${subject} preference.`,
+    unknown: `The posting does not provide enough evidence about your ${subject} preference.`,
+    gap: `The posting does not fully meet your stated ${subject} preference.`,
+    conflict: `The posting conflicts with your stated ${subject} preference.`,
+  };
+  return {
+    title: `${label}: ${assessment.outcome}`,
+    explanation: explanations[assessment.outcome],
+    evidence: assessment.evidence || "No explicit evidence found",
+  };
+}
+
+function explicitCriteriaDimensions(userCriteria) {
+  const text = typeof userCriteria === "string" ? userCriteria : "";
+  const applicationMethodMentioned =
+    /\b(?:easy\s+apply|application\s+method|one[- ]click\s+apply)\b/iu.test(
+      text,
+    ) &&
+    !/\beasy\s+apply\b.{0,60}\bnot\s+(?:required|mandatory)\b/isu.test(
+      text,
+    );
+  return {
+    workArrangement:
+      /\b(?:remote|hybrid|on[- ]?site|onsite|in[- ]office|work(?:ing)?\s+from\s+home|office[- ]based)\b/iu.test(
+        text,
+      ),
+    language:
+      /\b(?:language|english|german|japanese|french|spanish|fluent|fluency|business[- ]level|[abc][12])\b/iu.test(
+        text,
+      ),
+    seniority:
+      /\b(?:junior|mid[- ]?level|senior|lead|principal|staff|entry[- ]level|years?\s+(?:of\s+)?experience)\b/iu.test(
+        text,
+      ),
+    applicationMethod: applicationMethodMentioned,
+    otherPreferences:
+      /\b(?:compan(?:y|ies)|employer|industry|domain|sector|salary|compensation|visa|sponsorship|relocation|location|country|city|travel|benefits?|contract|full[- ]time|part[- ]time)\b/iu.test(
+        text,
+      ),
+  };
+}
+
+function countMatches(text, expression) {
+  return text.match(expression)?.length || 0;
+}
+
+function trustedPostingLanguage(description, modelLanguage) {
+  const text = typeof description === "string" ? description : "";
+  const englishSignals = countMatches(
+    text,
+    /\b(?:the|and|with|experience|job|team|will|requirements?|skills?)\b/giu,
+  );
+  const germanSignals = countMatches(
+    text,
+    /\b(?:und|der|die|das|mit|erfahrung|kenntnisse|anforderungen|deutsch|wir|sie)\b/giu,
+  );
+  if (englishSignals >= 8 && englishSignals > germanSignals * 2) {
+    return "English";
+  }
+  if (germanSignals >= 8 && germanSignals > englishSignals * 2) {
+    return "German";
+  }
+  return modelLanguage;
+}
+
+function expandLocalAnalysis(value, context) {
+  const explicitDimensions = explicitCriteriaDimensions(context?.userCriteria);
+  const jobEvidence = [
+    context?.job?.title,
+    context?.job?.company,
+    context?.job?.companyContext,
+    context?.job?.description,
+    context?.job?.application?.label,
+    context?.job?.application?.statusLabel,
+  ]
+    .filter(Boolean)
+    .join("\n")
+    .toLocaleLowerCase();
+  const supportedLanguageRequirements = (value.languageRequirements || [])
+    .filter((requirement) =>
+      jobEvidence.includes(requirement.evidence.trim().toLocaleLowerCase()),
+    )
+    .slice(0, 2);
+  const rubric = Object.fromEntries(
+    Object.entries(value.rubric || {}).map(([dimension, assessment]) => [
+      dimension,
+      {
+        applicable:
+          Object.hasOwn(explicitDimensions, dimension)
+            ? explicitDimensions[dimension] && assessment.applicable
+            : assessment.applicable,
+        outcome:
+          dimension === "language" &&
+          explicitDimensions.language &&
+          supportedLanguageRequirements.length === 0
+            ? "unknown"
+            : assessment.outcome,
+      },
+    ]),
+  );
+  const applicable = Object.entries(value.rubric || {})
+    .map(([dimension, assessment]) => [
+      dimension,
+      {
+        ...assessment,
+        applicable: rubric[dimension]?.applicable,
+        outcome: rubric[dimension]?.outcome,
+      },
+    ])
+    .filter(([, assessment]) => assessment.applicable);
+  const positiveMatches = applicable
+    .filter(([, assessment]) =>
+      ["match", "partial"].includes(assessment.outcome),
+    )
+    .map(([dimension, assessment]) => evidenceItem(dimension, assessment))
+    .slice(0, 3);
+  const concerns = applicable
+    .filter(([, assessment]) =>
+      ["unknown", "gap", "conflict"].includes(assessment.outcome),
+    )
+    .map(([dimension, assessment]) => evidenceItem(dimension, assessment))
+    .slice(0, 3);
+  const hardBlockers = (value.hardBlockers || [])
+    .filter((blocker) =>
+      jobEvidence.includes(blocker.evidence.trim().toLocaleLowerCase()),
+    )
+    .map((blocker) => ({
+      title: blocker.title,
+      explanation:
+        "This conflicts with an explicit deal-breaker or prevents an application.",
+      evidence: blocker.evidence,
+    }));
+  const draft = {
+    score: 0,
+    recommendation: "skip",
+    rubric,
+    confidence:
+      value.confidence === "high" &&
+      Object.values(rubric).some(
+        (assessment) =>
+          assessment.applicable && assessment.outcome === "unknown",
+      )
+        ? "medium"
+        : value.confidence,
+    summary:
+      value.summary.length >= 175 && !/[.!?…]$/u.test(value.summary)
+        ? `${value.summary.slice(0, 174).trimEnd()}…`
+        : value.summary,
+    positiveMatches,
+    concerns,
+    hardBlockers,
+    uncertainties: concerns
+      .filter((item) => item.title.endsWith(": unknown"))
+      .map((item) => item.title.replace(": unknown", "")),
+    postingLanguage: trustedPostingLanguage(
+      context?.job?.description,
+      value.postingLanguage,
+    ),
+    languageRequirements: supportedLanguageRequirements,
+  };
+  const score = calculateRubricScore(draft, context);
+  return {
+    ...draft,
+    score,
+    recommendation: expectedRecommendation(score),
+  };
 }
 
 async function readLocalError(response) {
@@ -138,7 +332,7 @@ async function analyzeWithLocalModel(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(
-        buildOpenAICompatibleRequest(compactedPayload, config.model),
+        buildFastLocalRequest(compactedPayload, config.model),
       ),
       signal: controller.signal,
     });
@@ -180,6 +374,9 @@ export {
   buildChatCompletionsUrl,
   compactLocalDescription,
   compactLocalPayload,
+  explicitCriteriaDimensions,
+  expandLocalAnalysis,
+  trustedPostingLanguage,
   extractLocalOutputText,
   parseLocalResponse,
   readLocalError,

@@ -102,7 +102,7 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.17.7 is post-submission development on the local
+Version 0.18.0 is post-submission development on the local
 `codex/local-llm-support` branch. The submitted version remains 0.16.1 on
 `main`. The development version can route analysis through either GPT-5.6 or a
 local OpenAI-compatible model, validates both through the same result contract,
@@ -126,7 +126,8 @@ results display the measured analysis duration alongside the model and prompt
 version.
 
 The extractor also detects visible Easy Apply and external-application controls.
-Prompt v12 treats alternative requirement lists correctly, treats application method as selected-job page-control evidence, recognizes
+Prompt v13 keeps the v12 alternative-requirement fix and adds a compact,
+classification-first path for CPU-bound local models. It treats application method as selected-job page-control evidence, recognizes
 transferable skills across related technologies, evaluates explicit employer
 and industry preferences from posting evidence, and forces closed listings to
 score 0 regardless of technical fit. It scores only the
@@ -296,6 +297,11 @@ for this mode.
 1. Start [Ollama](https://docs.ollama.com/api/openai-compatibility) or
    [LM Studio](https://lmstudio.ai/docs/developer/openai-compat) and load a
    model that supports structured JSON output.
+   For the lowest latency with Ollama, install the small multilingual model:
+
+   ```sh
+   ollama pull qwen3:0.6b
+   ```
 2. Keep `node local-relay/server.mjs` running.
 3. Open the extension settings and select
    **Local model · Ollama or LM Studio**.
@@ -306,11 +312,15 @@ for this mode.
    the same schema validation and deterministic scoring rules still apply.
 
 Only plain HTTP URLs on `localhost`, `127.0.0.1`, or `::1` are accepted. The
-relay rejects remote provider URLs and URLs containing credentials. Smaller
-local models may be slower or may fail to follow the required schema; in that
-case, choose a stronger structured-output-capable model. Local requests disable
+relay rejects remote provider URLs and URLs containing credentials. Very small
+local models are faster but less nuanced and may fail to follow the required
+schema; in that case, choose a stronger structured-output-capable model. Local requests disable
 extended reasoning, limit the job-description input to 9,000 representative
-characters, and cap structured output at 1,800 tokens. Local analysis may take several
+characters, ask the model only for rubric classifications, short evidence, and
+one summary, and cap structured output at 700 tokens. Trusted JavaScript
+calculates the score, expands the popup evidence sections, rejects unsupported
+blockers, and prevents clearly unstated dimensions from changing the score.
+Local analysis may still take several
 minutes on older hardware; the relay allows up to five minutes before reporting
 a timeout. While local analysis is running, the popup provides a **Cancel
 analysis** action that sends an explicit cancellation request to the relay and
@@ -322,7 +332,11 @@ analysis.
 The relay terminal logs each local job's elapsed time, transmitted description
 size, and prompt/completion token counts when the provider returns them. These
 metrics help distinguish model loading, prompt processing, and output-generation
-costs.
+costs. On the development machine, the supplied 5,114-character Amazon example
+took about 20–31 seconds with `qwen3:0.6b` depending on model warm-up; timing
+varies by hardware and job length.
+This is the latency-first option and may be less nuanced than a larger model or
+GPT-5.6, so the result remains decision support rather than a final decision.
 
 To make one real, billable GPT-5.6 request with fictional data, keep the relay
 running and use another terminal:

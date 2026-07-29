@@ -117,12 +117,14 @@
               autocomplete="off"
               autocapitalize="none"
               spellcheck="false"
-              placeholder="For example: qwen3:8b"
+              placeholder="Fastest: qwen3:0.6b"
               data-local-model
             >
             <p class="field-help">
               Use the exact model name shown by Ollama or LM Studio. The model
-              must support structured JSON output.
+              must support structured JSON output. <code>qwen3:0.6b</code> is
+              the lowest-latency tested option, with less nuance than larger
+              models.
             </p>
           </div>
           <p class="connection-status" role="status" aria-live="polite" data-connection-status></p>
