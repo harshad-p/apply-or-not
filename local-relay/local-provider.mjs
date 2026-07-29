@@ -383,7 +383,10 @@ function expandLocalAnalysis(value, context) {
     value.languageRequirementStatus === "found" &&
     supportedLanguageRequirements.length === 0
       ? "uncertain"
-      : value.languageRequirementStatus;
+      : value.languageRequirementStatus === "uncertain" &&
+          (value.languageRequirements || []).length === 0
+        ? "none"
+        : value.languageRequirementStatus;
   const rubric = Object.fromEntries(
     Object.entries(value.rubric || {}).map(([dimension, assessment]) => [
       dimension,

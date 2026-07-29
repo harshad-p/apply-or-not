@@ -279,6 +279,29 @@ test("builds a deterministic local summary from trusted classifications", () => 
   );
 });
 
+test("treats an empty uncertain language scan as no explicit requirement", () => {
+  const analysis = expandLocalAnalysis({
+    ...modelOutput(),
+    rubric: {
+      ...modelOutput().rubric,
+      language: { applicable: true, outcome: "unknown" },
+    },
+    languageRequirementStatus: "uncertain",
+    languageRequirements: [],
+  }, {
+    userCriteria: "Prefer English; German should be optional.",
+    job: {
+      description:
+        "Build production services with C# and collaborate across engineering teams.",
+    },
+  });
+
+  assert.equal(
+    analysis.summary,
+    "Strong overall match, led by skills. No explicit language requirement was found in the posting.",
+  );
+});
+
 test("extracts standard and content-part local responses", () => {
   assert.equal(
     extractLocalOutputText({
