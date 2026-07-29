@@ -4,6 +4,7 @@ import {
   LOCAL_DESCRIPTION_MAX_LENGTH,
   analyzeWithLocalModel,
   buildChatCompletionsUrl,
+  buildLocalSummary,
   compactLocalDescription,
   explicitCriteriaDimensions,
   extractLocalOutputText,
@@ -115,6 +116,25 @@ test("corrects obvious posting-language mistakes without translating", () => {
       "English",
     ),
     "German",
+  );
+});
+
+test("builds a deterministic local summary from trusted classifications", () => {
+  assert.equal(
+    buildLocalSummary(
+      90,
+      {
+        skills: { applicable: true, outcome: "match" },
+        workArrangement: { applicable: false, outcome: "unknown" },
+        language: { applicable: true, outcome: "unknown" },
+        seniority: { applicable: false, outcome: "unknown" },
+        applicationMethod: { applicable: false, outcome: "unknown" },
+        otherPreferences: { applicable: false, outcome: "unknown" },
+      },
+      [],
+      {},
+    ),
+    "Strong overall match, led by skills. The posting does not clearly confirm your language preference.",
   );
 });
 

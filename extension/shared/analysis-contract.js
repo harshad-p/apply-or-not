@@ -2,7 +2,7 @@
   "use strict";
 
   const SCHEMA_VERSION = 2;
-  const PROMPT_VERSION = "job-fit-v13";
+  const PROMPT_VERSION = "job-fit-v14";
   const DEFAULT_MODEL = "gpt-5.6-sol";
   const SUMMARY_MAX_LENGTH = 240;
   const RUBRIC_WEIGHTS = Object.freeze({
@@ -171,7 +171,6 @@
         required: Object.keys(RUBRIC_WEIGHTS),
       },
       confidence: { type: "string", enum: ["low", "medium", "high"] },
-      summary: { type: "string", minLength: 1, maxLength: 180 },
       hardBlockers: {
         type: "array",
         maxItems: 2,
@@ -195,7 +194,6 @@
     required: [
       "rubric",
       "confidence",
-      "summary",
       "hardBlockers",
       "postingLanguage",
       "languageRequirements",
@@ -242,7 +240,7 @@ Rules:
 - Easy Apply matters only if the user requires it. Use only the supplied application method/status.
 - Employer or industry preferences use only supplied company/job evidence; do not invent company facts.
 
-Write one short summary in the requested explanation language. Keep evidence in the posting's original language. Return only the schema fields.`;
+Keep evidence in the posting's original language. Return only the schema fields. Trusted code writes the summary and calculates the score.`;
 
   function buildInput({ userCriteria, preferredLanguage, job }) {
     return JSON.stringify(
@@ -333,7 +331,7 @@ Write one short summary in the requested explanation language. Keep evidence in 
       },
       reasoning_effort: "none",
       temperature: 0,
-      max_tokens: 700,
+      max_tokens: 500,
       stream: false,
     };
   }

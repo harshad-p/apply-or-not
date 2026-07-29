@@ -173,6 +173,58 @@ function trustedPostingLanguage(description, modelLanguage) {
   return modelLanguage;
 }
 
+function buildLocalSummary(score, rubric, hardBlockers, context) {
+  if (context?.job?.application?.status === "closed") {
+    return "Applications are closed for this role, regardless of the underlying job fit.";
+  }
+  if (hardBlockers.length) {
+    return "This role conflicts with an explicit deal-breaker in your preferences.";
+  }
+
+  const matching = Object.entries(rubric)
+    .filter(
+      ([, assessment]) =>
+        assessment.applicable &&
+        ["match", "partial"].includes(assessment.outcome),
+    )
+    .map(([dimension]) => DIMENSION_LABELS[dimension].toLocaleLowerCase());
+  const uncertain = Object.entries(rubric)
+    .filter(
+      ([, assessment]) =>
+        assessment.applicable && assessment.outcome === "unknown",
+    )
+    .map(([dimension]) => DIMENSION_LABELS[dimension].toLocaleLowerCase());
+  const negative = Object.entries(rubric)
+    .filter(
+      ([, assessment]) =>
+        assessment.applicable &&
+        ["gap", "conflict"].includes(assessment.outcome),
+    )
+    .map(([dimension]) => DIMENSION_LABELS[dimension].toLocaleLowerCase());
+
+  const lead =
+    score >= 80
+      ? "Strong overall match"
+      : score >= 60
+        ? "Potential match"
+        : "Weak overall match";
+  const parts = [
+    matching.length
+      ? `${lead}, led by ${matching.slice(0, 2).join(" and ")}.`
+      : `${lead} based on the available evidence.`,
+  ];
+  if (negative.length) {
+    parts.push(`Main concern: ${negative.slice(0, 2).join(" and ")}.`);
+  } else if (uncertain.length) {
+    parts.push(
+      `The posting does not clearly confirm your ${uncertain
+        .slice(0, 2)
+        .join(" and ")} preference.`,
+    );
+  }
+  return parts.join(" ");
+}
+
 function expandLocalAnalysis(value, context) {
   const explicitDimensions = explicitCriteriaDimensions(context?.userCriteria);
   const jobEvidence = [
@@ -252,10 +304,7 @@ function expandLocalAnalysis(value, context) {
       )
         ? "medium"
         : value.confidence,
-    summary:
-      value.summary.length >= 175 && !/[.!?…]$/u.test(value.summary)
-        ? `${value.summary.slice(0, 174).trimEnd()}…`
-        : value.summary,
+    summary: "Local analysis completed.",
     positiveMatches,
     concerns,
     hardBlockers,
@@ -273,6 +322,7 @@ function expandLocalAnalysis(value, context) {
     ...draft,
     score,
     recommendation: expectedRecommendation(score),
+    summary: buildLocalSummary(score, rubric, hardBlockers, context),
   };
 }
 
@@ -372,6 +422,7 @@ export {
   LOCAL_DESCRIPTION_MAX_LENGTH,
   analyzeWithLocalModel,
   buildChatCompletionsUrl,
+  buildLocalSummary,
   compactLocalDescription,
   compactLocalPayload,
   explicitCriteriaDimensions,

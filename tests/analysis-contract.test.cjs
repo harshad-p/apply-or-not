@@ -183,7 +183,7 @@ test("builds a private structured GPT-5.6 Responses request", () => {
   assert.match(request.input, /No longer accepting applications/);
   assert.match(request.input, /companyContext/);
   assert.match(request.input, /companyEvidenceSource/);
-  assert.equal(PROMPT_VERSION, "job-fit-v13");
+  assert.equal(PROMPT_VERSION, "job-fit-v14");
   assert.match(request.instructions, /transferable skills/i);
   assert.match(request.instructions, /satisfying one acceptable option fully satisfies/i);
   assert.match(request.instructions, /Java and C\+\+ are not missing skills/i);
@@ -249,11 +249,15 @@ test("builds a compact classification-first request for local inference", () => 
   );
 
   assert.equal(request.model, "qwen3:0.6b");
-  assert.equal(request.max_tokens, 700);
+  assert.equal(request.max_tokens, 500);
   assert.match(request.messages[0].content, /C# fully satisfies/);
   assert.match(request.messages[0].content, /Never infer a language requirement/);
   assert.equal(
     request.response_format.json_schema.schema.properties.score,
+    undefined,
+  );
+  assert.equal(
+    request.response_format.json_schema.schema.properties.summary,
     undefined,
   );
   assert.ok(

@@ -102,7 +102,7 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.18.0 is post-submission development on the local
+Version 0.18.1 is post-submission development on the local
 `codex/local-llm-support` branch. The submitted version remains 0.16.1 on
 `main`. The development version can route analysis through either GPT-5.6 or a
 local OpenAI-compatible model, validates both through the same result contract,
@@ -126,8 +126,10 @@ results display the measured analysis duration alongside the model and prompt
 version.
 
 The extractor also detects visible Easy Apply and external-application controls.
-Prompt v13 keeps the v12 alternative-requirement fix and adds a compact,
-classification-first path for CPU-bound local models. It treats application method as selected-job page-control evidence, recognizes
+Prompt v14 keeps the v12 alternative-requirement fix and adds a compact,
+classification-only path for CPU-bound local models. Trusted code writes the
+summary so a small model cannot produce a contradictory or truncated headline.
+It treats application method as selected-job page-control evidence, recognizes
 transferable skills across related technologies, evaluates explicit employer
 and industry preferences from posting evidence, and forces closed listings to
 score 0 regardless of technical fit. It scores only the
@@ -316,9 +318,9 @@ relay rejects remote provider URLs and URLs containing credentials. Very small
 local models are faster but less nuanced and may fail to follow the required
 schema; in that case, choose a stronger structured-output-capable model. Local requests disable
 extended reasoning, limit the job-description input to 9,000 representative
-characters, ask the model only for rubric classifications, short evidence, and
-one summary, and cap structured output at 700 tokens. Trusted JavaScript
-calculates the score, expands the popup evidence sections, rejects unsupported
+characters, ask the model only for rubric classifications and short evidence,
+and cap structured output at 500 tokens. Trusted JavaScript calculates the
+score, writes the summary, expands the popup evidence sections, rejects unsupported
 blockers, and prevents clearly unstated dimensions from changing the score.
 Local analysis may still take several
 minutes on older hardware; the relay allows up to five minutes before reporting
