@@ -184,7 +184,7 @@ test("builds a private structured GPT-5.6 Responses request", () => {
   assert.match(request.input, /No longer accepting applications/);
   assert.match(request.input, /companyContext/);
   assert.match(request.input, /companyEvidenceSource/);
-  assert.equal(PROMPT_VERSION, "job-fit-v28");
+  assert.equal(PROMPT_VERSION, "job-fit-v29");
   assert.match(request.instructions, /transferable skills/i);
   assert.match(request.instructions, /satisfying one acceptable option fully satisfies/i);
   assert.match(request.instructions, /Java and C\+\+ are not missing skills/i);
@@ -257,6 +257,11 @@ test("builds a compact classification-first request for local inference", () => 
     /Blazor is a \.NET UI framework, not a JavaScript-framework requirement/,
   );
   assert.match(request.messages[0].content, /Never infer a human-language/);
+  assert.match(
+    request.messages[0].content,
+    /one item for EACH named language/,
+  );
+  assert.match(request.messages[0].content, /Deutsch und Englisch/);
   assert.equal(
     request.response_format.json_schema.schema.properties.score,
     undefined,

@@ -115,6 +115,109 @@ function buildNativeOllamaRequest(request) {
   };
 }
 
+const CANONICAL_HUMAN_LANGUAGES = [
+  "German",
+  "English",
+  "French",
+  "Spanish",
+  "Italian",
+  "Dutch",
+  "Portuguese",
+  "Japanese",
+  "Chinese",
+  "Korean",
+  "Polish",
+  "Turkish",
+  "Arabic",
+  "Russian",
+  "Other",
+];
+
+function buildNativeLanguageVerificationRequest(candidates, model) {
+  return {
+    model,
+    messages: [
+      {
+        role: "system",
+        content:
+          "For each numbered passage, list every human language that the employer explicitly requires. Return each language separately. A conjunction joins separate requirements: Deutsch und Englisch means German and English. Translate language names to the canonical English choices. Ignore programming languages and passages that merely mention a language without requiring ability in it. Return only schema fields.",
+      },
+      {
+        role: "user",
+        content: JSON.stringify(
+          candidates.map((text, index) => ({ index, text })),
+        ),
+      },
+    ],
+    format: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        passages: {
+          type: "array",
+          maxItems: 8,
+          items: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              index: { type: "integer", minimum: 0, maximum: 7 },
+              languages: {
+                type: "array",
+                maxItems: 4,
+                items: {
+                  type: "string",
+                  enum: CANONICAL_HUMAN_LANGUAGES,
+                },
+              },
+            },
+            required: ["index", "languages"],
+          },
+        },
+      },
+      required: ["passages"],
+    },
+    stream: false,
+    think: false,
+    keep_alive: "30m",
+    options: {
+      temperature: 0,
+      num_ctx: 1024,
+      num_predict: 100,
+    },
+  };
+}
+
+function verifiedLanguageRequirements(value, candidates) {
+  if (!Array.isArray(value?.passages)) return [];
+  return value.passages
+    .flatMap((passage) => {
+      const evidence = candidates[passage?.index];
+      if (!evidence || !Array.isArray(passage.languages)) return [];
+      return passage.languages
+        .filter((language) => language !== "Other")
+        .map((language) => ({ language, evidence }));
+    })
+    .filter(
+      (requirement, index, all) =>
+        all.findIndex(
+          (candidate) =>
+            candidate.language === requirement.language &&
+            candidate.evidence === requirement.evidence,
+        ) === index,
+    )
+    .slice(0, 3);
+}
+
+function mergeVerifiedLanguages(outputText, requirements) {
+  if (requirements.length === 0) return outputText;
+  const value = JSON.parse(outputText);
+  value.language = {
+    status: "found",
+    requirements,
+  };
+  return JSON.stringify(value);
+}
+
 const preferenceProfileSchema = {
   type: "object",
   additionalProperties: false,
@@ -612,15 +715,7 @@ function buildLocalSummary(
   ];
   if (negative.length) {
     if (negative.includes("language") && languageRequirements.length) {
-      const conflictingRequirements = languageRequirements.filter(
-        ({ language }) =>
-          userStronglyReducesLanguage(context?.userCriteria, language),
-      );
-      const requirements = (
-        conflictingRequirements.length
-          ? conflictingRequirements
-          : languageRequirements
-      )
+      const requirements = languageRequirements
         .map(({ language }) => language)
         .slice(0, 3);
       const formatted =
@@ -912,6 +1007,34 @@ async function analyzeWithLocalModel(
       throw new Error(await readLocalError(response));
     }
     const providerResponse = await response.json();
+    const languageCandidates = analysisPayload.job.languageCandidates;
+    if (nativeOllamaQwen && languageCandidates.length > 0) {
+      const verificationResponse = await fetchImpl(
+        buildNativeOllamaChatUrl(config.baseUrl),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            buildNativeLanguageVerificationRequest(
+              languageCandidates,
+              config.model,
+            ),
+          ),
+          signal: controller.signal,
+        },
+      );
+      if (verificationResponse.ok) {
+        const verificationBody = await verificationResponse.json();
+        const requirements = verifiedLanguageRequirements(
+          JSON.parse(verificationBody?.message?.content || "{}"),
+          languageCandidates,
+        );
+        providerResponse.message.content = mergeVerifiedLanguages(
+          providerResponse?.message?.content || "",
+          requirements,
+        );
+      }
+    }
     const responseBody = nativeOllamaQwen
       ? {
           id: "",
@@ -971,6 +1094,7 @@ export {
   blockerMatchesLanguageRequirement,
   buildNativeOllamaChatUrl,
   buildNativeOllamaRequest,
+  buildNativeLanguageVerificationRequest,
   buildChatCompletionsUrl,
   buildLocalSummary,
   compactLocalDescription,
@@ -994,4 +1118,6 @@ export {
   userExplicitlyRejectsLanguage,
   userStronglyReducesLanguage,
   usesNativeOllamaQwen,
+  verifiedLanguageRequirements,
+  mergeVerifiedLanguages,
 };

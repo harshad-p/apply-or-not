@@ -7,6 +7,7 @@ import {
   buildChatCompletionsUrl,
   buildNativeOllamaChatUrl,
   buildNativeOllamaRequest,
+  buildNativeLanguageVerificationRequest,
   buildLocalSummary,
   compactLocalDescription,
   evidenceAppearsInJob,
@@ -24,6 +25,8 @@ import {
   userExplicitlyRejectsLanguage,
   userStronglyReducesLanguage,
   usesNativeOllamaQwen,
+  verifiedLanguageRequirements,
+  mergeVerifiedLanguages,
 } from "../local-relay/local-provider.mjs";
 
 function modelOutput() {
@@ -108,6 +111,53 @@ test("uses Ollama native non-thinking mode for Qwen 3.5", () => {
   assert.equal(request.keep_alive, "30m");
   assert.equal(request.options.num_predict, 220);
   assert.deepEqual(request.format, { type: "object" });
+});
+
+test("verifies every required language in a shared multilingual sentence", () => {
+  const candidates = [
+    "Kommunikationsfähigkeiten in Deutsch und Englisch.",
+  ];
+  const request = buildNativeLanguageVerificationRequest(
+    candidates,
+    "qwen3.5:2b-q4_K_M",
+  );
+  assert.equal(request.think, false);
+  assert.equal(request.options.num_predict, 100);
+  assert.deepEqual(
+    verifiedLanguageRequirements(
+      {
+        passages: [
+          { index: 0, languages: ["German", "English"] },
+        ],
+      },
+      candidates,
+    ),
+    [
+      { language: "German", evidence: candidates[0] },
+      { language: "English", evidence: candidates[0] },
+    ],
+  );
+  const merged = JSON.parse(
+    mergeVerifiedLanguages(
+      JSON.stringify({
+        language: {
+          status: "uncertain",
+          requirements: [
+            { language: "English", evidence: candidates[0] },
+          ],
+        },
+      }),
+      [
+        { language: "German", evidence: candidates[0] },
+        { language: "English", evidence: candidates[0] },
+      ],
+    ),
+  );
+  assert.equal(merged.language.status, "found");
+  assert.deepEqual(
+    merged.language.requirements.map(({ language }) => language),
+    ["German", "English"],
+  );
 });
 
 test("prepares and validates a reusable compact preference profile", async () => {
@@ -381,7 +431,7 @@ Gute Englischkenntnisse`,
   assert.equal(analysis.score, 73);
   assert.equal(
     analysis.summary,
-    "Potential match, led by skills. Language concern: the posting requires German.",
+    "Potential match, led by skills. Language concern: the posting requires German and English.",
   );
   assert.equal(analysis.languageRequirements.length, 2);
 });
@@ -428,7 +478,7 @@ test("strongly reduce does not become a language hard blocker", () => {
   assert.equal(analysis.hardBlockers.length, 0);
   assert.equal(
     analysis.summary,
-    "Potential match, led by skills. Language concern: the posting requires German.",
+    "Potential match, led by skills. Language concern: the posting requires German and English.",
   );
   assert.equal(
     userExplicitlyRejectsLanguage("Strongly reduce required German"),
@@ -522,7 +572,7 @@ test("enforces a grounded strong language reduction in trusted scoring", () => {
   assert.equal(analysis.score, 73);
   assert.equal(
     analysis.summary,
-    "Potential match, led by skills. Language concern: the posting requires German.",
+    "Potential match, led by skills. Language concern: the posting requires German and English.",
   );
 });
 
@@ -574,7 +624,7 @@ Gute Englischkenntnisse`,
   assert.equal(analysis.recommendation, "consider");
   assert.equal(
     analysis.summary,
-    "Potential match, led by skills. Language concern: the posting requires German.",
+    "Potential match, led by skills. Language concern: the posting requires German and English.",
   );
 });
 
