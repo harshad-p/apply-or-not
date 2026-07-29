@@ -15,14 +15,22 @@ const LANGUAGE_PASSAGE_PATTERN =
   /deutsch|englisch|sprach|\b(?:german|english|language|languages)\b/iu;
 
 function findLanguagePassages(description, maximumLength) {
-  const passages = description
+  const passages = extractLanguageCandidateLines(description);
+  return passages.join("\n").slice(0, maximumLength);
+}
+
+function extractLanguageCandidateLines(description) {
+  return [
+    ...new Set(
+      description
     .split(/\n{2,}|\n/u)
     .map((passage) => passage.trim())
     .filter(
       (passage) =>
         passage.length >= 3 && LANGUAGE_PASSAGE_PATTERN.test(passage),
-    );
-  return [...new Set(passages)].join("\n").slice(0, maximumLength);
+    ),
+    ),
+  ].slice(0, 8);
 }
 
 function compactLocalDescription(value, maximumLength = LOCAL_DESCRIPTION_MAX_LENGTH) {
@@ -86,10 +94,60 @@ function extractLocalOutputText(response) {
   throw new Error("The local model returned no structured analysis text.");
 }
 
+function expandCompactLocalOutput(value) {
+  if (
+    !value?.rubric ||
+    typeof value.rubric.skills !== "string" ||
+    !value?.language ||
+    !value?.hardBlocker
+  ) {
+    return value;
+  }
+
+  const languageRequirements = (value.language.requirements || []).map(
+    (requirement) => ({
+      language: requirement.language,
+      level: "stated",
+      requirement: "required",
+      evidence: requirement.evidence,
+    }),
+  );
+  const languageEvidence = languageRequirements[0]?.evidence || "";
+  const hardBlocker =
+    value.hardBlocker.dimension === "none"
+      ? []
+      : [
+          {
+            title: `${value.hardBlocker.dimension} blocker`,
+            evidence: value.hardBlocker.evidence,
+          },
+        ];
+  return {
+    rubric: Object.fromEntries(
+      Object.entries(value.rubric).map(([dimension, outcome]) => [
+        dimension,
+        {
+          applicable: outcome !== "not_applicable",
+          outcome: outcome === "not_applicable" ? "unknown" : outcome,
+          evidence:
+            dimension === "language" ? languageEvidence : "",
+        },
+      ]),
+    ),
+    confidence: "low",
+    hardBlockers: hardBlocker,
+    postingLanguage: "Unknown",
+    languageRequirementStatus: value.language.status,
+    languageRequirements,
+  };
+}
+
 function parseLocalResponse(response, config, context, languageEvidence) {
   let modelOutput;
   try {
-    modelOutput = JSON.parse(extractLocalOutputText(response));
+    modelOutput = expandCompactLocalOutput(
+      JSON.parse(extractLocalOutputText(response)),
+    );
   } catch (error) {
     if (error instanceof SyntaxError) {
       throw new Error(
@@ -274,6 +332,19 @@ function userExplicitlyRejectsLanguage(userCriteria) {
   );
 }
 
+function userStronglyReducesLanguage(userCriteria, language) {
+  const normalizedCriteria = String(userCriteria || "").toLocaleLowerCase();
+  const normalizedLanguage = String(language || "")
+    .toLocaleLowerCase()
+    .replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  if (!normalizedLanguage) return false;
+  const nearbyStrongReduction = new RegExp(
+    `(?:strongly\\s+(?:reduce|penalize)|strong\\s+penalty).{0,120}\\b${normalizedLanguage}\\b|\\b${normalizedLanguage}\\b.{0,120}(?:strongly\\s+(?:reduce|penalize)|strong\\s+penalty)`,
+    "isu",
+  );
+  return nearbyStrongReduction.test(normalizedCriteria);
+}
+
 function blockerMatchesLanguageRequirement(blocker, requirements) {
   const blockerText = normalizeEvidence(
     `${blocker?.title || ""} ${blocker?.evidence || ""}`,
@@ -431,6 +502,16 @@ function expandLocalAnalysis(value, context) {
   if (demotedLanguageBlocker && rubric.language?.applicable) {
     rubric.language.outcome = "conflict";
   }
+  const groundedStrongReduction = supportedLanguageRequirements.some(
+    (requirement) =>
+      userStronglyReducesLanguage(
+        context?.userCriteria,
+        requirement.language,
+      ),
+  );
+  if (groundedStrongReduction && rubric.language?.applicable) {
+    rubric.language.outcome = "conflict";
+  }
   const applicable = Object.entries(value.rubric || {})
     .map(([dimension, assessment]) => [
       dimension,
@@ -580,6 +661,8 @@ async function analyzeWithLocalModel(
       job: {
         ...compactedPayload.job,
         description: translatedDescription,
+        languageCandidates:
+          extractLanguageCandidateLines(translatedDescription),
       },
     };
     const response = await fetchImpl(buildChatCompletionsUrl(config.baseUrl), {
@@ -638,6 +721,8 @@ export {
   compactLocalPayload,
   explicitCriteriaDimensions,
   evidenceAppearsInJob,
+  extractLanguageCandidateLines,
+  expandCompactLocalOutput,
   expandLocalAnalysis,
   trustedPostingLanguage,
   extractLocalOutputText,
@@ -645,4 +730,5 @@ export {
   parseLanguageExtractionResponse,
   readLocalError,
   userExplicitlyRejectsLanguage,
+  userStronglyReducesLanguage,
 };

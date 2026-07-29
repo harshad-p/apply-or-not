@@ -184,7 +184,7 @@ test("builds a private structured GPT-5.6 Responses request", () => {
   assert.match(request.input, /No longer accepting applications/);
   assert.match(request.input, /companyContext/);
   assert.match(request.input, /companyEvidenceSource/);
-  assert.equal(PROMPT_VERSION, "job-fit-v24");
+  assert.equal(PROMPT_VERSION, "job-fit-v25");
   assert.match(request.instructions, /transferable skills/i);
   assert.match(request.instructions, /satisfying one acceptable option fully satisfies/i);
   assert.match(request.instructions, /Java and C\+\+ are not missing skills/i);
@@ -250,9 +250,9 @@ test("builds a compact classification-first request for local inference", () => 
   );
 
   assert.equal(request.model, "qwen3:0.6b");
-  assert.equal(request.max_tokens, 500);
-  assert.match(request.messages[0].content, /C# fully satisfies/);
-  assert.match(request.messages[0].content, /Never infer a language requirement/);
+  assert.equal(request.max_tokens, 220);
+  assert.match(request.messages[0].content, /C# satisfies/);
+  assert.match(request.messages[0].content, /Never infer a human-language/);
   assert.equal(
     request.response_format.json_schema.schema.properties.score,
     undefined,
@@ -261,14 +261,26 @@ test("builds a compact classification-first request for local inference", () => 
     request.response_format.json_schema.schema.properties.summary,
     undefined,
   );
-  assert.ok(
+  assert.deepEqual(
     request.response_format.json_schema.schema.properties.rubric.properties
-      .skills.properties.evidence,
+      .skills.enum,
+    [
+      "not_applicable",
+      "match",
+      "partial",
+      "unknown",
+      "gap",
+      "conflict",
+    ],
   );
   assert.deepEqual(
     request.response_format.json_schema.schema.properties
-      .languageRequirementStatus.enum,
+      .language.properties.status.enum,
     ["found", "none", "uncertain"],
+  );
+  assert.equal(
+    request.response_format.json_schema.schema.properties.confidence,
+    undefined,
   );
 });
 

@@ -8,6 +8,8 @@ import {
   buildLocalSummary,
   compactLocalDescription,
   evidenceAppearsInJob,
+  extractLanguageCandidateLines,
+  expandCompactLocalOutput,
   explicitCriteriaDimensions,
   expandLocalAnalysis,
   extractLocalOutputText,
@@ -15,6 +17,7 @@ import {
   parseLanguageExtractionResponse,
   trustedPostingLanguage,
   userExplicitlyRejectsLanguage,
+  userStronglyReducesLanguage,
 } from "../local-relay/local-provider.mjs";
 
 function modelOutput() {
@@ -68,6 +71,73 @@ test("builds the standard local chat-completions endpoint", () => {
   );
 });
 
+test("expands the minimal local contract for trusted scoring", () => {
+  assert.deepEqual(
+    expandCompactLocalOutput({
+      rubric: {
+        skills: "match",
+        workArrangement: "not_applicable",
+        language: "conflict",
+        seniority: "not_applicable",
+        applicationMethod: "not_applicable",
+        otherPreferences: "not_applicable",
+      },
+      hardBlocker: { dimension: "none", evidence: "" },
+      language: {
+        status: "found",
+        requirements: [
+          {
+            language: "German",
+            evidence: "Very good German skills",
+          },
+        ],
+      },
+    }),
+    {
+      rubric: {
+        skills: { applicable: true, outcome: "match", evidence: "" },
+        workArrangement: {
+          applicable: false,
+          outcome: "unknown",
+          evidence: "",
+        },
+        language: {
+          applicable: true,
+          outcome: "conflict",
+          evidence: "Very good German skills",
+        },
+        seniority: {
+          applicable: false,
+          outcome: "unknown",
+          evidence: "",
+        },
+        applicationMethod: {
+          applicable: false,
+          outcome: "unknown",
+          evidence: "",
+        },
+        otherPreferences: {
+          applicable: false,
+          outcome: "unknown",
+          evidence: "",
+        },
+      },
+      confidence: "low",
+      hardBlockers: [],
+      postingLanguage: "Unknown",
+      languageRequirementStatus: "found",
+      languageRequirements: [
+        {
+          language: "German",
+          level: "stated",
+          requirement: "required",
+          evidence: "Very good German skills",
+        },
+      ],
+    },
+  );
+});
+
 test("compacts oversized job text for local inference", () => {
   const description = "A".repeat(30_000);
   const compacted = compactLocalDescription(description);
@@ -91,6 +161,15 @@ test("preserves language passages when compacting a long posting", () => {
   assert.ok(compacted.length <= LOCAL_DESCRIPTION_MAX_LENGTH);
   assert.match(compacted, /Sehr gute Deutschkenntnisse/);
   assert.match(compacted, /Good English skills/);
+});
+
+test("extracts concise translated language candidates", () => {
+  assert.deepEqual(
+    extractLanguageCandidateLines(
+      "Build C# services\n\nVery good German skills\n\nGood English skills",
+    ),
+    ["Very good German skills", "Good English skills"],
+  );
 });
 
 test("guards local applicability with explicit preference text", () => {
@@ -272,6 +351,61 @@ test("demotes a combined language blocker unless the user says reject", () => {
     ),
     true,
   );
+});
+
+test("enforces a grounded strong language reduction in trusted scoring", () => {
+  assert.equal(
+    userStronglyReducesLanguage(
+      "Strongly reduce the score when fluent German is required.",
+      "German",
+    ),
+    true,
+  );
+  assert.equal(
+    userStronglyReducesLanguage(
+      "Strongly reduce the score when fluent German is required.",
+      "English",
+    ),
+    false,
+  );
+
+  const analysis = expandLocalAnalysis(
+    expandCompactLocalOutput({
+      rubric: {
+        skills: "match",
+        workArrangement: "not_applicable",
+        language: "unknown",
+        seniority: "not_applicable",
+        applicationMethod: "not_applicable",
+        otherPreferences: "not_applicable",
+      },
+      hardBlocker: { dimension: "none", evidence: "" },
+      language: {
+        status: "found",
+        requirements: [
+          {
+            language: "German",
+            evidence: "Very good German skills",
+          },
+          {
+            language: "English",
+            evidence: "Good English skills",
+          },
+        ],
+      },
+    }),
+    {
+      userCriteria:
+        "Match C#. Strongly reduce the score when fluent German is required.",
+      job: {
+        description:
+          "C# backend development\nVery good German skills\nGood English skills",
+      },
+    },
+  );
+
+  assert.equal(analysis.rubric.language.outcome, "conflict");
+  assert.equal(analysis.score, 73);
 });
 
 test("builds a deterministic local summary from trusted classifications", () => {

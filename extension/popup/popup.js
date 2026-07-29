@@ -277,14 +277,20 @@ function renderAnalysis(
     extraction.job.application,
   );
 
-  positiveGroup.hidden = analysis.positiveMatches.length === 0;
-  concernGroup.hidden = analysis.concerns.length === 0;
-  blockerGroup.hidden = analysis.hardBlockers.length === 0;
-  languageGroup.hidden = false;
-  appendEvidenceItems(positiveList, analysis.positiveMatches);
-  appendEvidenceItems(concernList, analysis.concerns);
-  appendEvidenceItems(blockerList, analysis.hardBlockers);
-  languageSummary.textContent = formatLanguageSummary(analysis);
+  const compactLocalResult = analysis.provider.id === "local" && !demo;
+  positiveGroup.hidden =
+    compactLocalResult || analysis.positiveMatches.length === 0;
+  concernGroup.hidden =
+    compactLocalResult || analysis.concerns.length === 0;
+  blockerGroup.hidden =
+    compactLocalResult || analysis.hardBlockers.length === 0;
+  languageGroup.hidden = compactLocalResult;
+  if (!compactLocalResult) {
+    appendEvidenceItems(positiveList, analysis.positiveMatches);
+    appendEvidenceItems(concernList, analysis.concerns);
+    appendEvidenceItems(blockerList, analysis.hardBlockers);
+    languageSummary.textContent = formatLanguageSummary(analysis);
+  }
   analysisDetails.hidden = false;
 
   if (demo) {

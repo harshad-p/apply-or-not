@@ -147,7 +147,7 @@ inferences, and respect access controls and third-party terms.
 ## LLM providers
 
 The submitted live implementation uses OpenAI GPT-5.6 through the localhost
-relay. Post-submission version 0.18.11 adds a provider selector while keeping the
+relay. Post-submission version 0.19.0 adds a provider selector while keeping the
 same relay boundary:
 
 - OpenAI GPT-5.6 as the default and demonstrated hackathon provider
@@ -170,13 +170,14 @@ provider metadata records elapsed analysis time for display with saved results.
 
 For CPU-bound local inference, the relay limits job-description text to 9,000
 representative characters and uses a compact classification-only contract with
-a 500-token output budget. Trusted code calculates the score, writes a
-deterministic summary, expands concise
-evidence sections, rejects unsupported blockers, and guards applicability for
+a 220-token output budget. The local model returns only rubric classifications,
+one possible blocker, and minimal language evidence. Trusted code calculates the
+score, writes a short deterministic summary, rejects unsupported blockers, and guards applicability for
 clearly unstated dimensions. For local inference, mixed German and English job
 text is first normalized into English by a dedicated German-to-English
 translation model. Language-requirement interpretation then remains an LLM
-semantic task. The relay logs elapsed
+semantic task. The popup omits the detailed fit, concern, blocker, and language
+sections for local analysis. The relay logs elapsed
 time plus provider token
 counts when available. `llama3.2:3b` is the smallest tested model that reliably
 identified both German and English in the mixed-language acceptance case;

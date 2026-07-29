@@ -102,13 +102,14 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.18.11 is post-submission development on the local
+Version 0.19.0 is post-submission development on the local
 `codex/local-llm-support` branch. The submitted version remains 0.16.1 on
 `main`. The development version can route analysis through either GPT-5.6 or a
 local OpenAI-compatible model, validates both through the same result contract,
 and displays the score, recommendation, confidence, evidence, language
-assessment, and returned model. The toolbar badge shows the score with a
-recommendation color.
+assessment, and returned model for GPT-5.6. To reduce CPU inference time, local
+analysis displays only the score and a short trusted summary. The toolbar badge
+shows the score with a recommendation color.
 
 Successful analyses are cached locally by stable job identity, application
 availability, saved criteria, explanation language, prompt version, and selected
@@ -333,11 +334,12 @@ relay rejects remote provider URLs and URLs containing credentials. Very small
 local models are faster but less nuanced and may fail to follow the required
 schema; in that case, choose a stronger structured-output-capable model. Local requests disable
 extended reasoning, limit the job-description input to 9,000 representative
-characters, ask the model only for rubric classifications and short evidence,
-and cap structured output at 500 tokens. Trusted JavaScript calculates the
-score, writes the summary, expands the popup evidence sections, rejects
+characters, ask the model only for compact rubric classifications, a possible
+blocker, and minimal language evidence, and cap structured output at 220 tokens.
+Trusted JavaScript calculates the score, writes the short summary, rejects
 unsupported blockers, and prevents clearly unstated dimensions from changing
-the score. The local semantic contract explicitly asks the model to scan for
+the score. Detailed **Why it fits**, concerns, blockers, and language sections
+are not rendered for local results. The local semantic contract explicitly asks the model to scan for
 language requirements and distinguish requirements found, confidently none
 found, and uncertainty. Before local analysis, a dedicated German-to-English
 OPUS model translates the compacted job text. It accepts mixed English/German
