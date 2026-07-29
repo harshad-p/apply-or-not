@@ -102,7 +102,7 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.18.6 is post-submission development on the local
+Version 0.18.7 is post-submission development on the local
 `codex/local-llm-support` branch. The submitted version remains 0.16.1 on
 `main`. The development version can route analysis through either GPT-5.6 or a
 local OpenAI-compatible model, validates both through the same result contract,
@@ -357,9 +357,9 @@ The relay terminal logs each local job's elapsed time, transmitted description
 size, and prompt/completion token counts when the provider returns them. These
 metrics help distinguish model loading, prompt processing, and output-generation
 costs. On the development machine, the focused mixed-language acceptance case
-took about 40 seconds end to end with `llama3.2:3b` after the translation model
-was cached. It identified both required languages and reduced the result to the
-consider band. Timing varies by hardware and job length. Smaller models can be
+took about 40–56 seconds end to end with `llama3.2:3b` after the translation
+model was cached. It identified both required languages and reduced the result
+to the consider band. Timing varies by hardware and job length. Smaller models can be
 faster but were not reliable enough on this acceptance case, so every result
 remains decision support rather than a final decision.
 German translation uses a dedicated quantized Marian/OPUS model rather than a

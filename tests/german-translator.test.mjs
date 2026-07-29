@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   buildTranslationChunks,
+  isLikelyGermanPassage,
   splitLongText,
   translateGermanToEnglish,
 } from "../local-relay/german-translator.mjs";
@@ -29,6 +30,15 @@ test("keeps mixed-language paragraphs as separate translation chunks", () => {
   );
 });
 
+test("routes German passages without translating ordinary English", () => {
+  assert.equal(isLikelyGermanPassage("About the job and our team"), false);
+  assert.equal(
+    isLikelyGermanPassage("Sehr gute Deutschkenntnisse in Wort und Schrift"),
+    true,
+  );
+  assert.equal(isLikelyGermanPassage("Gute Englischkenntnisse"), true);
+});
+
 test("translates mixed German and English content through an injected pipeline", async () => {
   let capturedChunks;
   const translated = await translateGermanToEnglish(
@@ -37,7 +47,6 @@ test("translates mixed German and English content through an injected pipeline",
       pipelineFactory: async () => async (chunks) => {
         capturedChunks = chunks;
         return [
-          { translation_text: "About the job" },
           { translation_text: "Very good German skills" },
           { translation_text: "Good English skills" },
         ];
@@ -45,7 +54,8 @@ test("translates mixed German and English content through an injected pipeline",
     },
   );
 
-  assert.equal(capturedChunks.length, 3);
+  assert.equal(capturedChunks.length, 2);
+  assert.equal(capturedChunks.includes("About the job"), false);
   assert.equal(
     translated,
     "About the job\n\nVery good German skills\n\nGood English skills",

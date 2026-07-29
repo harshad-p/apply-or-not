@@ -548,8 +548,8 @@ async function analyzeWithLocalModel(
     const translationStartedAt = performance.now();
     let translatedDescription;
     try {
-      translatedDescription = await translateImpl(
-        compactedPayload.job.description,
+      translatedDescription = compactLocalDescription(
+        await translateImpl(compactedPayload.job.description),
       );
     } catch (error) {
       throw new Error(`German translation failed: ${error.message}`);
