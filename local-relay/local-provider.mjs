@@ -715,7 +715,15 @@ function buildLocalSummary(
   ];
   if (negative.length) {
     if (negative.includes("language") && languageRequirements.length) {
-      const requirements = languageRequirements
+      const conflictingRequirements = languageRequirements.filter(
+        ({ language }) =>
+          userStronglyReducesLanguage(context?.userCriteria, language),
+      );
+      const requirements = (
+        conflictingRequirements.length
+          ? conflictingRequirements
+          : languageRequirements
+      )
         .map(({ language }) => language)
         .slice(0, 3);
       const formatted =

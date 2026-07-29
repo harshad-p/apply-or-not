@@ -431,7 +431,7 @@ Gute Englischkenntnisse`,
   assert.equal(analysis.score, 73);
   assert.equal(
     analysis.summary,
-    "Potential match, led by skills. Language concern: the posting requires German and English.",
+    "Potential match, led by skills. Language concern: the posting requires German.",
   );
   assert.equal(analysis.languageRequirements.length, 2);
 });
@@ -478,7 +478,7 @@ test("strongly reduce does not become a language hard blocker", () => {
   assert.equal(analysis.hardBlockers.length, 0);
   assert.equal(
     analysis.summary,
-    "Potential match, led by skills. Language concern: the posting requires German and English.",
+    "Potential match, led by skills. Language concern: the posting requires German.",
   );
   assert.equal(
     userExplicitlyRejectsLanguage("Strongly reduce required German"),
@@ -572,7 +572,7 @@ test("enforces a grounded strong language reduction in trusted scoring", () => {
   assert.equal(analysis.score, 73);
   assert.equal(
     analysis.summary,
-    "Potential match, led by skills. Language concern: the posting requires German and English.",
+    "Potential match, led by skills. Language concern: the posting requires German.",
   );
 });
 
@@ -624,7 +624,7 @@ Gute Englischkenntnisse`,
   assert.equal(analysis.recommendation, "consider");
   assert.equal(
     analysis.summary,
-    "Potential match, led by skills. Language concern: the posting requires German and English.",
+    "Potential match, led by skills. Language concern: the posting requires German.",
   );
 });
 
