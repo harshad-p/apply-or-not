@@ -144,13 +144,17 @@ for (const model of models) {
   }
 }
 
-const passing = results.filter(
-  (result) => result.correct && result.underTarget,
-);
+const passingModels = models.filter((model) => {
+  const modelResults = results.filter((result) => result.model === model);
+  return (
+    modelResults.length === jobs.length &&
+    modelResults.every((result) => result.correct && result.underTarget)
+  );
+});
 process.stdout.write(
   `${JSON.stringify({
     targetSeconds: targetMs / 1000,
-    passingModels: [...new Set(passing.map(({ model }) => model))],
+    passingModels,
     results,
   }, null, 2)}\n`,
 );

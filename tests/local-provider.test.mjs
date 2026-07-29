@@ -5,6 +5,8 @@ import {
   analyzeWithLocalModel,
   blockerMatchesLanguageRequirement,
   buildChatCompletionsUrl,
+  buildNativeOllamaChatUrl,
+  buildNativeOllamaRequest,
   buildLocalSummary,
   compactLocalDescription,
   evidenceAppearsInJob,
@@ -21,6 +23,7 @@ import {
   trustedPostingLanguage,
   userExplicitlyRejectsLanguage,
   userStronglyReducesLanguage,
+  usesNativeOllamaQwen,
 } from "../local-relay/local-provider.mjs";
 
 function modelOutput() {
@@ -72,6 +75,39 @@ test("builds the standard local chat-completions endpoint", () => {
     buildChatCompletionsUrl("http://127.0.0.1:11434/v1/"),
     "http://127.0.0.1:11434/v1/chat/completions",
   );
+});
+
+test("uses Ollama native non-thinking mode for Qwen 3.5", () => {
+  assert.equal(
+    usesNativeOllamaQwen({
+      baseUrl: "http://127.0.0.1:11434/v1",
+      model: "qwen3.5:2b-q4_K_M",
+    }),
+    true,
+  );
+  assert.equal(
+    usesNativeOllamaQwen({
+      baseUrl: "http://127.0.0.1:1234/v1",
+      model: "qwen3.5:2b-q4_K_M",
+    }),
+    false,
+  );
+  assert.equal(
+    buildNativeOllamaChatUrl("http://127.0.0.1:11434/v1"),
+    "http://127.0.0.1:11434/api/chat",
+  );
+  const request = buildNativeOllamaRequest({
+    model: "qwen3.5:2b-q4_K_M",
+    messages: [{ role: "user", content: "test" }],
+    response_format: {
+      json_schema: { schema: { type: "object" } },
+    },
+    max_tokens: 220,
+  });
+  assert.equal(request.think, false);
+  assert.equal(request.keep_alive, "30m");
+  assert.equal(request.options.num_predict, 220);
+  assert.deepEqual(request.format, { type: "object" });
 });
 
 test("prepares and validates a reusable compact preference profile", async () => {
@@ -503,10 +539,10 @@ test("keeps the Remmert technology match above the skip band", () => {
       },
       hardBlocker: { dimension: "none", evidence: "" },
       language: {
-        status: "found",
+        status: "none",
         requirements: [
           {
-            language: "German",
+            language: "German (fluent)",
             evidence: "Sehr gute Deutschkenntnisse in Wort und Schrift",
           },
           {
@@ -533,6 +569,7 @@ Gute Englischkenntnisse`,
 
   assert.equal(analysis.rubric.skills.outcome, "match");
   assert.equal(analysis.rubric.language.outcome, "conflict");
+  assert.equal(analysis.languageRequirements[0].language, "German");
   assert.equal(analysis.score, 73);
   assert.equal(analysis.recommendation, "consider");
   assert.equal(

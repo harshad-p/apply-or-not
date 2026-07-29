@@ -117,15 +117,15 @@
               autocomplete="off"
               autocapitalize="none"
               spellcheck="false"
-              placeholder="Recommended: llama3.2:3b"
+              placeholder="Recommended: qwen3.5:2b-q4_K_M"
               data-local-model
             >
             <p class="field-help">
               Use the exact model name shown by Ollama or LM Studio. The model
-              must support structured JSON output. <code>llama3.2:3b</code>
-              is the smallest tested option that reliably reported both German
-              and English requirements. <code>qwen3:0.6b</code> is faster but
-              less reliable.
+              must support structured JSON output.
+              <code>qwen3.5:2b-q4_K_M</code> is currently recommended for
+              Ollama: it disables hidden reasoning, handles German directly,
+              and completed the benchmark jobs in under 20 seconds.
             </p>
 
             <p class="field-help">

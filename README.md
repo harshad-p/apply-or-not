@@ -102,7 +102,7 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.20.0 is post-submission development on the local
+Version 0.21.0 is post-submission development on the local
 `codex/local-llm-support` branch. The submitted version remains 0.16.1 on
 `main`. The development version can route analysis through either GPT-5.6 or a
 local OpenAI-compatible model, validates both through the same result contract,
@@ -323,7 +323,7 @@ for this mode.
 5. Enter the local server base URL and exact model identifier, then save:
    - Ollama commonly uses `http://127.0.0.1:11434/v1`.
    - LM Studio commonly uses `http://127.0.0.1:1234/v1`.
-   - The recommended local configuration uses `llama3.2:3b`.
+   - The recommended local configuration uses `qwen3.5:2b-q4_K_M`.
    - `qwen3:0.6b` remains a faster experimental option, but it did not
      classify the supplied language requirements reliably.
 6. Analyze a job normally. The popup identifies the returned local model, and
@@ -355,6 +355,11 @@ OPUS model translates the compacted job text. It accepts mixed English/German
 input, leaves English passages readable, and avoids loading a second chat model.
 Language-related passages are preserved explicitly when a long posting is
 compacted so a short qualification in the omitted region is not lost.
+With Qwen 3.5 on Ollama's default port, the relay uses Ollama's native chat
+endpoint, disables hidden reasoning, keeps the model loaded for 30 minutes, and
+lets the multilingual model read German directly instead of invoking the slow
+translation layer. Other local configurations retain the compatible fallback
+path.
 Local analysis may still take several
 minutes on older hardware; the relay allows up to five minutes before reporting
 a timeout. While local analysis is running, the popup provides a **Cancel

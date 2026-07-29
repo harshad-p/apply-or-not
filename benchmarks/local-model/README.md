@@ -41,6 +41,24 @@ yet the extension's production analysis path. Production adoption must
 generalize evidence selection beyond these two fixtures and retain the raw job
 description as a fallback so speed does not silently reduce result quality.
 
+## Production-path trial — version 0.21.0
+
+The extension now has an optimized native Ollama path for
+`qwen3.5:2b-q4_K_M`. It disables hidden reasoning, reads mixed English/German
+text directly, requests only the compact local result, and keeps the model warm.
+Two production-shaped runs produced:
+
+| Job | Run 1 | Run 2 | Visible result |
+|---|---:|---:|---|
+| Amazon | 16.1s | 9.2s | Apply — 90% |
+| Remmert | 19.3s | 13.5s | Consider — 73%, German-language concern |
+
+Both visible results were appropriate and comfortably below 30 seconds. In the
+Remmert runs, however, the model omitted satisfied English from its hidden
+language-evidence array while correctly detecting the conflicting German
+requirement. This does not change this user's score or summary, but remains a
+quality caveat for broader preference profiles.
+
 ## Commands
 
 Run the existing production-shaped benchmark:
@@ -53,4 +71,10 @@ Run the compact experimental contract:
 
 ```sh
 node benchmarks/local-model/run-fast-prototype.mjs qwen3.5:2b-q4_K_M
+```
+
+Run Qwen through the exact compact production contract:
+
+```sh
+node benchmarks/local-model/run-qwen-production-contract.mjs
 ```

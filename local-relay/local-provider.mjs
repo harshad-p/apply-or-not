@@ -79,6 +79,42 @@ function buildChatCompletionsUrl(baseUrl) {
   return `${baseUrl.replace(/\/+$/u, "")}/chat/completions`;
 }
 
+function usesNativeOllamaQwen(config) {
+  try {
+    const url = new URL(config.baseUrl);
+    return (
+      /^qwen3\.5:/iu.test(config.model) &&
+      url.port === "11434"
+    );
+  } catch {
+    return false;
+  }
+}
+
+function buildNativeOllamaChatUrl(baseUrl) {
+  const url = new URL(baseUrl);
+  url.pathname = "/api/chat";
+  url.search = "";
+  url.hash = "";
+  return url.toString();
+}
+
+function buildNativeOllamaRequest(request) {
+  return {
+    model: request.model,
+    messages: request.messages,
+    format: request.response_format.json_schema.schema,
+    stream: false,
+    think: false,
+    keep_alive: "30m",
+    options: {
+      temperature: 0,
+      num_ctx: 4096,
+      num_predict: request.max_tokens,
+    },
+  };
+}
+
 const preferenceProfileSchema = {
   type: "object",
   additionalProperties: false,
@@ -167,17 +203,30 @@ async function prepareLocalPreferences(
   const criteria = String(userCriteria || "").trim();
   if (!criteria) throw new Error("Preferences are required.");
   const config = validateProviderConfig(providerConfig);
-  const response = await fetchImpl(buildChatCompletionsUrl(config.baseUrl), {
+  const request = buildPreferencePreparationRequest(criteria, config.model);
+  const nativeOllamaQwen = usesNativeOllamaQwen(config);
+  const response = await fetchImpl(
+    nativeOllamaQwen
+      ? buildNativeOllamaChatUrl(config.baseUrl)
+      : buildChatCompletionsUrl(config.baseUrl),
+    {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(
-      buildPreferencePreparationRequest(criteria, config.model),
+      nativeOllamaQwen
+        ? buildNativeOllamaRequest(request)
+        : request,
     ),
     signal,
-  });
+    },
+  );
   if (!response.ok) throw new Error(await readLocalError(response));
   const body = await response.json();
-  const profile = JSON.parse(extractLocalOutputText(body));
+  const profile = JSON.parse(
+    nativeOllamaQwen
+      ? body?.message?.content || ""
+      : extractLocalOutputText(body),
+  );
   const preparedUserCriteria = preferenceProfileToText(profile);
   if (
     !preparedUserCriteria ||
@@ -230,7 +279,7 @@ function expandCompactLocalOutput(value) {
 
   const languageRequirements = (value.language.requirements || []).map(
     (requirement) => ({
-      language: requirement.language,
+      language: requirement.language.replace(/\s*\([^)]*\)\s*$/u, "").trim(),
       level: "stated",
       requirement: "required",
       evidence: requirement.evidence,
@@ -261,7 +310,8 @@ function expandCompactLocalOutput(value) {
     confidence: "low",
     hardBlockers: hardBlocker,
     postingLanguage: "Unknown",
-    languageRequirementStatus: value.language.status,
+    languageRequirementStatus:
+      languageRequirements.length > 0 ? "found" : value.language.status,
     languageRequirements,
   };
 }
@@ -817,12 +867,19 @@ async function analyzeWithLocalModel(
   try {
     const translationStartedAt = performance.now();
     let translatedDescription;
-    try {
+    const nativeOllamaQwen = usesNativeOllamaQwen(config);
+    if (nativeOllamaQwen) {
       translatedDescription = compactLocalDescription(
-        await translateImpl(compactedPayload.job.description),
+        compactedPayload.job.description,
       );
-    } catch (error) {
-      throw new Error(`German translation failed: ${error.message}`);
+    } else {
+      try {
+        translatedDescription = compactLocalDescription(
+          await translateImpl(compactedPayload.job.description),
+        );
+      } catch (error) {
+        throw new Error(`German translation failed: ${error.message}`);
+      }
     }
     const translationDurationMs = performance.now() - translationStartedAt;
     const analysisPayload = {
@@ -834,19 +891,47 @@ async function analyzeWithLocalModel(
           extractLanguageCandidateLines(translatedDescription),
       },
     };
-    const response = await fetchImpl(buildChatCompletionsUrl(config.baseUrl), {
+    const fastRequest = buildFastLocalRequest(analysisPayload, config.model);
+    const response = await fetchImpl(
+      nativeOllamaQwen
+        ? buildNativeOllamaChatUrl(config.baseUrl)
+        : buildChatCompletionsUrl(config.baseUrl),
+      {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(
-        buildFastLocalRequest(analysisPayload, config.model),
+        nativeOllamaQwen
+          ? buildNativeOllamaRequest(fastRequest)
+          : fastRequest,
       ),
       signal: controller.signal,
-    });
+      },
+    );
 
     if (!response.ok) {
       throw new Error(await readLocalError(response));
     }
-    const responseBody = await response.json();
+    const providerResponse = await response.json();
+    const responseBody = nativeOllamaQwen
+      ? {
+          id: "",
+          model: providerResponse.model || config.model,
+          choices: [
+            {
+              message: {
+                content: providerResponse?.message?.content || "",
+              },
+            },
+          ],
+          usage: {
+            prompt_tokens: providerResponse.prompt_eval_count || null,
+            completion_tokens: providerResponse.eval_count || null,
+            total_tokens:
+              (providerResponse.prompt_eval_count || 0) +
+                (providerResponse.eval_count || 0) || null,
+          },
+        }
+      : providerResponse;
     onMetrics({
       originalDescriptionCharacters: payload.job.description.length,
       sentDescriptionCharacters: translatedDescription.length,
@@ -884,6 +969,8 @@ export {
   LOCAL_DESCRIPTION_MAX_LENGTH,
   analyzeWithLocalModel,
   blockerMatchesLanguageRequirement,
+  buildNativeOllamaChatUrl,
+  buildNativeOllamaRequest,
   buildChatCompletionsUrl,
   buildLocalSummary,
   compactLocalDescription,
@@ -906,4 +993,5 @@ export {
   readLocalError,
   userExplicitlyRejectsLanguage,
   userStronglyReducesLanguage,
+  usesNativeOllamaQwen,
 };
