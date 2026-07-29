@@ -334,15 +334,43 @@ function userExplicitlyRejectsLanguage(userCriteria) {
 
 function userStronglyReducesLanguage(userCriteria, language) {
   const normalizedCriteria = String(userCriteria || "").toLocaleLowerCase();
-  const normalizedLanguage = String(language || "")
-    .toLocaleLowerCase()
-    .replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  const normalizedLanguage = String(language || "").toLocaleLowerCase();
   if (!normalizedLanguage) return false;
-  const nearbyStrongReduction = new RegExp(
-    `(?:strongly\\s+(?:reduce|penalize)|strong\\s+penalty).{0,120}\\b${normalizedLanguage}\\b|\\b${normalizedLanguage}\\b.{0,120}(?:strongly\\s+(?:reduce|penalize)|strong\\s+penalty)`,
-    "isu",
+  return normalizedCriteria
+    .split(/[\n.!?]+/u)
+    .some(
+      (statement) =>
+        /(?:strongly\s+(?:reduce|penalize)|strong\s+penalty)/iu.test(
+          statement,
+        ) && statement.includes(normalizedLanguage),
+    );
+}
+
+function extractExplicitCoreSkills(userCriteria) {
+  const match = String(userCriteria || "").match(
+    /\bmatch\s+me\s+with\s+(?:these\s+)?skills\s*:\s*([^\n.]+)/iu,
   );
-  return nearbyStrongReduction.test(normalizedCriteria);
+  if (!match) return [];
+  return match[1]
+    .split(/[,;/]|\band\b/iu)
+    .map((skill) => skill.trim())
+    .filter((skill) => skill.length >= 2 && skill.length <= 40)
+    .slice(0, 12);
+}
+
+function jobContainsSkill(jobEvidence, skill) {
+  const normalizedJob = normalizeEvidence(jobEvidence);
+  const normalizedSkill = normalizeEvidence(skill);
+  if (!normalizedSkill) return false;
+  if (normalizedSkill === ".net") {
+    return /(?:^|[^a-z0-9])\.?net(?:\s+core)?(?:$|[^a-z0-9])/iu.test(
+      normalizedJob,
+    );
+  }
+  if (normalizedSkill === "c#") {
+    return /(?:^|[^a-z0-9])c#(?:$|[^a-z0-9])/iu.test(normalizedJob);
+  }
+  return normalizedJob.includes(normalizedSkill);
 }
 
 function blockerMatchesLanguageRequirement(blocker, requirements) {
@@ -410,7 +438,15 @@ function buildLocalSummary(
   ];
   if (negative.length) {
     if (negative.includes("language") && languageRequirements.length) {
-      const requirements = languageRequirements
+      const conflictingRequirements = languageRequirements.filter(
+        ({ language }) =>
+          userStronglyReducesLanguage(context?.userCriteria, language),
+      );
+      const requirements = (
+        conflictingRequirements.length
+          ? conflictingRequirements
+          : languageRequirements
+      )
         .map(({ language }) => language)
         .slice(0, 3);
       const formatted =
@@ -511,6 +547,15 @@ function expandLocalAnalysis(value, context) {
   );
   if (groundedStrongReduction && rubric.language?.applicable) {
     rubric.language.outcome = "conflict";
+  }
+  const explicitCoreSkills = extractExplicitCoreSkills(context?.userCriteria);
+  if (
+    explicitCoreSkills.length > 0 &&
+    explicitCoreSkills.every((skill) => jobContainsSkill(jobEvidence, skill)) &&
+    rubric.skills?.applicable &&
+    ["partial", "unknown"].includes(rubric.skills.outcome)
+  ) {
+    rubric.skills.outcome = "match";
   }
   const applicable = Object.entries(value.rubric || {})
     .map(([dimension, assessment]) => [
@@ -721,9 +766,11 @@ export {
   compactLocalPayload,
   explicitCriteriaDimensions,
   evidenceAppearsInJob,
+  extractExplicitCoreSkills,
   extractLanguageCandidateLines,
   expandCompactLocalOutput,
   expandLocalAnalysis,
+  jobContainsSkill,
   trustedPostingLanguage,
   extractLocalOutputText,
   parseLocalResponse,

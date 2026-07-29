@@ -2,7 +2,7 @@
   "use strict";
 
   const SCHEMA_VERSION = 2;
-  const PROMPT_VERSION = "job-fit-v25";
+  const PROMPT_VERSION = "job-fit-v26";
   const DEFAULT_MODEL = "gpt-5.6-sol";
   const SUMMARY_MAX_LENGTH = 240;
   const RUBRIC_WEIGHTS = Object.freeze({
@@ -277,6 +277,7 @@ Rubric values: not_applicable when the user stated no criterion; otherwise match
 
 Rules:
 - Skill options joined by or, "such as", or "for example" are alternatives. C# satisfies "Java, C++, or C#". Treat adjacent technologies as transferable.
+- Set skills=match when the posting contains the user's named core skills and does not explicitly require a missing deal-breaker skill. Do not lower skills for technologies the posting never requires. Blazor is a .NET UI framework, not a JavaScript-framework requirement; a full-stack title alone does not imply React, Angular, or Vue.
 - Never infer a human-language requirement from the posting language. Scan all text for explicit proficiency requirements. jobPosting.languageCandidates repeats possible lines for attention only; classify every candidate against its original context and ignore non-requirements. Standalone qualifications are required unless explicitly optional/preferred or either/or.
 - Return every required human language with a short exact job excerpt. Use language.status=none after a complete scan finds none; uncertain only for genuinely ambiguous language wording.
 - A required language that triggers the user's strong reduction makes rubric.language=conflict. One matching language cannot cancel it.

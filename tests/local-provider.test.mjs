@@ -267,7 +267,7 @@ Gute Englischkenntnisse`,
   assert.equal(analysis.score, 73);
   assert.equal(
     analysis.summary,
-    "Potential match, led by skills. Language concern: the posting requires German and English.",
+    "Potential match, led by skills. Language concern: the posting requires German.",
   );
   assert.equal(analysis.languageRequirements.length, 2);
 });
@@ -314,7 +314,7 @@ test("strongly reduce does not become a language hard blocker", () => {
   assert.equal(analysis.hardBlockers.length, 0);
   assert.equal(
     analysis.summary,
-    "Potential match, led by skills. Language concern: the posting requires German and English.",
+    "Potential match, led by skills. Language concern: the posting requires German.",
   );
   assert.equal(
     userExplicitlyRejectsLanguage("Strongly reduce required German"),
@@ -406,6 +406,61 @@ test("enforces a grounded strong language reduction in trusted scoring", () => {
 
   assert.equal(analysis.rubric.language.outcome, "conflict");
   assert.equal(analysis.score, 73);
+  assert.equal(
+    analysis.summary,
+    "Potential match, led by skills. Language concern: the posting requires German.",
+  );
+});
+
+test("keeps the Remmert technology match above the skip band", () => {
+  const analysis = expandLocalAnalysis(
+    expandCompactLocalOutput({
+      rubric: {
+        skills: "partial",
+        workArrangement: "not_applicable",
+        language: "conflict",
+        seniority: "not_applicable",
+        applicationMethod: "not_applicable",
+        otherPreferences: "not_applicable",
+      },
+      hardBlocker: { dimension: "none", evidence: "" },
+      language: {
+        status: "found",
+        requirements: [
+          {
+            language: "German",
+            evidence: "Sehr gute Deutschkenntnisse in Wort und Schrift",
+          },
+          {
+            language: "English",
+            evidence: "Gute Englischkenntnisse",
+          },
+        ],
+      },
+    }),
+    {
+      userCriteria: `Match me with these skills: C#, .NET. If Blazor is present, score higher.
+I do not have frontend JavaScript Framework knowledge.
+Prefer positions where English is the working language or German is optional.
+Strongly reduce the score when fluent German, C1, or business-level German is an explicit hard requirement.`,
+      job: {
+        description: `Softwareentwicklung in C# / .Net (Full Stack)
+Fundierte Erfahrung in der C#-Entwicklung
+Erfahrungen mit Blazor und Entity Framework Core wünschenswert
+Sehr gute Deutschkenntnisse in Wort und Schrift
+Gute Englischkenntnisse`,
+      },
+    },
+  );
+
+  assert.equal(analysis.rubric.skills.outcome, "match");
+  assert.equal(analysis.rubric.language.outcome, "conflict");
+  assert.equal(analysis.score, 73);
+  assert.equal(analysis.recommendation, "consider");
+  assert.equal(
+    analysis.summary,
+    "Potential match, led by skills. Language concern: the posting requires German.",
+  );
 });
 
 test("builds a deterministic local summary from trusted classifications", () => {
