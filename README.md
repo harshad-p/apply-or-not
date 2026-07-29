@@ -194,7 +194,36 @@ The extension source is in [`extension`](extension).
   with local port `4173` available. Python is not needed on real job sites.
 - **Offline automated tests:** Node.js 18 or newer; no API key or network call.
 
-### Safari 27 on macOS
+### Persistent Safari app on macOS
+
+The Xcode wrapper in
+[`safari-app/Apply or Not/Apply or Not.xcodeproj`](safari-app/Apply%20or%20Not/Apply%20or%20Not.xcodeproj)
+packages the WebExtension as a macOS app. Unlike Safari's temporary-extension
+workflow, a properly signed development build remains installed after Safari
+quits.
+
+1. Install and open the full Xcode application.
+2. Open the Xcode project above.
+3. In Xcode Settings > Accounts, add an Apple ID if no development team is
+   available.
+4. Select the **Apply or Not** project, then set the same development team under
+   Signing & Capabilities for both the **Apply or Not** app and
+   **Apply or Not Extension** targets. Leave automatic signing enabled.
+5. Choose the **Apply or Not** scheme and select Product > Run.
+6. When the containing app opens, enable **Apply or Not** in Safari Settings >
+   Extensions and grant page access when Safari requests it.
+
+Check that Xcode shows an Apple Development signing identity or development
+team. **Sign to Run Locally** is ad-hoc signing; Safari may still require
+**Allow Unsigned Extensions** after each restart when that is the only identity
+available.
+
+The Safari extension target references the repository's shared `extension`
+directory. Changes to the browser-neutral WebExtension are therefore included
+the next time the Xcode app is built; there is no copied extension snapshot to
+resynchronize.
+
+### Temporary Safari development extension
 
 1. Open Safari Settings, select Advanced, and enable **Show features for web
    developers**.
@@ -204,6 +233,10 @@ The extension source is in [`extension`](extension).
 4. Enable **Apply or Not** in Safari Settings > Extensions.
 5. Add its button to the toolbar if Safari does not show it automatically, then
    click it to open the popup.
+
+Safari removes this unsigned temporary installation when Safari quits (and may
+also expire it after a limited development period). Use the packaged Xcode
+project above when restart persistence matters.
 
 ### Chrome or another Chromium browser
 
