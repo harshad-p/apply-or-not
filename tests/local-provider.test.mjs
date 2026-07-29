@@ -169,7 +169,10 @@ Gute Englischkenntnisse`,
   assert.equal(analysis.rubric.language.applicable, true);
   assert.equal(analysis.rubric.language.outcome, "conflict");
   assert.equal(analysis.score, 73);
-  assert.equal(analysis.summary, "Potential match, led by skills. Main concern: language.");
+  assert.equal(
+    analysis.summary,
+    "Potential match, led by skills. Language concern: the posting requires German and English.",
+  );
   assert.equal(analysis.languageRequirements.length, 2);
 });
 
@@ -243,14 +246,27 @@ test("normalizes focused language extraction structural consistency", () => {
                   level: "Very good",
                   requirement: "required",
                   evidence: "Sehr gute Deutschkenntnisse",
+                  fit: "conflict",
                 },
               ],
             }),
           },
         },
       ],
-    }).status,
-    "found",
+    }),
+    {
+      status: "found",
+      postingLanguage: "German",
+      outcome: "conflict",
+      requirements: [
+        {
+          language: "German",
+          level: "Very good",
+          requirement: "required",
+          evidence: "Sehr gute Deutschkenntnisse",
+        },
+      ],
+    },
   );
 });
 

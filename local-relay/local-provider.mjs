@@ -119,7 +119,23 @@ function parseLanguageExtractionResponse(response) {
     return { ...value, status: "uncertain" };
   }
   if (value.requirements.length > 0) {
-    return { ...value, status: "found" };
+    const outcomePriority = [
+      "conflict",
+      "gap",
+      "unknown",
+      "partial",
+      "match",
+    ];
+    const itemOutcomes = value.requirements
+      .map((requirement) => requirement.fit)
+      .filter((fit) => outcomePriority.includes(fit));
+    const outcome = itemOutcomes.length
+      ? outcomePriority.find((candidate) => itemOutcomes.includes(candidate))
+      : value.outcome;
+    const requirements = value.requirements.map(({ fit, ...requirement }) =>
+      requirement
+    );
+    return { ...value, status: "found", outcome, requirements };
   }
   return value;
 }
@@ -236,6 +252,7 @@ function buildLocalSummary(
   hardBlockers,
   context,
   languageRequirementStatus = "uncertain",
+  languageRequirements = [],
 ) {
   if (context?.job?.application?.status === "closed") {
     return "Applications are closed for this role, regardless of the underlying job fit.";
@@ -248,7 +265,7 @@ function buildLocalSummary(
     .filter(
       ([, assessment]) =>
         assessment.applicable &&
-        ["match", "partial"].includes(assessment.outcome),
+        assessment.outcome === "match",
     )
     .map(([dimension]) => DIMENSION_LABELS[dimension].toLocaleLowerCase());
   const uncertain = Object.entries(rubric)
@@ -277,7 +294,18 @@ function buildLocalSummary(
       : `${lead} based on the available evidence.`,
   ];
   if (negative.length) {
-    parts.push(`Main concern: ${negative.slice(0, 2).join(" and ")}.`);
+    if (negative.includes("language") && languageRequirements.length) {
+      const requirements = languageRequirements
+        .map(({ language }) => language)
+        .slice(0, 3);
+      const formatted =
+        requirements.length > 1
+          ? `${requirements.slice(0, -1).join(", ")} and ${requirements.at(-1)}`
+          : requirements[0];
+      parts.push(`Language concern: the posting requires ${formatted}.`);
+    } else {
+      parts.push(`Main concern: ${negative.slice(0, 2).join(" and ")}.`);
+    }
   } else if (uncertain.length) {
     if (uncertain.length === 1 && uncertain[0] === "language") {
       parts.push(
@@ -413,6 +441,7 @@ function expandLocalAnalysis(value, context) {
       hardBlockers,
       context,
       languageRequirementStatus,
+      supportedLanguageRequirements,
     ),
   };
 }

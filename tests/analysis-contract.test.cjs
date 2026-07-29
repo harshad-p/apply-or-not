@@ -184,7 +184,7 @@ test("builds a private structured GPT-5.6 Responses request", () => {
   assert.match(request.input, /No longer accepting applications/);
   assert.match(request.input, /companyContext/);
   assert.match(request.input, /companyEvidenceSource/);
-  assert.equal(PROMPT_VERSION, "job-fit-v17");
+  assert.equal(PROMPT_VERSION, "job-fit-v18");
   assert.match(request.instructions, /transferable skills/i);
   assert.match(request.instructions, /satisfying one acceptable option fully satisfies/i);
   assert.match(request.instructions, /Java and C\+\+ are not missing skills/i);
@@ -281,6 +281,9 @@ test("builds a focused language fit request with separated inputs", () => {
 
   assert.equal(request.model, "qwen3:1.7b");
   assert.equal(request.max_tokens, 300);
+  assert.match(request.messages[0].content, /extract EVERY statement/);
+  assert.match(request.messages[0].content, /do not stop after the first/);
+  assert.match(request.messages[0].content, /strong reduction or deal-breaker/);
   assert.match(request.messages[1].content, /jobPosting/);
   assert.match(request.messages[1].content, /applicantLanguageCriteria/);
   assert.deepEqual(

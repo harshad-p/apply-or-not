@@ -102,7 +102,7 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.18.4 is post-submission development on the local
+Version 0.18.5 is post-submission development on the local
 `codex/local-llm-support` branch. The submitted version remains 0.16.1 on
 `main`. The development version can route analysis through either GPT-5.6 or a
 local OpenAI-compatible model, validates both through the same result contract,
@@ -308,7 +308,7 @@ for this mode.
    For the optional focused language-fit helper:
 
    ```sh
-   ollama pull qwen3:14b
+   ollama pull gemma3:4b
    ```
 2. Keep `node local-relay/server.mjs` running.
 3. Open the extension settings and select
@@ -317,7 +317,9 @@ for this mode.
    - Ollama commonly uses `http://127.0.0.1:11434/v1`.
    - LM Studio commonly uses `http://127.0.0.1:1234/v1`.
    - The tested hybrid uses `qwen3:0.6b` as the primary model and
-     `qwen3:14b` as the optional language extraction model.
+     `gemma3:4b` as the optional language extraction model. The helper is more
+     reliable for multilingual requirements, but switching between two models
+     on CPU can make the complete analysis substantially slower.
 5. Analyze a job normally. The popup identifies the returned local model, and
    the same schema validation and deterministic scoring rules still apply.
 

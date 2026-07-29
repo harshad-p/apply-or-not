@@ -2,7 +2,7 @@
   "use strict";
 
   const SCHEMA_VERSION = 2;
-  const PROMPT_VERSION = "job-fit-v17";
+  const PROMPT_VERSION = "job-fit-v18";
   const DEFAULT_MODEL = "gpt-5.6-sol";
   const SUMMARY_MAX_LENGTH = 240;
   const RUBRIC_WEIGHTS = Object.freeze({
@@ -218,7 +218,19 @@
       requirements: {
         type: "array",
         maxItems: 4,
-        items: languageRequirementSchema,
+        items: {
+          ...languageRequirementSchema,
+          properties: {
+            ...languageRequirementSchema.properties,
+            fit: {
+              type: "string",
+              enum: ["match", "partial", "unknown", "gap", "conflict"],
+              description:
+                "How this individual requirement relates to the applicant criteria.",
+            },
+          },
+          required: [...languageRequirementSchema.required, "fit"],
+        },
       },
     },
     required: ["status", "postingLanguage", "outcome", "requirements"],
@@ -376,7 +388,7 @@ Keep evidence in the posting's original language. Return only the schema fields.
         {
           role: "system",
           content:
-            "Analyze only the language fit between one job posting and the applicant's language preferences. First extract proficiency requirements from the job in any language, then classify their relationship to the applicant criteria as match, partial, unknown, gap, or conflict. A standalone proficiency statement or qualification-list bullet is required unless explicitly marked preferred, optional, nice-to-have, or alternative. Never infer optionality merely from an adjective such as good. Describe the actual proficiency level and preserve exact original-language job evidence. Evidence must never come from applicant criteria. Return found when requirements exist, none only when confidently absent, otherwise uncertain.",
+            "Analyze only language requirements. The job and criteria may use any language. Read the entire job and extract EVERY statement that names a human language or proficiency; create one item per statement and do not stop after the first. Standalone qualifications are required unless explicitly preferred or optional. Use alternative only with explicit either/or wording; adjacent lines are separate requirements. Proficiency adjectives do not imply optionality. Copy exact job evidence, never criteria. For each item, set fit by comparing that requirement with the applicant criteria: conflict when it triggers an explicit strong reduction or deal-breaker; gap for a non-blocking shortfall; match only when satisfied. Then set overall outcome to the worst item fit: conflict, gap, unknown, partial, match. A match cannot cancel a conflict. status=found when any item exists. postingLanguage is the language used to write the posting. Verify no language statement was omitted.",
         },
         {
           role: "user",
