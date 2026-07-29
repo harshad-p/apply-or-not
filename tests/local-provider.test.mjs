@@ -7,10 +7,8 @@ import {
   buildChatCompletionsUrl,
   buildNativeOllamaChatUrl,
   buildNativeOllamaRequest,
-  buildNativeLanguageVerificationRequest,
   buildLocalSummary,
   compactLocalDescription,
-  compactOutputHasLanguageRequirement,
   evidenceAppearsInJob,
   extractLanguageCandidateLines,
   expandCompactLocalOutput,
@@ -26,8 +24,7 @@ import {
   userExplicitlyRejectsLanguage,
   userStronglyReducesLanguage,
   usesNativeOllamaQwen,
-  verifiedLanguageRequirements,
-  mergeVerifiedLanguages,
+  expandNamedLanguagesFromEvidence,
   removeProgrammingLanguageFalsePositives,
 } from "../local-relay/local-provider.mjs";
 
@@ -115,92 +112,24 @@ test("uses Ollama native non-thinking mode for Qwen 3.5", () => {
   assert.deepEqual(request.format, { type: "object" });
 });
 
-test("verifies every required language in a shared multilingual sentence", () => {
-  const candidates = [
-    "Kommunikationsfähigkeiten in Deutsch und Englisch.",
-  ];
-  const request = buildNativeLanguageVerificationRequest(
-    candidates,
-    "qwen3.5:2b-q4_K_M",
-  );
-  assert.equal(request.think, false);
-  assert.equal(request.options.num_predict, 100);
-  assert.deepEqual(
-    verifiedLanguageRequirements(
-      {
-        passages: [
-          {
-            index: 0,
-            kind: "human_language_requirement",
-            languages: ["German", "English"],
-          },
-        ],
-      },
-      candidates,
-    ),
-    [
-      { language: "German", evidence: candidates[0] },
-      { language: "English", evidence: candidates[0] },
-    ],
-  );
-  const merged = JSON.parse(
-    mergeVerifiedLanguages(
+test("expands every named language from model-approved evidence", () => {
+  const evidence =
+    "Kommunikationsfähigkeiten in Deutsch und Englisch.";
+  const expanded = JSON.parse(
+    expandNamedLanguagesFromEvidence(
       JSON.stringify({
         language: {
           status: "uncertain",
-          requirements: [
-            { language: "English", evidence: candidates[0] },
-          ],
+          requirements: [{ language: "English", evidence }],
         },
       }),
-      [
-        { language: "German", evidence: candidates[0] },
-        { language: "English", evidence: candidates[0] },
-      ],
     ),
   );
-  assert.equal(merged.language.status, "found");
+  assert.equal(expanded.language.status, "found");
   assert.deepEqual(
-    merged.language.requirements.map(({ language }) => language),
+    expanded.language.requirements.map(({ language }) => language),
     ["German", "English"],
   );
-});
-
-test("semantic verification rejects programming languages as human languages", () => {
-  const evidence =
-    "Experience with one modern language such as Java, C++, or C#.";
-  const requirements = verifiedLanguageRequirements(
-    {
-      passages: [
-        {
-          index: 0,
-          kind: "programming_language",
-          languages: [],
-        },
-      ],
-    },
-    [evidence],
-  );
-  assert.deepEqual(requirements, []);
-  const merged = JSON.parse(
-    mergeVerifiedLanguages(
-      JSON.stringify({
-        rubric: { language: "gap" },
-        language: {
-          status: "found",
-          requirements: [
-            { language: "Chinese", evidence },
-            { language: "English", evidence },
-          ],
-        },
-      }),
-      requirements,
-    ),
-  );
-  assert.deepEqual(merged.language, {
-    status: "none",
-    requirements: [],
-  });
 });
 
 test("rejects human-language claims grounded only in programming evidence", () => {
@@ -223,33 +152,6 @@ test("rejects human-language claims grounded only in programming evidence", () =
     status: "none",
     requirements: [],
   });
-});
-
-test("does not verify programming-language passages without a human-language result", () => {
-  assert.equal(
-    compactOutputHasLanguageRequirement(
-      JSON.stringify({
-        language: { status: "none", requirements: [] },
-      }),
-    ),
-    false,
-  );
-  assert.equal(
-    compactOutputHasLanguageRequirement(
-      JSON.stringify({
-        language: {
-          status: "uncertain",
-          requirements: [
-            {
-              language: "English",
-              evidence: "Kommunikationsfähigkeiten in Deutsch und Englisch",
-            },
-          ],
-        },
-      }),
-    ),
-    true,
-  );
 });
 
 test("prepares and validates a reusable compact preference profile", async () => {

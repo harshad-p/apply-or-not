@@ -115,102 +115,39 @@ function buildNativeOllamaRequest(request) {
   };
 }
 
-const CANONICAL_HUMAN_LANGUAGES = [
-  "German",
-  "English",
-  "French",
-  "Spanish",
-  "Italian",
-  "Dutch",
-  "Portuguese",
-  "Japanese",
-  "Chinese",
-  "Korean",
-  "Polish",
-  "Turkish",
-  "Arabic",
-  "Russian",
-  "Other",
+const HUMAN_LANGUAGE_ALIASES = [
+  ["German", /\b(?:German|Deutsch(?:kenntnisse)?)\b/iu],
+  ["English", /\b(?:English|Englisch(?:kenntnisse)?)\b/iu],
+  ["French", /\b(?:French|Französisch)\b/iu],
+  ["Spanish", /\b(?:Spanish|Spanisch)\b/iu],
+  ["Italian", /\b(?:Italian|Italienisch)\b/iu],
+  ["Dutch", /\b(?:Dutch|Niederländisch)\b/iu],
+  ["Portuguese", /\b(?:Portuguese|Portugiesisch)\b/iu],
+  ["Japanese", /\b(?:Japanese|Japanisch)\b/iu],
+  ["Chinese", /\b(?:Chinese|Chinesisch)\b/iu],
+  ["Korean", /\b(?:Korean|Koreanisch)\b/iu],
+  ["Polish", /\b(?:Polish|Polnisch)\b/iu],
+  ["Turkish", /\b(?:Turkish|Türkisch)\b/iu],
+  ["Arabic", /\b(?:Arabic|Arabisch)\b/iu],
+  ["Russian", /\b(?:Russian|Russisch)\b/iu],
 ];
 
-function buildNativeLanguageVerificationRequest(candidates, model) {
-  return {
-    model,
-    messages: [
-      {
-        role: "system",
-        content:
-          "Classify each numbered passage. human_language_requirement means an employer requirement for ability in a spoken or written human language. programming_language means Java, C#, C++, Python, JavaScript, SQL, or similar software technology; its languages array MUST be empty. not_a_requirement means no required human-language ability. Only for human_language_requirement, list every required human language separately using the canonical English choices. A conjunction joins separate requirements: Deutsch und Englisch means German and English. Return only schema fields.",
-      },
-      {
-        role: "user",
-        content: JSON.stringify(
-          candidates.map((text, index) => ({ index, text })),
-        ),
-      },
-    ],
-    format: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        passages: {
-          type: "array",
-          maxItems: 8,
-          items: {
-            type: "object",
-            additionalProperties: false,
-            properties: {
-              index: { type: "integer", minimum: 0, maximum: 7 },
-              kind: {
-                type: "string",
-                enum: [
-                  "human_language_requirement",
-                  "programming_language",
-                  "not_a_requirement",
-                ],
-              },
-              languages: {
-                type: "array",
-                maxItems: 4,
-                items: {
-                  type: "string",
-                  enum: CANONICAL_HUMAN_LANGUAGES,
-                },
-              },
-            },
-            required: ["index", "kind", "languages"],
-          },
-        },
-      },
-      required: ["passages"],
-    },
-    stream: false,
-    think: false,
-    keep_alive: "30m",
-    options: {
-      temperature: 0,
-      num_ctx: 1024,
-      num_predict: 100,
-    },
-  };
-}
-
-function verifiedLanguageRequirements(value, candidates) {
-  if (!Array.isArray(value?.passages)) return [];
-  return value.passages
-    .flatMap((passage) => {
-      const evidence = candidates[passage?.index];
-      if (
-        !evidence ||
-        passage?.kind !== "human_language_requirement" ||
-        !Array.isArray(passage.languages)
-      ) {
-        return [];
-      }
-      return passage.languages
-        .filter((language) => language !== "Other")
-        .map((language) => ({ language, evidence }));
-    })
+function expandNamedLanguagesFromEvidence(outputText) {
+  const value = JSON.parse(outputText);
+  const requirements = Array.isArray(value?.language?.requirements)
+    ? value.language.requirements
+    : [];
+  const expanded = requirements.flatMap((requirement) => {
+    const languages = HUMAN_LANGUAGE_ALIASES
+      .filter(([, expression]) => expression.test(requirement.evidence || ""))
+      .map(([language]) => language);
+    if (languages.length === 0) return [requirement];
+    return languages.map((language) => ({
+      language,
+      evidence: requirement.evidence,
+    }));
+  });
+  const supported = expanded
     .filter(
       (requirement, index, all) =>
         all.findIndex(
@@ -220,27 +157,11 @@ function verifiedLanguageRequirements(value, candidates) {
         ) === index,
     )
     .slice(0, 3);
-}
-
-function mergeVerifiedLanguages(outputText, requirements) {
-  const value = JSON.parse(outputText);
   value.language = {
-    status: requirements.length > 0 ? "found" : "none",
-    requirements,
+    status: supported.length > 0 ? "found" : "none",
+    requirements: supported,
   };
   return JSON.stringify(value);
-}
-
-function compactOutputHasLanguageRequirement(outputText) {
-  try {
-    const value = JSON.parse(outputText);
-    return (
-      Array.isArray(value?.language?.requirements) &&
-      value.language.requirements.length > 0
-    );
-  } catch {
-    return false;
-  }
 }
 
 function removeProgrammingLanguageFalsePositives(outputText) {
@@ -1071,39 +992,10 @@ async function analyzeWithLocalModel(
         removeProgrammingLanguageFalsePositives(
           providerResponse?.message?.content || "",
         );
-    }
-    const languageCandidates = analysisPayload.job.languageCandidates;
-    const initialOutput = providerResponse?.message?.content || "";
-    if (
-      nativeOllamaQwen &&
-      languageCandidates.length > 0 &&
-      compactOutputHasLanguageRequirement(initialOutput)
-    ) {
-      const verificationResponse = await fetchImpl(
-        buildNativeOllamaChatUrl(config.baseUrl),
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(
-            buildNativeLanguageVerificationRequest(
-              languageCandidates,
-              config.model,
-            ),
-          ),
-          signal: controller.signal,
-        },
-      );
-      if (verificationResponse.ok) {
-        const verificationBody = await verificationResponse.json();
-        const requirements = verifiedLanguageRequirements(
-          JSON.parse(verificationBody?.message?.content || "{}"),
-          languageCandidates,
-        );
-        providerResponse.message.content = mergeVerifiedLanguages(
+      providerResponse.message.content =
+        expandNamedLanguagesFromEvidence(
           providerResponse?.message?.content || "",
-          requirements,
         );
-      }
     }
     const responseBody = nativeOllamaQwen
       ? {
@@ -1164,11 +1056,9 @@ export {
   blockerMatchesLanguageRequirement,
   buildNativeOllamaChatUrl,
   buildNativeOllamaRequest,
-  buildNativeLanguageVerificationRequest,
   buildChatCompletionsUrl,
   buildLocalSummary,
   compactLocalDescription,
-  compactOutputHasLanguageRequirement,
   compactLocalPayload,
   explicitCriteriaDimensions,
   evidenceAppearsInJob,
@@ -1189,7 +1079,6 @@ export {
   userExplicitlyRejectsLanguage,
   userStronglyReducesLanguage,
   usesNativeOllamaQwen,
-  verifiedLanguageRequirements,
-  mergeVerifiedLanguages,
+  expandNamedLanguagesFromEvidence,
   removeProgrammingLanguageFalsePositives,
 };
