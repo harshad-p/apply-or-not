@@ -102,7 +102,7 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.18.5 is post-submission development on the local
+Version 0.18.6 is post-submission development on the local
 `codex/local-llm-support` branch. The submitted version remains 0.16.1 on
 `main`. The development version can route analysis through either GPT-5.6 or a
 local OpenAI-compatible model, validates both through the same result contract,
@@ -189,10 +189,12 @@ The extension source is in [`extension`](extension).
   repository. It needs no API key, Node.js, Python, relay, or internet request.
 - **Live GPT-5.6 analysis:** Node.js 18 or newer, an OpenAI Platform API key with
   available API credit, an internet connection, and local port `8787` available.
-- **Local-model analysis:** Node.js 18 or newer, local port `8787`, and an
+- **Local-model analysis:** Node.js 18 or newer, `npm install`, local port
+  `8787`, and an
   OpenAI-compatible Ollama or LM Studio server running on a loopback address.
   The selected model must support structured JSON output and have enough context
-  capacity for the job description and rubric.
+  capacity for the job description and rubric. The first German-to-English
+  translation downloads a local quantized model; subsequent runs use its cache.
 - **Four fictional video scenarios:** Python 3 only to serve the static pages,
   with local port `4173` available. Python is not needed on real job sites.
 - **Offline automated tests:** Node.js 18 or newer; no API key or network call.
@@ -299,28 +301,31 @@ for this mode.
 1. Start [Ollama](https://docs.ollama.com/api/openai-compatibility) or
    [LM Studio](https://lmstudio.ai/docs/developer/openai-compat) and load a
    model that supports structured JSON output.
-   For the lowest latency with Ollama, install the small multilingual model:
+   For the smallest tested model that reliably handled the mixed German and
+   English acceptance case:
 
    ```sh
-   ollama pull qwen3:0.6b
+   ollama pull llama3.2:3b
    ```
 
-   For the optional focused language-fit helper:
+2. Install the relay's local translation runtime once:
 
    ```sh
-   ollama pull gemma3:4b
+   npm install
    ```
-2. Keep `node local-relay/server.mjs` running.
-3. Open the extension settings and select
+
+3. Keep `node local-relay/server.mjs` running. The first local analysis
+   downloads the quantized German-to-English OPUS model. It remains in the
+   Hugging Face cache for later offline use.
+4. Open the extension settings and select
    **Local model · Ollama or LM Studio**.
-4. Enter the local server base URL and exact model identifier, then save:
+5. Enter the local server base URL and exact model identifier, then save:
    - Ollama commonly uses `http://127.0.0.1:11434/v1`.
    - LM Studio commonly uses `http://127.0.0.1:1234/v1`.
-   - The tested hybrid uses `qwen3:0.6b` as the primary model and
-     `gemma3:4b` as the optional language extraction model. The helper is more
-     reliable for multilingual requirements, but switching between two models
-     on CPU can make the complete analysis substantially slower.
-5. Analyze a job normally. The popup identifies the returned local model, and
+   - The recommended local configuration uses `llama3.2:3b`.
+   - `qwen3:0.6b` remains a faster experimental option, but it did not
+     classify the supplied language requirements reliably.
+6. Analyze a job normally. The popup identifies the returned local model, and
    the same schema validation and deterministic scoring rules still apply.
 
 Only plain HTTP URLs on `localhost`, `127.0.0.1`, or `::1` are accepted. The
@@ -333,9 +338,12 @@ and cap structured output at 500 tokens. Trusted JavaScript calculates the
 score, writes the summary, expands the popup evidence sections, rejects
 unsupported blockers, and prevents clearly unstated dimensions from changing
 the score. The local semantic contract explicitly asks the model to scan for
-language requirements in any language and distinguish requirements found,
-confidently none found, and uncertainty. Trusted code validates the returned
-original-language evidence without attempting to interpret grammar.
+language requirements and distinguish requirements found, confidently none
+found, and uncertainty. Before local analysis, a dedicated German-to-English
+OPUS model translates the compacted job text. It accepts mixed English/German
+input, leaves English passages readable, and avoids loading a second chat model.
+Language-related passages are preserved explicitly when a long posting is
+compacted so a short qualification in the omitted region is not lost.
 Local analysis may still take several
 minutes on older hardware; the relay allows up to five minutes before reporting
 a timeout. While local analysis is running, the popup provides a **Cancel
@@ -348,17 +356,15 @@ analysis.
 The relay terminal logs each local job's elapsed time, transmitted description
 size, and prompt/completion token counts when the provider returns them. These
 metrics help distinguish model loading, prompt processing, and output-generation
-costs. On the development machine, the supplied 5,114-character Amazon example
-took about 20–31 seconds with `qwen3:0.6b` depending on model warm-up; timing
-varies by hardware and job length.
-This is the latency-first option and may be less nuanced than a larger model or
-GPT-5.6, so the result remains decision support rather than a final decision.
-The optional helper introduces model routing: a stronger model performs the
-focused multilingual language-fit pass while the smaller model handles the
-general rubric. Live tests found that 1.7B and 4B helpers were faster but
-misclassified the supplied German preference; 14B classified it plausibly but
-took about 144 seconds for the focused CPU pass. Leaving the helper blank reuses
-the primary model and may reach the explicit uncertainty fallback more often.
+costs. On the development machine, the focused mixed-language acceptance case
+took about 40 seconds end to end with `llama3.2:3b` after the translation model
+was cached. It identified both required languages and reduced the result to the
+consider band. Timing varies by hardware and job length. Smaller models can be
+faster but were not reliable enough on this acceptance case, so every result
+remains decision support rather than a final decision.
+German translation uses a dedicated quantized Marian/OPUS model rather than a
+second general-purpose chat model. Other source languages remain the
+responsibility of GPT-5.6 or a future translation model.
 
 To make one real, billable GPT-5.6 request with fictional data, keep the relay
 running and use another terminal:

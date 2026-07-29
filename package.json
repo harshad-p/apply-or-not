@@ -1,0 +1,10 @@
+{
+  "name": "apply-or-not",
+  "private": true,
+  "dependencies": {
+    "@huggingface/transformers": "^3.7.3"
+  },
+  "overrides": {
+    "sharp": "^0.35.0"
+  }
+}

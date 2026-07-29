@@ -57,12 +57,10 @@ async function readProviderConfig() {
   const {
     analysisProvider = "openai",
     localModel = "",
-    localLanguageModel = "",
     localBaseUrl = DEFAULT_LOCAL_BASE_URL,
   } = await extensionApi.storage.local.get([
     "analysisProvider",
     "localModel",
-    "localLanguageModel",
     "localBaseUrl",
   ]);
 
@@ -70,7 +68,6 @@ async function readProviderConfig() {
     ? {
         id: "local",
         model: localModel,
-        languageModel: localLanguageModel || localModel,
         baseUrl: localBaseUrl,
       }
     : { id: "openai" };

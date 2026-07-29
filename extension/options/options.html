@@ -117,36 +117,21 @@
               autocomplete="off"
               autocapitalize="none"
               spellcheck="false"
-              placeholder="Fastest: qwen3:0.6b"
+              placeholder="Recommended: llama3.2:3b"
               data-local-model
             >
             <p class="field-help">
               Use the exact model name shown by Ollama or LM Studio. The model
-              must support structured JSON output. <code>qwen3:0.6b</code> is
-              the lowest-latency tested option, with less nuance than larger
-              models.
+              must support structured JSON output. <code>llama3.2:3b</code>
+              is the smallest tested option that reliably reported both German
+              and English requirements. <code>qwen3:0.6b</code> is faster but
+              less reliable.
             </p>
 
-            <label for="local-language-model">
-              Language extraction model
-            </label>
-            <input
-              id="local-language-model"
-              name="localLanguageModel"
-              type="text"
-              maxlength="200"
-              autocomplete="off"
-              autocapitalize="none"
-              spellcheck="false"
-              placeholder="Focused helper: gemma3:4b"
-              data-local-language-model
-            >
             <p class="field-help">
-              Optional focused multilingual helper. It reads only the job text,
-              compares grounded language evidence with your preferences, and
-              passes the result to the main analysis. Leave blank to reuse the
-              primary model. More capable helpers are substantially slower on
-              CPU.
+              German passages are translated locally into English before this
+              model analyzes the posting. English passages remain readable,
+              and no translation text is sent to an online service.
             </p>
           </div>
           <p class="connection-status" role="status" aria-live="polite" data-connection-status></p>

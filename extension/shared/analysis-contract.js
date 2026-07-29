@@ -2,7 +2,7 @@
   "use strict";
 
   const SCHEMA_VERSION = 2;
-  const PROMPT_VERSION = "job-fit-v18";
+  const PROMPT_VERSION = "job-fit-v19";
   const DEFAULT_MODEL = "gpt-5.6-sol";
   const SUMMARY_MAX_LENGTH = 240;
   const RUBRIC_WEIGHTS = Object.freeze({
@@ -271,7 +271,9 @@ For each rubric dimension, set applicable=true only if the user stated a criteri
 Rules:
 - Missing evidence is unknown, not a conflict. Never infer a language requirement from the posting language.
 - Scan the entire posting specifically for language proficiency requirements, regardless of the posting language or wording. Semantically interpret phrases such as fluency, written/spoken ability, CEFR levels, business proficiency, native-level ability, optional languages, and alternatives.
-- Set languageRequirementStatus=found when explicit requirements are present and return each requirement with its original-language evidence. Set it to none only when you are confident the posting states no language requirement. Set it to uncertain only when the text is ambiguous or you cannot determine the requirement confidently.
+- A standalone language qualification or list item is required unless the posting explicitly marks it preferred, optional, nice-to-have, or connects it to another language with either/or wording. Adjectives such as good or very good describe proficiency; they do not mean preferred.
+- Set languageRequirementStatus=found when explicit requirements are present and return every explicit language requirement, one item per language; scan beyond the first match and verify that no language qualification was omitted. Set it to none only when you are confident the posting states no language requirement. Set it to uncertain only when the text is ambiguous or you cannot determine the requirement confidently.
+- Compare every language requirement independently with the user criteria. A required language that triggers the user's explicit strong reduction or deal-breaker makes the language outcome conflict even when another required language matches. A matching English requirement does not cancel a conflicting German requirement, and a German-specific penalty does not apply to English.
 - Keep language-requirement evidence as an exact or very close excerpt from the job posting. Never copy the user's criteria into evidence.
 - When jobPosting.languageEvidence is present, treat it as a focused extraction from the job text and use it when classifying the language rubric.
 - "One of", "at least one", "such as", "for example", and options joined by "or" are alternatives unless all/both/each is explicit. C# fully satisfies "Java, C++, or C#".

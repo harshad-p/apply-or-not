@@ -1,33 +1,58 @@
 import { createRequire } from "node:module";
 import { validatePayload } from "./openai-provider.mjs";
 import { validateProviderConfig } from "./configuration.mjs";
+import { translateGermanToEnglish } from "./german-translator.mjs";
 
 const require = createRequire(import.meta.url);
 const {
   buildFastLocalRequest,
-  buildLanguageExtractionRequest,
   calculateRubricScore,
   expectedRecommendation,
   normalizeAnalysis,
 } = require("../extension/shared/analysis-contract.js");
 const LOCAL_DESCRIPTION_MAX_LENGTH = 9_000;
+const LANGUAGE_PASSAGE_PATTERN =
+  /deutsch|englisch|sprach|\b(?:german|english|language|languages)\b/iu;
+
+function findLanguagePassages(description, maximumLength) {
+  const passages = description
+    .split(/\n{2,}|\n/u)
+    .map((passage) => passage.trim())
+    .filter(
+      (passage) =>
+        passage.length >= 3 && LANGUAGE_PASSAGE_PATTERN.test(passage),
+    );
+  return [...new Set(passages)].join("\n").slice(0, maximumLength);
+}
 
 function compactLocalDescription(value, maximumLength = LOCAL_DESCRIPTION_MAX_LENGTH) {
   const description = typeof value === "string" ? value.trim() : "";
   if (description.length <= maximumLength) return description;
 
   const omission = "\n\n[... page text omitted for local analysis ...]\n\n";
+  const priorityLabel = "\n\n[Language-related passage preserved]\n";
+  const priorityMaximum = Math.floor(maximumLength * 0.2);
+  const priorityPassages = findLanguagePassages(
+    description,
+    priorityMaximum,
+  );
+  const reservedLength = priorityPassages
+    ? priorityLabel.length + priorityPassages.length
+    : 0;
   const segmentLength = Math.floor(
-    (maximumLength - omission.length * 2) / 3,
+    (maximumLength - omission.length * 2 - reservedLength) / 3,
   );
   const middleStart = Math.floor((description.length - segmentLength) / 2);
-  return [
+  const compacted = [
     description.slice(0, segmentLength).trimEnd(),
     description
       .slice(middleStart, middleStart + segmentLength)
       .trim(),
     description.slice(-segmentLength).trimStart(),
   ].join(omission);
+  return priorityPassages
+    ? `${compacted}${priorityLabel}${priorityPassages}`
+    : compacted;
 }
 
 function compactLocalPayload(payload) {
@@ -93,10 +118,7 @@ function parseLocalResponse(response, config, context, languageEvidence) {
     expandLocalAnalysis(modelOutput, context),
     {
       id: "local",
-      model:
-        (config.languageModel || config.model) !== config.model
-          ? `${response.model || config.model} + ${config.languageModel} language`
-          : response.model || config.model,
+      model: `${response.model || config.model} + German→English translation`,
       responseId: response.id || "",
     },
     context,
@@ -246,6 +268,12 @@ function evidenceAppearsInJob(evidence, jobEvidence) {
   );
 }
 
+function userExplicitlyRejectsLanguage(userCriteria) {
+  return /\b(?:reject|skip|never apply|do not apply|hard blocker|deal[- ]breaker|must not apply)\b/iu.test(
+    userCriteria || "",
+  );
+}
+
 function buildLocalSummary(
   score,
   rubric,
@@ -373,6 +401,19 @@ function expandLocalAnalysis(value, context) {
       },
     ]),
   );
+  const languageEvidence = new Set(
+    supportedLanguageRequirements.map((requirement) =>
+      normalizeEvidence(requirement.evidence),
+    ),
+  );
+  const demotedLanguageBlocker = (value.hardBlockers || []).some(
+    (blocker) =>
+      languageEvidence.has(normalizeEvidence(blocker.evidence)) &&
+      !userExplicitlyRejectsLanguage(context?.userCriteria),
+  );
+  if (demotedLanguageBlocker && rubric.language?.applicable) {
+    rubric.language.outcome = "conflict";
+  }
   const applicable = Object.entries(value.rubric || {})
     .map(([dimension, assessment]) => [
       dimension,
@@ -398,6 +439,11 @@ function expandLocalAnalysis(value, context) {
   const hardBlockers = (value.hardBlockers || [])
     .filter((blocker) =>
       evidenceAppearsInJob(blocker.evidence, jobEvidence),
+    )
+    .filter(
+      (blocker) =>
+        !languageEvidence.has(normalizeEvidence(blocker.evidence)) ||
+        userExplicitlyRejectsLanguage(context?.userCriteria),
     )
     .map((blocker) => ({
       title: blocker.title,
@@ -476,6 +522,7 @@ async function analyzeWithLocalModel(
     timeoutMs = 300_000,
     signal,
     onMetrics = () => {},
+    translateImpl = translateGermanToEnglish,
   } = {},
 ) {
   validatePayload(payload);
@@ -498,51 +545,23 @@ async function analyzeWithLocalModel(
   }
 
   try {
-    let languageEvidence = null;
-    let languageUsage = {};
-    if (explicitCriteriaDimensions(payload.userCriteria).language) {
-      try {
-        const languageResponse = await fetchImpl(
-          buildChatCompletionsUrl(config.baseUrl),
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(
-              buildLanguageExtractionRequest(
-                compactedPayload.job.description,
-                payload.userCriteria,
-                config.languageModel,
-              ),
-            ),
-            signal: controller.signal,
-          },
-        );
-        if (!languageResponse.ok) {
-          throw new Error(await readLocalError(languageResponse));
-        }
-        const languageBody = await languageResponse.json();
-        languageEvidence = parseLanguageExtractionResponse(languageBody);
-        languageUsage = languageBody?.usage || {};
-      } catch (error) {
-        if (error?.name === "AbortError") throw error;
-        languageEvidence = {
-          status: "uncertain",
-          postingLanguage: "Unknown",
-          outcome: "unknown",
-          requirements: [],
-        };
-      }
+    const translationStartedAt = performance.now();
+    let translatedDescription;
+    try {
+      translatedDescription = await translateImpl(
+        compactedPayload.job.description,
+      );
+    } catch (error) {
+      throw new Error(`German translation failed: ${error.message}`);
     }
-
-    const analysisPayload = languageEvidence
-      ? {
-          ...compactedPayload,
-          job: {
-            ...compactedPayload.job,
-            languageEvidence,
-          },
-        }
-      : compactedPayload;
+    const translationDurationMs = performance.now() - translationStartedAt;
+    const analysisPayload = {
+      ...compactedPayload,
+      job: {
+        ...compactedPayload.job,
+        description: translatedDescription,
+      },
+    };
     const response = await fetchImpl(buildChatCompletionsUrl(config.baseUrl), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -558,22 +577,17 @@ async function analyzeWithLocalModel(
     const responseBody = await response.json();
     onMetrics({
       originalDescriptionCharacters: payload.job.description.length,
-      sentDescriptionCharacters: compactedPayload.job.description.length,
-      promptTokens:
-        (languageUsage.prompt_tokens || 0) +
-          (responseBody?.usage?.prompt_tokens || 0) || null,
-      completionTokens:
-        (languageUsage.completion_tokens || 0) +
-          (responseBody?.usage?.completion_tokens || 0) || null,
-      totalTokens:
-        (languageUsage.total_tokens || 0) +
-          (responseBody?.usage?.total_tokens || 0) || null,
+      sentDescriptionCharacters: translatedDescription.length,
+      translationDurationMs,
+      promptTokens: responseBody?.usage?.prompt_tokens || null,
+      completionTokens: responseBody?.usage?.completion_tokens || null,
+      totalTokens: responseBody?.usage?.total_tokens || null,
     });
     return parseLocalResponse(
       responseBody,
       config,
-      payload,
-      languageEvidence,
+      analysisPayload,
+      null,
     );
   } catch (error) {
     if (error?.name === "AbortError") {
@@ -609,4 +623,5 @@ export {
   parseLocalResponse,
   parseLanguageExtractionResponse,
   readLocalError,
+  userExplicitlyRejectsLanguage,
 };

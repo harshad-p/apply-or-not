@@ -54,7 +54,6 @@ let currentSettings = {
   analysisProvider: "openai",
   localBaseUrl: "http://127.0.0.1:11434/v1",
   localModel: "",
-  localLanguageModel: "",
 };
 let activeAnalysisContext = null;
 
@@ -80,7 +79,7 @@ function selectedProviderKey() {
         "local",
         currentSettings.localBaseUrl,
         currentSettings.localModel,
-        currentSettings.localLanguageModel || currentSettings.localModel,
+        "german-to-english-v1",
       ].join("|")
     : "openai|gpt-5.6-sol";
 }
@@ -130,14 +129,12 @@ async function loadSettingsStatus() {
       analysisProvider = "openai",
       localBaseUrl = "http://127.0.0.1:11434/v1",
       localModel = "",
-      localLanguageModel = "",
     } = await extensionApi.storage.local.get([
       "userCriteria",
       "preferredLanguage",
       "analysisProvider",
       "localBaseUrl",
       "localModel",
-      "localLanguageModel",
     ]);
     currentSettings = {
       userCriteria,
@@ -145,7 +142,6 @@ async function loadSettingsStatus() {
       analysisProvider,
       localBaseUrl,
       localModel,
-      localLanguageModel,
     };
     const isConfigured =
       userCriteria.trim().length > 0 &&

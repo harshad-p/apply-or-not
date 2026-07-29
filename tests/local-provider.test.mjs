@@ -13,6 +13,7 @@ import {
   parseLocalResponse,
   parseLanguageExtractionResponse,
   trustedPostingLanguage,
+  userExplicitlyRejectsLanguage,
 } from "../local-relay/local-provider.mjs";
 
 function modelOutput() {
@@ -74,6 +75,21 @@ test("compacts oversized job text for local inference", () => {
   assert.match(compacted, /page text omitted/);
   assert.ok(compacted.startsWith("A".repeat(100)));
   assert.ok(compacted.endsWith("A".repeat(100)));
+});
+
+test("preserves language passages when compacting a long posting", () => {
+  const description = [
+    "A".repeat(8_000),
+    "Sehr gute Deutschkenntnisse in Wort und Schrift",
+    "B".repeat(8_000),
+    "Good English skills are required",
+    "C".repeat(8_000),
+  ].join("\n\n");
+  const compacted = compactLocalDescription(description);
+
+  assert.ok(compacted.length <= LOCAL_DESCRIPTION_MAX_LENGTH);
+  assert.match(compacted, /Sehr gute Deutschkenntnisse/);
+  assert.match(compacted, /Good English skills/);
 });
 
 test("guards local applicability with explicit preference text", () => {
@@ -174,6 +190,60 @@ Gute Englischkenntnisse`,
     "Potential match, led by skills. Language concern: the posting requires German and English.",
   );
   assert.equal(analysis.languageRequirements.length, 2);
+});
+
+test("strongly reduce does not become a language hard blocker", () => {
+  const analysis = expandLocalAnalysis({
+    ...modelOutput(),
+    rubric: {
+      ...modelOutput().rubric,
+      language: { applicable: true, outcome: "partial" },
+    },
+    hardBlockers: [
+      {
+        title: "Strong German requirement",
+        evidence: "Very good German skills",
+      },
+    ],
+    languageRequirementStatus: "found",
+    languageRequirements: [
+      {
+        language: "German",
+        level: "very good",
+        requirement: "required",
+        evidence: "Very good German skills",
+      },
+      {
+        language: "English",
+        level: "good",
+        requirement: "required",
+        evidence: "Good English skills",
+      },
+    ],
+  }, {
+    userCriteria:
+      "Match C#. Prefer English. Strongly reduce the score when fluent German is required.",
+    job: {
+      description:
+        "C# backend development\nVery good German skills\nGood English skills",
+    },
+  });
+
+  assert.equal(analysis.rubric.language.outcome, "conflict");
+  assert.equal(analysis.score, 73);
+  assert.equal(analysis.hardBlockers.length, 0);
+  assert.equal(
+    analysis.summary,
+    "Potential match, led by skills. Language concern: the posting requires German and English.",
+  );
+  assert.equal(
+    userExplicitlyRejectsLanguage("Strongly reduce required German"),
+    false,
+  );
+  assert.equal(
+    userExplicitlyRejectsLanguage("Reject roles requiring German"),
+    true,
+  );
 });
 
 test("builds a deterministic local summary from trusted classifications", () => {
@@ -284,7 +354,10 @@ test("normalizes a local response with trusted provider metadata", () => {
   assert.equal(result.score, 100);
   assert.equal(result.recommendation, "apply");
   assert.equal(result.provider.id, "local");
-  assert.equal(result.provider.model, "qwen3:8b");
+  assert.equal(
+    result.provider.model,
+    "qwen3:8b + German→English translation",
+  );
   assert.equal(result.provider.responseId, "chatcmpl_local");
 });
 
@@ -292,6 +365,7 @@ test("sends a schema-constrained request to the configured loopback server", asy
   let capturedRequest;
   let capturedMetrics;
   const result = await analyzeWithLocalModel(payload(), providerConfig, {
+    translateImpl: async (text) => text,
     fetchImpl: async (url, options) => {
       capturedRequest = { url, options };
       return {
@@ -322,6 +396,7 @@ test("sends a schema-constrained request to the configured loopback server", asy
   assert.equal(requestBody.response_format.type, "json_schema");
   assert.equal(requestBody.stream, false);
   assert.equal(result.provider.id, "local");
+  assert.match(result.provider.model, /German→English translation/);
   assert.equal(capturedMetrics.promptTokens, 400);
   assert.equal(capturedMetrics.completionTokens, 200);
 });
@@ -344,8 +419,13 @@ test("propagates external cancellation to the local model request", async () => 
   const controller = new AbortController();
   const operation = analyzeWithLocalModel(payload(), providerConfig, {
     signal: controller.signal,
+    translateImpl: async (text) => text,
     fetchImpl: async (_url, { signal }) =>
       new Promise((_resolve, reject) => {
+        if (signal.aborted) {
+          reject(new DOMException("Aborted", "AbortError"));
+          return;
+        }
         signal.addEventListener(
           "abort",
           () => reject(new DOMException("Aborted", "AbortError")),

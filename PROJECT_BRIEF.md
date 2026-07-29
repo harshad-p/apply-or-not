@@ -147,7 +147,7 @@ inferences, and respect access controls and third-party terms.
 ## LLM providers
 
 The submitted live implementation uses OpenAI GPT-5.6 through the localhost
-relay. Post-submission version 0.18.5 adds a provider selector while keeping the
+relay. Post-submission version 0.18.6 adds a provider selector while keeping the
 same relay boundary:
 
 - OpenAI GPT-5.6 as the default and demonstrated hackathon provider
@@ -173,17 +173,17 @@ representative characters and uses a compact classification-only contract with
 a 500-token output budget. Trusted code calculates the score, writes a
 deterministic summary, expands concise
 evidence sections, rejects unsupported blockers, and guards applicability for
-clearly unstated dimensions. Language-requirement interpretation remains an LLM
-semantic task across arbitrary languages and wording. The model must return a
-found, none, or uncertain state with original-language evidence; trusted code
-validates the evidence but does not interpret its grammar. The relay logs elapsed
+clearly unstated dimensions. For local inference, mixed German and English job
+text is first normalized into English by a dedicated German-to-English
+translation model. Language-requirement interpretation then remains an LLM
+semantic task. The relay logs elapsed
 time plus provider token
-counts when available. `qwen3:0.6b` is the documented latency-first Ollama
-option; larger models remain configurable when accuracy matters more than speed.
-An optional second local model can be configured for focused multilingual
-language extraction and language-fit classification. This is model routing, not
-deterministic grammar matching, and both model choices participate in cache
-identity.
+counts when available. `llama3.2:3b` is the smallest tested model that reliably
+identified both German and English in the mixed-language acceptance case;
+smaller models remain configurable when latency matters more than accuracy.
+Long-description compaction explicitly preserves language-related passages.
+Other source languages use GPT-5.6 until additional dedicated translation
+models are added.
 Local inference must be labeled clearly because model quality, structured-output
 support, speed, and hardware requirements vary by model and computer.
 

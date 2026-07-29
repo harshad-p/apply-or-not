@@ -49,13 +49,11 @@ test("requires a model only for the local provider", () => {
       id: "local",
       baseUrl: "http://127.0.0.1:11434/v1",
       model: " qwen3:8b ",
-      languageModel: " qwen3:1.7b ",
     }),
     {
       id: "local",
       baseUrl: "http://127.0.0.1:11434/v1",
       model: "qwen3:8b",
-      languageModel: "qwen3:1.7b",
     },
   );
   assert.throws(
