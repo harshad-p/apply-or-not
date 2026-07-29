@@ -204,9 +204,10 @@ team. **Sign to Run Locally** is ad-hoc signing; Safari may still require
 **Allow Unsigned Extensions** after each restart when that is the only identity
 available.
 
-The wrapper contains a copied snapshot of the `extension` directory. When the
-WebExtension changes, regenerate or resynchronize its `Resources` directory
-before building the app again.
+The Safari extension target references the repository's shared `extension`
+directory. Changes to the browser-neutral WebExtension are therefore included
+the next time the Xcode app is built; there is no copied extension snapshot to
+resynchronize.
 
 ### Temporary Safari development extension
 

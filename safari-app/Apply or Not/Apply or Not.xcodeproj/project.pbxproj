@@ -65,14 +65,14 @@
 		B4229E003013A19800EB8C16 /* Apply or Not Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Apply or Not Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		B4229E053013A19800EB8C16 /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
 		B4229E073013A19800EB8C16 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		B4229E123013A19900EB8C16 /* background */ = {isa = PBXFileReference; lastKnownFileType = folder; name = background; path = Resources/background; sourceTree = "<group>"; };
-		B4229E133013A19900EB8C16 /* options */ = {isa = PBXFileReference; lastKnownFileType = folder; name = options; path = Resources/options; sourceTree = "<group>"; };
-		B4229E143013A19900EB8C16 /* popup */ = {isa = PBXFileReference; lastKnownFileType = folder; name = popup; path = Resources/popup; sourceTree = "<group>"; };
-		B4229E153013A19900EB8C16 /* content */ = {isa = PBXFileReference; lastKnownFileType = folder; name = content; path = Resources/content; sourceTree = "<group>"; };
-		B4229E163013A19900EB8C16 /* shared */ = {isa = PBXFileReference; lastKnownFileType = folder; name = shared; path = Resources/shared; sourceTree = "<group>"; };
-		B4229E173013A19900EB8C16 /* icons */ = {isa = PBXFileReference; lastKnownFileType = folder; name = icons; path = Resources/icons; sourceTree = "<group>"; };
-		B4229E183013A19900EB8C16 /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = manifest.json; path = Resources/manifest.json; sourceTree = "<group>"; };
-		B4229E193013A19900EB8C16 /* fixtures */ = {isa = PBXFileReference; lastKnownFileType = folder; name = fixtures; path = Resources/fixtures; sourceTree = "<group>"; };
+		B4229E123013A19900EB8C16 /* background */ = {isa = PBXFileReference; lastKnownFileType = folder; name = background; path = extension/background; sourceTree = "<group>"; };
+		B4229E133013A19900EB8C16 /* options */ = {isa = PBXFileReference; lastKnownFileType = folder; name = options; path = extension/options; sourceTree = "<group>"; };
+		B4229E143013A19900EB8C16 /* popup */ = {isa = PBXFileReference; lastKnownFileType = folder; name = popup; path = extension/popup; sourceTree = "<group>"; };
+		B4229E153013A19900EB8C16 /* content */ = {isa = PBXFileReference; lastKnownFileType = folder; name = content; path = extension/content; sourceTree = "<group>"; };
+		B4229E163013A19900EB8C16 /* shared */ = {isa = PBXFileReference; lastKnownFileType = folder; name = shared; path = extension/shared; sourceTree = "<group>"; };
+		B4229E173013A19900EB8C16 /* icons */ = {isa = PBXFileReference; lastKnownFileType = folder; name = icons; path = extension/icons; sourceTree = "<group>"; };
+		B4229E183013A19900EB8C16 /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = manifest.json; path = extension/manifest.json; sourceTree = "<group>"; };
+		B4229E193013A19900EB8C16 /* fixtures */ = {isa = PBXFileReference; lastKnownFileType = folder; name = fixtures; path = extension/fixtures; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -158,7 +158,7 @@
 				B4229E193013A19900EB8C16 /* fixtures */,
 			);
 			name = Resources;
-			path = "Apply or Not Extension";
+			path = ../..;
 			sourceTree = SOURCE_ROOT;
 		};
 /* End PBXGroup section */
