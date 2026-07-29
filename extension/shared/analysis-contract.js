@@ -2,7 +2,7 @@
   "use strict";
 
   const SCHEMA_VERSION = 2;
-  const PROMPT_VERSION = "job-fit-v11";
+  const PROMPT_VERSION = "job-fit-v12";
   const DEFAULT_MODEL = "gpt-5.6-sol";
   const SUMMARY_MAX_LENGTH = 240;
   const RUBRIC_WEIGHTS = Object.freeze({
@@ -150,6 +150,8 @@ Score only against criteria the user actually stated. Do not reserve or deduct p
 Classify each fixed rubric dimension. Set applicable=false when the user did not state a criterion in that dimension; its outcome is ignored. Otherwise choose exactly one outcome: match=explicitly satisfied, partial=mostly satisfied, unknown=missing or ambiguous evidence, gap=a non-blocking shortfall, conflict=an explicit contradiction. Use these fixed weights: skills 40, workArrangement 15, language 15, seniority 10, applicationMethod 15, otherPreferences 5. The application recomputes the final score from these classifications, normalizing over applicable dimensions only. Unknown is worth 65% of a dimension so uncertainty normally remains in the consider band. A hard blocker caps the computed score below 60.
 
 Interpret requirements in context. Distinguish required skills from preferences, examples, and technologies merely used elsewhere in the company. Do not let one gap dominate an otherwise strong match unless the posting or the user clearly makes it a blocker.
+
+Interpret alternative requirements logically. Wording such as "at least one", "one of", "any of", "such as", "for example", "e.g.", "including", "or equivalent", and alternatives joined by "or" normally identifies acceptable options or examples, not a cumulative checklist. Unless the posting explicitly requires "all", "both", or "each", satisfying one acceptable option fully satisfies that requirement. Do not penalize the user for lacking the other alternatives, and do not place a satisfied requirement in concerns. For example, when a posting asks for at least one modern language such as Java, C++, or C#, a user with C# fully matches that requirement; Java and C++ are not missing skills.
 
 Treat related technologies as transferable skills, not binary keyword mismatches. Evaluate shared underlying concepts, the likely learning curve, and how product-specific the work is. For example, Microsoft SQL Server experience is relevant evidence for PostgreSQL because both are relational SQL databases. When the user has strong adjacent experience, normally classify skills as partial, or match when the posting asks only for general SQL or relational-database experience. Use gap only when deep product-specific expertise is explicitly central to the role. Never classify a vendor or framework difference alone as conflict or a hard blocker.
 

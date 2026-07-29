@@ -1,5 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const alternativeSkillsFixture = require("./fixtures/alternative-skills.json");
 
 const {
   DEFAULT_MODEL,
@@ -181,8 +182,10 @@ test("builds a private structured GPT-5.6 Responses request", () => {
   assert.match(request.input, /No longer accepting applications/);
   assert.match(request.input, /companyContext/);
   assert.match(request.input, /companyEvidenceSource/);
-  assert.equal(PROMPT_VERSION, "job-fit-v11");
+  assert.equal(PROMPT_VERSION, "job-fit-v12");
   assert.match(request.instructions, /transferable skills/i);
+  assert.match(request.instructions, /satisfying one acceptable option fully satisfies/i);
+  assert.match(request.instructions, /Java and C\+\+ are not missing skills/i);
   assert.match(request.instructions, /SQL Server experience is relevant evidence for PostgreSQL/i);
   assert.match(request.instructions, /only OpenAI/i);
   assert.match(request.instructions, /extracted page-control evidence/i);
@@ -191,6 +194,26 @@ test("builds a private structured GPT-5.6 Responses request", () => {
   assert.match(request.instructions, /Never describe unknown application availability as open/i);
   assert.match(request.instructions, /one or two concise sentences/i);
   assert.equal(request.text.format.schema.properties.summary.maxLength, 240);
+});
+
+test("preserves the alternative-skills regression rule in both provider prompts", () => {
+  const payload = {
+    userCriteria: alternativeSkillsFixture.userCriteria,
+    preferredLanguage: "English",
+    job: alternativeSkillsFixture.job,
+  };
+  const openAIRequest = buildOpenAIRequest(payload);
+  const localRequest = buildOpenAICompatibleRequest(payload, "qwen3:4b-instruct");
+
+  assert.match(openAIRequest.input, /at least one modern language such as Java, C\+\+, or C#/);
+  assert.match(localRequest.messages[1].content, /at least one modern language such as Java, C\+\+, or C#/);
+  assert.match(openAIRequest.instructions, /user with C# fully matches that requirement/i);
+  assert.match(localRequest.messages[0].content, /user with C# fully matches that requirement/i);
+  assert.deepEqual(alternativeSkillsFixture.expected, {
+    skillsOutcome: "match",
+    missingSkills: [],
+    concern: false,
+  });
 });
 
 test("builds a structured OpenAI-compatible local request", () => {

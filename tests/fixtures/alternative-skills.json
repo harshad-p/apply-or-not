@@ -1,0 +1,14 @@
+{
+  "name": "One acceptable backend language satisfies an alternative list",
+  "userCriteria": "Match me with these skills: C#, .NET.",
+  "job": {
+    "title": "Software Development Engineer, Automation Products",
+    "company": "Amazon Development Center Germany GmbH",
+    "description": "Experience programming with at least one modern language such as Java, C++, or C# including object-oriented design."
+  },
+  "expected": {
+    "skillsOutcome": "match",
+    "missingSkills": [],
+    "concern": false
+  }
+}
