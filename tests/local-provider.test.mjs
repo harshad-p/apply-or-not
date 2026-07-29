@@ -7,6 +7,8 @@ import {
   buildLocalSummary,
   compactLocalDescription,
   explicitCriteriaDimensions,
+  expandLocalAnalysis,
+  extractExplicitLanguageRequirements,
   extractLocalOutputText,
   parseLocalResponse,
   trustedPostingLanguage,
@@ -117,6 +119,47 @@ test("corrects obvious posting-language mistakes without translating", () => {
     ),
     "German",
   );
+});
+
+test("extracts explicit German and English requirements without the model", () => {
+  assert.deepEqual(
+    extractExplicitLanguageRequirements(`Sehr gute Deutschkenntnisse in Wort und Schrift
+
+Gute Englischkenntnisse`),
+    [
+      {
+        language: "German",
+        level: "very good written and spoken",
+        requirement: "required",
+        evidence: "Sehr gute Deutschkenntnisse in Wort und Schrift",
+      },
+      {
+        language: "English",
+        level: "good",
+        requirement: "required",
+        evidence: "Gute Englischkenntnisse",
+      },
+    ],
+  );
+});
+
+test("treats an explicit strong German requirement as a language conflict", () => {
+  const analysis = expandLocalAnalysis(modelOutput(), {
+    userCriteria: `Match me with C# and .NET.
+Prefer positions where English is the working language or German is optional.
+Strongly reduce the score when fluent German, C1, or business-level German is an explicit hard requirement.`,
+    job: {
+      description: `Build backend APIs with C#.
+Sehr gute Deutschkenntnisse in Wort und Schrift
+Gute Englischkenntnisse`,
+    },
+  });
+
+  assert.equal(analysis.rubric.language.applicable, true);
+  assert.equal(analysis.rubric.language.outcome, "conflict");
+  assert.equal(analysis.score, 73);
+  assert.equal(analysis.summary, "Potential match, led by skills. Main concern: language.");
+  assert.equal(analysis.languageRequirements.length, 2);
 });
 
 test("builds a deterministic local summary from trusted classifications", () => {

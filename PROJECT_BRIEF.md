@@ -147,7 +147,7 @@ inferences, and respect access controls and third-party terms.
 ## LLM providers
 
 The submitted live implementation uses OpenAI GPT-5.6 through the localhost
-relay. Post-submission version 0.18.2 adds a provider selector while keeping the
+relay. Post-submission version 0.18.3 adds a provider selector while keeping the
 same relay boundary:
 
 - OpenAI GPT-5.6 as the default and demonstrated hackathon provider
@@ -173,7 +173,9 @@ representative characters and uses a compact classification-only contract with
 a 500-token output budget. Trusted code calculates the score, writes a
 deterministic summary, expands concise
 evidence sections, rejects unsupported blockers, and guards applicability for
-clearly unstated dimensions. The relay logs elapsed time plus provider token
+clearly unstated dimensions. Common explicit German and English proficiency
+phrases are extracted deterministically rather than depending solely on a small
+model. The relay logs elapsed time plus provider token
 counts when available. `qwen3:0.6b` is the documented latency-first Ollama
 option; larger models remain configurable when accuracy matters more than speed.
 Local inference must be labeled clearly because model quality, structured-output

@@ -173,6 +173,71 @@ function trustedPostingLanguage(description, modelLanguage) {
   return modelLanguage;
 }
 
+function extractExplicitLanguageRequirements(description) {
+  const text = typeof description === "string" ? description : "";
+  const requirements = [];
+  const patterns = [
+    {
+      language: "German",
+      level: "very good written and spoken",
+      expression:
+        /(?:sehr\s+gute|hervorragende|ausgezeichnete|verhandlungssichere|fließende)\s+Deutschkenntnisse(?:\s+in\s+Wort\s+und\s+Schrift)?/giu,
+    },
+    {
+      language: "German",
+      level: "C1/C2 or business fluent",
+      expression:
+        /(?:Deutschkenntnisse[^\n.!?]{0,40}(?:C1|C2|Business[- ]Level|verhandlungssicher|fließend)|(?:C1|C2)[^\n.!?]{0,30}Deutschkenntnisse)/giu,
+    },
+    {
+      language: "English",
+      level: "good",
+      expression:
+        /(?:gute|sehr\s+gute|fließende|verhandlungssichere)\s+Englischkenntnisse(?:\s+in\s+Wort\s+und\s+Schrift)?/giu,
+    },
+  ];
+
+  for (const pattern of patterns) {
+    for (const match of text.matchAll(pattern.expression)) {
+      requirements.push({
+        language: pattern.language,
+        level: pattern.level,
+        requirement: "required",
+        evidence: match[0],
+      });
+    }
+  }
+  return requirements.slice(0, 3);
+}
+
+function languageOutcomeFromEvidence(requirements, userCriteria, fallback) {
+  const criteria =
+    typeof userCriteria === "string" ? userCriteria.toLocaleLowerCase() : "";
+  const strongGermanRequirement = requirements.some(
+    (requirement) =>
+      requirement.language === "German" &&
+      requirement.requirement === "required" &&
+      /(?:very good|c1|c2|business|fluent)/iu.test(requirement.level),
+  );
+  const userRejectsStrongGerman =
+    /(?:strongly\s+reduce|reject|do\s+not\s+apply|hard\s+requirement|deal[- ]breaker)[^\n.]{0,100}(?:german|deutsch)|(?:german|deutsch)[^\n.]{0,100}(?:strongly\s+reduce|reject|deal[- ]breaker)/iu.test(
+      criteria,
+    );
+  if (strongGermanRequirement && userRejectsStrongGerman) return "conflict";
+
+  const englishRequirement = requirements.some(
+    (requirement) =>
+      requirement.language === "English" &&
+      requirement.requirement === "required",
+  );
+  const userPrefersEnglish =
+    /\benglish\b[^\n.]{0,80}\b(?:working\s+language|preferred|prefer|acceptable)\b|\bprefer[^\n.]{0,80}\benglish\b/iu.test(
+      criteria,
+    );
+  if (englishRequirement && userPrefersEnglish) return "match";
+  return fallback;
+}
+
 function buildLocalSummary(score, rubric, hardBlockers, context) {
   if (context?.job?.application?.status === "closed") {
     return "Applications are closed for this role, regardless of the underlying job fit.";
@@ -242,24 +307,45 @@ function expandLocalAnalysis(value, context) {
     .filter(Boolean)
     .join("\n")
     .toLocaleLowerCase();
-  const supportedLanguageRequirements = (value.languageRequirements || [])
+  const modelLanguageRequirements = (value.languageRequirements || [])
     .filter((requirement) =>
       jobEvidence.includes(requirement.evidence.trim().toLocaleLowerCase()),
+    );
+  const deterministicLanguageRequirements =
+    extractExplicitLanguageRequirements(context?.job?.description);
+  const supportedLanguageRequirements = [
+    ...deterministicLanguageRequirements,
+    ...modelLanguageRequirements,
+  ]
+    .filter(
+      (requirement, index, all) =>
+        all.findIndex(
+          (candidate) =>
+            candidate.language === requirement.language &&
+            candidate.evidence.toLocaleLowerCase() ===
+              requirement.evidence.toLocaleLowerCase(),
+        ) === index,
     )
-    .slice(0, 2);
+    .slice(0, 3);
   const rubric = Object.fromEntries(
     Object.entries(value.rubric || {}).map(([dimension, assessment]) => [
       dimension,
       {
         applicable:
           Object.hasOwn(explicitDimensions, dimension)
-            ? explicitDimensions[dimension] && assessment.applicable
+            ? explicitDimensions[dimension]
             : assessment.applicable,
         outcome:
           dimension === "language" &&
           explicitDimensions.language &&
           supportedLanguageRequirements.length === 0
             ? "unknown"
+            : dimension === "language" && explicitDimensions.language
+              ? languageOutcomeFromEvidence(
+                  supportedLanguageRequirements,
+                  context?.userCriteria,
+                  assessment.outcome,
+                )
             : assessment.outcome,
       },
     ]),
@@ -430,7 +516,9 @@ export {
   compactLocalDescription,
   compactLocalPayload,
   explicitCriteriaDimensions,
+  extractExplicitLanguageRequirements,
   expandLocalAnalysis,
+  languageOutcomeFromEvidence,
   trustedPostingLanguage,
   extractLocalOutputText,
   parseLocalResponse,

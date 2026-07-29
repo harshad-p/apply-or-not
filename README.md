@@ -102,7 +102,7 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.18.2 is post-submission development on the local
+Version 0.18.3 is post-submission development on the local
 `codex/local-llm-support` branch. The submitted version remains 0.16.1 on
 `main`. The development version can route analysis through either GPT-5.6 or a
 local OpenAI-compatible model, validates both through the same result contract,
@@ -126,7 +126,7 @@ results display the measured analysis duration alongside the model and prompt
 version.
 
 The extractor also detects visible Easy Apply and external-application controls.
-Prompt v15 keeps the v12 alternative-requirement fix and adds a compact,
+Prompt v16 keeps the v12 alternative-requirement fix and adds a compact,
 classification-only path for CPU-bound local models. Trusted code writes the
 summary so a small model cannot produce a contradictory or truncated headline.
 It treats application method as selected-job page-control evidence, recognizes
@@ -322,6 +322,9 @@ characters, ask the model only for rubric classifications and short evidence,
 and cap structured output at 500 tokens. Trusted JavaScript calculates the
 score, writes the summary, expands the popup evidence sections, rejects unsupported
 blockers, and prevents clearly unstated dimensions from changing the score.
+Common explicit German and English requirement phrases are also extracted
+deterministically, so a small model cannot turn “Sehr gute Deutschkenntnisse”
+into missing language evidence.
 Local analysis may still take several
 minutes on older hardware; the relay allows up to five minutes before reporting
 a timeout. While local analysis is running, the popup provides a **Cancel
