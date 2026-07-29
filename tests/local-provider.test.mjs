@@ -134,7 +134,7 @@ test("builds a deterministic local summary from trusted classifications", () => 
       [],
       {},
     ),
-    "Strong overall match, led by skills. The posting does not clearly confirm your language preference.",
+    "Strong overall match, led by skills. No explicit language requirement was found in the posting.",
   );
 });
 

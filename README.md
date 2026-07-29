@@ -102,7 +102,7 @@ does not pretend to be a live model call.
 
 ## Status
 
-Version 0.18.1 is post-submission development on the local
+Version 0.18.2 is post-submission development on the local
 `codex/local-llm-support` branch. The submitted version remains 0.16.1 on
 `main`. The development version can route analysis through either GPT-5.6 or a
 local OpenAI-compatible model, validates both through the same result contract,
@@ -126,7 +126,7 @@ results display the measured analysis duration alongside the model and prompt
 version.
 
 The extractor also detects visible Easy Apply and external-application controls.
-Prompt v14 keeps the v12 alternative-requirement fix and adds a compact,
+Prompt v15 keeps the v12 alternative-requirement fix and adds a compact,
 classification-only path for CPU-bound local models. Trusted code writes the
 summary so a small model cannot produce a contradictory or truncated headline.
 It treats application method as selected-job page-control evidence, recognizes

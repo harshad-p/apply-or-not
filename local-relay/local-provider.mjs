@@ -216,11 +216,15 @@ function buildLocalSummary(score, rubric, hardBlockers, context) {
   if (negative.length) {
     parts.push(`Main concern: ${negative.slice(0, 2).join(" and ")}.`);
   } else if (uncertain.length) {
-    parts.push(
-      `The posting does not clearly confirm your ${uncertain
-        .slice(0, 2)
-        .join(" and ")} preference.`,
-    );
+    if (uncertain.length === 1 && uncertain[0] === "language") {
+      parts.push("No explicit language requirement was found in the posting.");
+    } else {
+      parts.push(
+        `The posting does not clearly confirm your ${uncertain
+          .slice(0, 2)
+          .join(" and ")} preference.`,
+      );
+    }
   }
   return parts.join(" ");
 }
