@@ -382,7 +382,7 @@ function expandLocalAnalysis(value, context) {
   const languageRequirementStatus =
     value.languageRequirementStatus === "found" &&
     supportedLanguageRequirements.length === 0
-      ? "uncertain"
+      ? "none"
       : value.languageRequirementStatus === "uncertain" &&
           (value.languageRequirements || []).length === 0
         ? "none"

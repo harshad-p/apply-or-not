@@ -302,6 +302,38 @@ test("treats an empty uncertain language scan as no explicit requirement", () =>
   );
 });
 
+test("treats ungrounded claimed language evidence as no explicit requirement", () => {
+  const analysis = expandLocalAnalysis({
+    ...modelOutput(),
+    rubric: {
+      ...modelOutput().rubric,
+      language: { applicable: true, outcome: "conflict" },
+    },
+    languageRequirementStatus: "found",
+    languageRequirements: [
+      {
+        language: "German",
+        level: "fluent",
+        requirement: "required",
+        evidence: "Fluent German is mandatory",
+      },
+    ],
+  }, {
+    userCriteria: "Prefer English; German should be optional.",
+    job: {
+      description:
+        "Build production services with C# and collaborate across engineering teams.",
+    },
+  });
+
+  assert.equal(analysis.languageRequirements.length, 0);
+  assert.equal(analysis.rubric.language.outcome, "unknown");
+  assert.match(
+    analysis.summary,
+    /No explicit language requirement was found/,
+  );
+});
+
 test("extracts standard and content-part local responses", () => {
   assert.equal(
     extractLocalOutputText({
