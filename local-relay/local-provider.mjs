@@ -274,6 +274,22 @@ function userExplicitlyRejectsLanguage(userCriteria) {
   );
 }
 
+function blockerMatchesLanguageRequirement(blocker, requirements) {
+  const blockerText = normalizeEvidence(
+    `${blocker?.title || ""} ${blocker?.evidence || ""}`,
+  );
+  const blockerEvidence = normalizeEvidence(blocker?.evidence);
+  return requirements.some((requirement) => {
+    const requirementEvidence = normalizeEvidence(requirement.evidence);
+    const language = normalizeEvidence(requirement.language);
+    return (
+      blockerEvidence.includes(requirementEvidence) ||
+      requirementEvidence.includes(blockerEvidence) ||
+      (language.length >= 3 && blockerText.includes(language))
+    );
+  });
+}
+
 function buildLocalSummary(
   score,
   rubric,
@@ -404,14 +420,12 @@ function expandLocalAnalysis(value, context) {
       },
     ]),
   );
-  const languageEvidence = new Set(
-    supportedLanguageRequirements.map((requirement) =>
-      normalizeEvidence(requirement.evidence),
-    ),
-  );
   const demotedLanguageBlocker = (value.hardBlockers || []).some(
     (blocker) =>
-      languageEvidence.has(normalizeEvidence(blocker.evidence)) &&
+      blockerMatchesLanguageRequirement(
+        blocker,
+        supportedLanguageRequirements,
+      ) &&
       !userExplicitlyRejectsLanguage(context?.userCriteria),
   );
   if (demotedLanguageBlocker && rubric.language?.applicable) {
@@ -445,7 +459,10 @@ function expandLocalAnalysis(value, context) {
     )
     .filter(
       (blocker) =>
-        !languageEvidence.has(normalizeEvidence(blocker.evidence)) ||
+        !blockerMatchesLanguageRequirement(
+          blocker,
+          supportedLanguageRequirements,
+        ) ||
         userExplicitlyRejectsLanguage(context?.userCriteria),
     )
     .map((blocker) => ({
@@ -614,6 +631,7 @@ async function analyzeWithLocalModel(
 export {
   LOCAL_DESCRIPTION_MAX_LENGTH,
   analyzeWithLocalModel,
+  blockerMatchesLanguageRequirement,
   buildChatCompletionsUrl,
   buildLocalSummary,
   compactLocalDescription,

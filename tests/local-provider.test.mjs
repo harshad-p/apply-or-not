@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   LOCAL_DESCRIPTION_MAX_LENGTH,
   analyzeWithLocalModel,
+  blockerMatchesLanguageRequirement,
   buildChatCompletionsUrl,
   buildLocalSummary,
   compactLocalDescription,
@@ -202,7 +203,7 @@ test("strongly reduce does not become a language hard blocker", () => {
     hardBlockers: [
       {
         title: "Strong German requirement",
-        evidence: "Very good German skills",
+        evidence: "Very good German skills\nGood English skills",
       },
     ],
     languageRequirementStatus: "found",
@@ -242,6 +243,33 @@ test("strongly reduce does not become a language hard blocker", () => {
   );
   assert.equal(
     userExplicitlyRejectsLanguage("Reject roles requiring German"),
+    true,
+  );
+});
+
+test("demotes a combined language blocker unless the user says reject", () => {
+  const requirements = [
+    {
+      language: "German",
+      level: "very good",
+      requirement: "required",
+      evidence: "Very good German skills",
+    },
+    {
+      language: "English",
+      level: "good",
+      requirement: "required",
+      evidence: "Good English skills",
+    },
+  ];
+  assert.equal(
+    blockerMatchesLanguageRequirement(
+      {
+        title: "Mandatory language proficiency",
+        evidence: "Very good German skills\nGood English skills",
+      },
+      requirements,
+    ),
     true,
   );
 });
