@@ -91,9 +91,7 @@ async function translateGermanToEnglish(
       const trimmed = translated.trim();
       const maximumLength = Math.max(germanChunks[index].length * 3, 300);
       if (trimmed.length > maximumLength) {
-        throw new Error(
-          `German translation expanded passage ${index + 1} unexpectedly.`,
-        );
+        return germanChunks[index];
       }
       return trimmed;
     },

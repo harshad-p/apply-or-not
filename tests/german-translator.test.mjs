@@ -61,3 +61,14 @@ test("translates mixed German and English content through an injected pipeline",
     "About the job\n\nVery good German skills\n\nGood English skills",
   );
 });
+
+test("falls back to original German when translation expands unexpectedly", async () => {
+  const original = "Sehr gute Deutschkenntnisse";
+  const translated = await translateGermanToEnglish(original, {
+    pipelineFactory: async () => async () => [
+      { translation_text: "repeated ".repeat(100) },
+    ],
+  });
+
+  assert.equal(translated, original);
+});
