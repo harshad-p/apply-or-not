@@ -272,8 +272,8 @@ internet hosts.
 
 ## Start the localhost analysis relay
 
-Use Node.js 18 or newer. Start the relay without putting a key in this
-repository:
+Use Node.js 18 or newer. For a one-off terminal session, start the relay
+without putting a key in this repository:
 
 ```sh
 node local-relay/server.mjs
@@ -292,6 +292,24 @@ node local-relay/server.mjs
 
 The relay listens only on `127.0.0.1`, accepts browser-extension origins, and
 keeps the key only in the local process. Stop it with `Control-C`.
+
+### Start automatically on macOS
+
+For local development, install the included launch agent once:
+
+```sh
+zsh scripts/install-local-relay-launch-agent.sh
+```
+
+It starts the relay at login, restarts it after a crash, and runs Node in watch
+mode. Changes to files imported by `local-relay/server.mjs` automatically
+restart the relay; there is no relay build step. You still need to build and
+run the Safari app from Xcode after changing extension or app source. Logs are
+written to `logs/local-relay.out.log` and `logs/local-relay.err.log`.
+
+The OpenAI key configured from extension settings remains intentionally
+in-memory only. After the relay restarts (including after login or a source
+edit), connect the key again. Local-model mode does not need an OpenAI key.
 
 ### Use a local model instead of OpenAI
 
@@ -315,7 +333,8 @@ for this mode.
    npm install
    ```
 
-3. Keep `node local-relay/server.mjs` running. The first local analysis
+3. Keep `node local-relay/server.mjs` running, or install the macOS launch
+   agent above. The first local analysis
    downloads the quantized German-to-English OPUS model. It remains in the
    Hugging Face cache for later offline use.
 4. Open the extension settings and select

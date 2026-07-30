@@ -22,9 +22,9 @@ node_modules/
 # Test and coverage output
 coverage/
 test-results/
+logs/
 
 # Editor files
 .idea/
 .vscode/
 *.swp
-
