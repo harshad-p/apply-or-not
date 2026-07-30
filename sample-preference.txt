@@ -1,3 +1,3 @@
-Match me with these skills: C#, .NET. 
+Match me with these skills: C#, .NET. If Blazor is present, score higher. 
 I do not have frontend JavaScript Framework knowledge. 
 Prefer positions where English is the working language or German is optional. Strongly reduce the score when fluent German, C1, or business-level German is an explicit hard requirement. Do not infer a strict German requirement merely because the job description is written in German.
