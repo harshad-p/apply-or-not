@@ -34,6 +34,10 @@
 - [x] Add a configurable local-model provider. Start with a localhost-only,
   OpenAI-compatible endpoint for Ollama or LM Studio; preserve the normalized
   result schema, deterministic scoring, timeout handling, and provider label.
+- [x] Add Groq as the default free-tier provider. Server-side key in relay;
+  full analysis contract (no compact prompt needed); no translation step.
+- [x] Add custom-server reference implementation. Users run their own model
+  server; extension sends payload; server returns normalized schema.
 - [ ] Add optional, user-triggered company enrichment from an employer website
   or public company profile. Keep company evidence separate from job evidence,
   show provenance and confidence, request only necessary host access, and avoid
@@ -44,3 +48,17 @@
   frames, without filling or submitting the application automatically.
 - [ ] Consider an optional, privacy-conscious hosted relay with quotas and
   abuse controls after the local release.
+
+## Provider restructure (feature/provider-restructure)
+
+- [x] Move expandLocalAnalysis and helpers into analysis-contract.js
+- [x] Add groq-provider.mjs (full contract, GROQ_API_KEY from env)
+- [x] Update server.mjs — Groq default, OpenAI with user key, /health reports both
+- [x] Update configuration.mjs — free/openai/local providers, Groq key validation
+- [x] Build custom-server/ reference implementation
+- [x] Update service-worker.js routing (free/openai → relay, custom → user URL)
+- [x] Update extension options UI (Free / OpenAI / Custom server)
+- [ ] Add GROQ_API_KEY to launchd plist template so it is set on server startup
+- [ ] Add custom-server to launchd or provide a startup script
+- [ ] Write a groq-provider test (mock fetch, verify full contract request/response)
+- [ ] Update README to document the new provider model and custom server setup

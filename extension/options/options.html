@@ -82,72 +82,46 @@
             Analysis provider
           </label>
           <p class="field-description">
-            Use GPT-5.6 through OpenAI, or run a compatible model on this
-            computer.
+            Use the free cloud tier, your own OpenAI key, or a custom server
+            running your own model.
           </p>
           <select id="analysis-provider" name="analysisProvider" data-provider>
+            <option value="free">Free · Fast cloud analysis</option>
             <option value="openai">OpenAI · GPT-5.6 Sol</option>
-            <option value="local">Local model · Ollama or LM Studio</option>
+            <option value="custom">Custom server · Your own model</option>
           </select>
 
-          <div class="nested-settings" data-local-settings hidden>
-            <label for="local-base-url">Local server base URL</label>
+          <div class="nested-settings" data-custom-settings hidden>
+            <label for="custom-server-url">Custom server URL</label>
             <input
-              id="local-base-url"
-              name="localBaseUrl"
+              id="custom-server-url"
+              name="customServerUrl"
               type="url"
               maxlength="500"
               autocomplete="off"
               spellcheck="false"
-              value="http://127.0.0.1:11434/v1"
-              data-local-base-url
+              value="http://127.0.0.1:8788"
+              data-custom-server-url
             >
             <p class="field-help">
-              Ollama usually uses <code>http://127.0.0.1:11434/v1</code>;
-              LM Studio usually uses <code>http://127.0.0.1:1234/v1</code>.
-              Only localhost and loopback addresses are accepted.
-            </p>
-
-            <label for="local-model">Model identifier</label>
-            <input
-              id="local-model"
-              name="localModel"
-              type="text"
-              maxlength="200"
-              autocomplete="off"
-              autocapitalize="none"
-              spellcheck="false"
-              placeholder="Recommended: qwen3.5:2b-q4_K_M"
-              data-local-model
-            >
-            <p class="field-help">
-              Use the exact model name shown by Ollama or LM Studio. The model
-              must support structured JSON output.
-              <code>qwen3.5:2b-q4_K_M</code> is currently recommended for
-              Ollama: it disables hidden reasoning, handles German directly,
-              and completed the benchmark jobs in under 20 seconds.
-            </p>
-
-            <p class="field-help">
-              German passages are translated locally into English before this
-              model analyzes the posting. English passages remain readable,
-              and no translation text is sent to an online service.
+              Run the reference implementation from <code>custom-server/</code>
+              and enter its URL here. The server handles prompt building and
+              model communication; the extension just sends the job and your
+              criteria.
             </p>
             <p class="field-help">
-              Saving local preferences prepares a compact reusable profile and
-              warms the selected model. Analysis becomes available after this
-              one-time preparation finishes.
+              See <code>custom-server/README.md</code> for setup instructions.
             </p>
           </div>
           <p class="connection-status" role="status" aria-live="polite" data-connection-status></p>
         </section>
       </form>
 
-      <section class="settings-card" aria-labelledby="api-key-label" data-openai-settings>
-          <label id="api-key-label" for="api-key">OpenAI API key</label>
-          <p class="field-description">
-            Optional shortcut for the local demo. Start the relay, then send a
-            key to its memory for this session only.
+      <section class="settings-card" aria-labelledby="api-key-label" data-key-settings>
+          <label id="api-key-label" for="api-key" data-key-label>OpenAI API key</label>
+          <p class="field-description" data-key-description>
+            Enter your key to use OpenAI for analysis. The relay holds it in
+            memory only — it is never saved to browser storage.
           </p>
           <div class="inline-field-action">
             <textarea
@@ -174,10 +148,10 @@
           <div>
             <strong>Local storage, explicit provider choice</strong>
             <p>
-              Preferences and cached results stay here. API keys stay only in
-              the relay process. OpenAI analysis sends the job and preferences
-              to OpenAI; local analysis sends them only to the loopback model
-              server you selected.
+              Preferences and cached results stay on your device. API keys stay
+              only in the relay process. The free tier and OpenAI send the job
+              and preferences to a cloud API; the custom server sends them only
+              to the server URL you configured.
             </p>
           </div>
       </aside>
