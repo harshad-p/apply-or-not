@@ -7,7 +7,9 @@ const {
 } = require("../extension/shared/analysis-contract.js");
 
 const GROQ_CHAT_URL = "https://api.groq.com/openai/v1/chat/completions";
+// Override with GROQ_MODEL env var if the default is unavailable on your account.
 const DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile";
+const GROQ_MODEL = process.env.GROQ_MODEL || DEFAULT_GROQ_MODEL;
 
 function extractOutputText(response) {
   const content = response?.choices?.[0]?.message?.content;
@@ -89,7 +91,7 @@ async function analyzeWithGroq(
   payload,
   {
     apiKey,
-    model = DEFAULT_GROQ_MODEL,
+    model = GROQ_MODEL,
     fetchImpl = globalThis.fetch,
     timeoutMs = 60000,
     maxAttempts = 2,

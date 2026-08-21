@@ -4,7 +4,7 @@ import {
   prepareLocalPreferences,
 } from "./local-provider.mjs";
 import { analyzeWithOpenAI } from "./openai-provider.mjs";
-import { analyzeWithGroq, DEFAULT_GROQ_MODEL } from "./groq-provider.mjs";
+import { analyzeWithGroq } from "./groq-provider.mjs";
 import {
   isAllowedOrigin,
   isExtensionOrigin,
@@ -319,9 +319,9 @@ function startServer() {
           analysis = await analyzeWithOpenAI(payload, { apiKey: openAiApiKey, projectId });
         } else {
           // "free" provider — use Groq with session key taking priority over env key
+          // model defaults to GROQ_MODEL (env) inside analyzeWithGroq
           analysis = await analyzeWithGroq(payload, {
             apiKey: groqSessionKey || groqApiKey,
-            model: DEFAULT_GROQ_MODEL,
           });
         }
         sendJson(response, 200, { analysis }, origin);
@@ -373,10 +373,11 @@ function startServer() {
 
   server.listen(port, host, () => {
     console.log(`Apply or Not relay listening on http://${host}:${port}`);
+    const groqModel = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
     console.log(
       groqApiKey
-        ? "Free tier (Groq) is configured from GROQ_API_KEY."
-        : "Free tier (Groq) is not configured. Set GROQ_API_KEY or a user key will be required.",
+        ? `Free tier (Groq) is configured from GROQ_API_KEY. Model: ${groqModel}`
+        : `Free tier (Groq) is not configured. Set GROQ_API_KEY or a user key will be required. Model will be: ${groqModel}`,
     );
     console.log(
       openAiApiKey
