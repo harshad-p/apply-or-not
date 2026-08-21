@@ -3,30 +3,35 @@ import assert from "node:assert/strict";
 import {
   LOCAL_DESCRIPTION_MAX_LENGTH,
   analyzeWithLocalModel,
-  blockerMatchesLanguageRequirement,
   buildChatCompletionsUrl,
   buildNativeOllamaChatUrl,
   buildNativeOllamaRequest,
-  buildLocalSummary,
   compactLocalDescription,
-  evidenceAppearsInJob,
   extractLanguageCandidateLines,
   expandCompactLocalOutput,
-  explicitCriteriaDimensions,
-  expandLocalAnalysis,
   extractLocalOutputText,
   parseLocalResponse,
   parseLanguageExtractionResponse,
   prepareLocalPreferences,
   preferenceProfileToText,
   profilePreservesNamedTerms,
-  trustedPostingLanguage,
-  userExplicitlyRejectsLanguage,
-  userStronglyReducesLanguage,
   usesNativeOllamaQwen,
   expandNamedLanguagesFromEvidence,
   removeProgrammingLanguageFalsePositives,
 } from "../local-relay/local-provider.mjs";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+const {
+  blockerMatchesLanguageRequirement,
+  buildLocalSummary,
+  evidenceAppearsInJob,
+  explicitCriteriaDimensions,
+  expandLocalAnalysis,
+  trustedPostingLanguage,
+  userExplicitlyRejectsLanguage,
+  userStronglyReducesLanguage,
+} = require("../extension/shared/analysis-contract.js");
 
 function modelOutput() {
   return {
