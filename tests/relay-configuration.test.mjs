@@ -40,6 +40,17 @@ test("accepts only loopback local-model endpoints", () => {
   );
 });
 
+test("validates free provider config without requiring a model", () => {
+  assert.deepEqual(validateProviderConfig({ id: "free" }), { id: "free" });
+  assert.deepEqual(validateProviderConfig({}), { id: "free" });
+});
+
+test("accepts a groq key and rejects a too-short key with groq hint", () => {
+  const key = `gsk_test-${"x".repeat(24)}`;
+  assert.equal(validateApiKey(`  ${key}  `, "groq"), key);
+  assert.throws(() => validateApiKey("short", "groq"), /valid Groq API key/);
+});
+
 test("requires a model only for the local provider", () => {
   assert.deepEqual(validateProviderConfig({ id: "openai" }), {
     id: "openai",

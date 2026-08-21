@@ -4,6 +4,7 @@ import {
   prepareLocalPreferences,
 } from "./local-provider.mjs";
 import { analyzeWithOpenAI } from "./openai-provider.mjs";
+import { analyzeWithGroq, DEFAULT_GROQ_MODEL } from "./groq-provider.mjs";
 import {
   isAllowedOrigin,
   isExtensionOrigin,
@@ -13,7 +14,12 @@ import {
 
 const host = "127.0.0.1";
 const port = Number.parseInt(process.env.APPLY_OR_NOT_PORT || "8787", 10);
-let apiKey = process.env.OPENAI_API_KEY || "";
+// Groq key: your server-side key (default free tier).
+// Session key set via /configure overrides the env key for that session.
+let groqApiKey = process.env.GROQ_API_KEY || "";
+let groqSessionKey = "";
+// OpenAI key: user-provided via /configure, held in memory only.
+let openAiApiKey = process.env.OPENAI_API_KEY || "";
 const projectId = process.env.OPENAI_PROJECT_ID || "";
 const maximumBodyBytes = 128 * 1024;
 const localRequests = new Map();
@@ -107,18 +113,20 @@ function startServer() {
     }
 
     if (request.method === "GET" && request.url === "/health") {
+      const freeConfigured = Boolean(groqSessionKey || groqApiKey);
+      const openAiConfigured = Boolean(openAiApiKey);
       sendJson(
         response,
         200,
         {
           ok: true,
-          provider: "openai",
-          model: "gpt-5.6-sol",
-          configured: Boolean(apiKey),
           providers: {
+            free: {
+              configured: freeConfigured,
+              serverKey: Boolean(groqApiKey),
+            },
             openai: {
-              model: "gpt-5.6-sol",
-              configured: Boolean(apiKey),
+              configured: openAiConfigured,
             },
             local: {
               configured: true,
@@ -137,8 +145,14 @@ function startServer() {
       }
       try {
         const body = await readJson(request);
-        apiKey = validateApiKey(body?.apiKey);
-        sendJson(response, 200, { ok: true, configured: true }, origin);
+        const provider = body?.provider || "openai";
+        if (provider === "free") {
+          groqSessionKey = validateApiKey(body?.apiKey, "groq");
+          sendJson(response, 200, { ok: true, configured: true }, origin);
+        } else {
+          openAiApiKey = validateApiKey(body?.apiKey, "openai");
+          sendJson(response, 200, { ok: true, configured: true }, origin);
+        }
       } catch (error) {
         sendJson(response, 400, { error: error.message }, origin);
       }
@@ -279,7 +293,7 @@ function startServer() {
           requestBody?.payload && typeof requestBody.payload === "object";
         const payload = isWrappedRequest ? requestBody.payload : requestBody;
         const providerConfig = validateProviderConfig(
-          isWrappedRequest ? requestBody.providerConfig : { id: "openai" },
+          isWrappedRequest ? requestBody.providerConfig : { id: "free" },
         );
         requestId =
           typeof requestBody?.requestId === "string"
@@ -296,12 +310,20 @@ function startServer() {
             updatedAt: Date.now(),
           });
         }
-        const analysis =
-          providerConfig.id === "local"
-            ? await analyzeWithLocalModel(payload, providerConfig, {
-                signal: controller.signal,
-              })
-            : await analyzeWithOpenAI(payload, { apiKey, projectId });
+        let analysis;
+        if (providerConfig.id === "local") {
+          analysis = await analyzeWithLocalModel(payload, providerConfig, {
+            signal: controller.signal,
+          });
+        } else if (providerConfig.id === "openai") {
+          analysis = await analyzeWithOpenAI(payload, { apiKey: openAiApiKey, projectId });
+        } else {
+          // "free" provider — use Groq with session key taking priority over env key
+          analysis = await analyzeWithGroq(payload, {
+            apiKey: groqSessionKey || groqApiKey,
+            model: DEFAULT_GROQ_MODEL,
+          });
+        }
         sendJson(response, 200, { analysis }, origin);
       } catch (error) {
         console.error(`Analysis failed: ${error.message}`);
@@ -352,11 +374,16 @@ function startServer() {
   server.listen(port, host, () => {
     console.log(`Apply or Not relay listening on http://${host}:${port}`);
     console.log(
-      apiKey
-        ? "OpenAI is configured from the process environment."
-        : "OpenAI is not configured. Enter a key in the extension settings.",
+      groqApiKey
+        ? "Free tier (Groq) is configured from GROQ_API_KEY."
+        : "Free tier (Groq) is not configured. Set GROQ_API_KEY or a user key will be required.",
     );
-    console.log("The OpenAI API key is kept only in this relay process.");
+    console.log(
+      openAiApiKey
+        ? "OpenAI is configured from OPENAI_API_KEY."
+        : "OpenAI is not configured. Users can enter a key in extension settings.",
+    );
+    console.log("API keys are kept only in this relay process.");
     console.log(
       "Local model requests are restricted to localhost and loopback addresses.",
     );
