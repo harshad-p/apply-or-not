@@ -11,7 +11,7 @@ if (typeof importScripts === "function") {
 
 const extensionApi = globalThis.browser ?? globalThis.chrome;
 const relayUrl = "http://127.0.0.1:8787";
-const DEFAULT_LOCAL_BASE_URL = "http://127.0.0.1:11434/v1";
+const DEFAULT_CUSTOM_SERVER_URL = "http://127.0.0.1:8788";
 const updateActionBadge = globalThis.ApplyOrNotBadge.createBadgeUpdater(
   extensionApi.action,
 );
@@ -44,11 +44,11 @@ async function checkRelay() {
   return readJsonResponse(response);
 }
 
-async function configureRelay(apiKey) {
+async function configureRelay(apiKey, provider = "openai") {
   const response = await fetch(`${relayUrl}/configure`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ apiKey }),
+    body: JSON.stringify({ apiKey, provider }),
   });
   return readJsonResponse(response);
 }
@@ -64,22 +64,28 @@ async function prepareLocalPreferences(userCriteria, providerConfig) {
 
 async function readProviderConfig() {
   const {
-    analysisProvider = "openai",
+    analysisProvider = "free",
     localModel = "",
-    localBaseUrl = DEFAULT_LOCAL_BASE_URL,
+    localBaseUrl = "http://127.0.0.1:11434/v1",
+    customServerUrl = DEFAULT_CUSTOM_SERVER_URL,
   } = await extensionApi.storage.local.get([
     "analysisProvider",
     "localModel",
     "localBaseUrl",
+    "customServerUrl",
   ]);
 
-  return analysisProvider === "local"
-    ? {
-        id: "local",
-        model: localModel,
-        baseUrl: localBaseUrl,
-      }
-    : { id: "openai" };
+  if (analysisProvider === "local") {
+    return { id: "local", model: localModel, baseUrl: localBaseUrl };
+  }
+  if (analysisProvider === "custom") {
+    return { id: "custom", serverUrl: customServerUrl };
+  }
+  if (analysisProvider === "openai") {
+    return { id: "openai" };
+  }
+  // Default: free tier (Groq via relay)
+  return { id: "free" };
 }
 
 function waitForPoll(milliseconds, signal) {
@@ -130,7 +136,8 @@ async function analyzeWithRelayJob(payload, providerConfig, requestId, signal) {
 async function analyzeJob(payload, { context, signal } = {}) {
   const providerConfig = await readProviderConfig();
   const controller = new AbortController();
-  const timeoutMs = providerConfig.id === "local" ? 315_000 : 70_000;
+  const isSlowProvider = providerConfig.id === "local" || providerConfig.id === "custom";
+  const timeoutMs = isSlowProvider ? 315_000 : 70_000;
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   const cancel = () => controller.abort();
   if (signal?.aborted) {
@@ -141,6 +148,7 @@ async function analyzeJob(payload, { context, signal } = {}) {
 
   try {
     if (providerConfig.id === "local") {
+      // Local model: use the relay's async job queue (start + poll).
       const analysis = await analyzeWithRelayJob(
         payload,
         providerConfig,
@@ -157,6 +165,27 @@ async function analyzeJob(payload, { context, signal } = {}) {
       return analysis;
     }
 
+    if (providerConfig.id === "custom") {
+      // Custom server: send directly to the user's server URL.
+      const serverUrl = providerConfig.serverUrl || DEFAULT_CUSTOM_SERVER_URL;
+      const response = await fetch(`${serverUrl}/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payload }),
+        signal: controller.signal,
+      });
+      const body = await readJsonResponse(response);
+      const validation = globalThis.ApplyOrNotAnalysis.validateModelOutput(
+        body.analysis,
+        payload,
+      );
+      if (!validation.valid) {
+        throw new Error("Custom server returned an invalid analysis result.");
+      }
+      return body.analysis;
+    }
+
+    // Free (Groq) or OpenAI: send to the relay.
     const response = await fetch(`${relayUrl}/analyze`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -170,7 +199,7 @@ async function analyzeJob(payload, { context, signal } = {}) {
     );
 
     if (!validation.valid) {
-      throw new Error("Local AI helper returned an invalid analysis result.");
+      throw new Error("Analysis server returned an invalid analysis result.");
     }
 
     return body.analysis;
@@ -179,11 +208,13 @@ async function analyzeJob(payload, { context, signal } = {}) {
       if (signal?.aborted) {
         throw new Error("Analysis canceled.");
       }
-      throw new Error(
-        providerConfig.id === "local"
-          ? "Local model analysis timed out. Try a smaller model or shorter job description."
-          : "GPT-5.6 analysis timed out. Please try again.",
-      );
+      if (providerConfig.id === "local") {
+        throw new Error("Local model analysis timed out. Try a smaller model or shorter job description.");
+      }
+      if (providerConfig.id === "custom") {
+        throw new Error("Custom server analysis timed out. Check that the server is running.");
+      }
+      throw new Error("Analysis timed out. Please try again.");
     }
     throw error;
   } finally {
@@ -264,7 +295,7 @@ extensionApi.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "analysis:health") {
     operation = checkRelay();
   } else if (message?.type === "analysis:key:set") {
-    operation = configureRelay(message.apiKey);
+    operation = configureRelay(message.apiKey, message.provider || "openai");
   } else if (message?.type === "analysis:prepare:local") {
     operation = prepareLocalPreferences(
       message.userCriteria,
