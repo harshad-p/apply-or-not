@@ -9,6 +9,18 @@ secrets.*
 # macOS
 .DS_Store
 
+# Virtual environments
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# IDE
+.idea/
+.vscode/
+
 # Xcode and Safari extension local state
 DerivedData/
 build/
